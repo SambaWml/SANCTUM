@@ -41,10 +41,13 @@
     "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
     "scenario": "(setup)",
     "validatedIn": [
+      "GURUJA-8241-20261101T184657",
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-11-01"
   },
   {
     "route": "/aluno/visao-geral",
@@ -69,10 +72,12 @@
     "playwright": "await page.goto('/aluno/visao-geral');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -143,9 +148,11 @@
     "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8241-20261101T184657",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-11-01"
   },
   {
     "route": "/",
@@ -169,9 +176,11 @@
     "playwright": "await page.goto('/entrar');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8241-20261101T184657",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-11-01"
   },
   {
     "route": "/aluno/visao-geral",
@@ -202,10 +211,11 @@
     "playwright": "await page.getByRole('tabpanel', { name: 'Sobre mim' }).press('End');",
     "scenario": "CT-003",
     "validatedIn": [
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -217,10 +227,12 @@
     "playwright": "await page.getByRole('tab', { name: 'Perfil de trabalho' }).click();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -232,10 +244,12 @@
     "playwright": "await page.getByRole('tab', { name: 'Sobre mim' }).click();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -269,10 +283,11 @@
     "playwright": "await page.getByRole('dialog', { name: 'Professor' }).getByRole('button', { name: 'Fechar' }).click();",
     "scenario": "CT-007",
     "validatedIn": [
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -284,10 +299,11 @@
     "playwright": "await page.getByRole('dialog', { name: 'Professor' }).press('Escape');",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-9224-20261031T144211",
       "GURUJA-9002-20261026T151837",
       "GURUJA-9002-20261026T143144"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-31"
   },
   {
     "route": "/aluno/visao-geral",
@@ -333,5 +349,1136 @@
       "GURUJA-9002-20261026T151837"
     ],
     "lastSeen": "2026-10-26"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "AB Abner Nasser Barbosa desativado@guruja.com.br"
+    },
+    "playwright": "await page.getByRole('button', { name: 'AB Abner Nasser Barbosa desativado@guruja.com.br' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "within": {
+        "role": "dialog",
+        "name": "Você se mudou de cidade?"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Você se mudou de cidade?' }).getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Bruno Castilho Professor Bruno Castilho"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Bruno Castilho Professor Bruno Castilho' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Usuários"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Usuários' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar usuário' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar usuário' }).press('Enter');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ações",
+      "within": {
+        "role": "row",
+        "name": "Bruno Castilho Bruno Castilho desativado@guruja.com.br 17/08/2026 Guruja - Ativo - 17/08/2026 - 16:17 Ações"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: 'Bruno Castilho Bruno Castilho desativado@guruja.com.br 17/08/2026 Guruja - Ativo - 17/08/2026 - 16:17 Ações' }).getByRole('button', { name: 'Ações' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Editar"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Editar' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "press",
+    "target": {
+      "role": "menuitem",
+      "name": "Editar"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Editar' }).press('Enter');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "img",
+      "name": "Bruno Castilho"
+    },
+    "playwright": "await page.getByRole('img', { name: 'Bruno Castilho' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ações",
+      "within": {
+        "role": "row",
+        "name": "AT Aluno Teste - Bruno Castilho desativado@guruja.com.br 17/08/2026 Bolsista Bruno Castilho Aguardando aceite dos termos - 22/10/2026 - 09:09 Ações"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: 'AT Aluno Teste - Bruno Castilho desativado@guruja.com.br 17/08/2026 Bolsista Bruno Castilho Aguardando aceite dos termos - 22/10/2026 - 09:09 Ações' }).getByRole('button', { name: 'Ações' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "exact": true,
+      "text": "Editar",
+      "within": {
+        "role": "menu"
+      }
+    },
+    "playwright": "await page.getByRole('menu').getByText('Editar', { exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/34533",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/34533"
+    },
+    "playwright": "await page.goto('/admin/usuarios/34533');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/editar/34533"
+    },
+    "playwright": "await page.goto('/admin/usuarios/editar/34533');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Produção"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Produção' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Assistentes"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Assistentes' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ações",
+      "within": {
+        "role": "main"
+      }
+    },
+    "playwright": "await page.getByRole('main').getByRole('button', { name: 'Ações' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "press",
+    "target": {
+      "role": "menu",
+      "name": "Ações"
+    },
+    "playwright": "await page.getByRole('menu', { name: 'Ações' }).press('Escape');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Termos de uso"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Termos de uso' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Informações básicas"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Informações básicas' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Editar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Editar', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/34533",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/painel-de-controle",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/painel-de-controle"
+    },
+    "playwright": "await page.goto('/admin/painel-de-controle');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/painel-de-controle",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Professores Disponíveis"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Professores Disponíveis' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Professor Bruno Castilho"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Professor Bruno Castilho' }).click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "390x844"
+    },
+    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
+    "scenario": "CT-008",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Abrir menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Abrir menu' }).click();",
+    "scenario": "CT-008",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "768x1024"
+    },
+    "playwright": "await page.setViewportSize({ width: 768, height: 1024 });",
+    "scenario": "CT-008",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios"
+    },
+    "playwright": "await page.goto('/admin/usuarios');",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/22548",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/editar/22548"
+    },
+    "playwright": "await page.goto('/admin/usuarios/editar/22548');",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/552",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/editar/552"
+    },
+    "playwright": "await page.goto('/admin/usuarios/editar/552');",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "navigate",
+    "target": {
+      "url": "/meu-perfil"
+    },
+    "playwright": "await page.goto('/meu-perfil');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Produção"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Produção' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/coordenadas",
+    "action": "navigate",
+    "target": {
+      "url": "/guruja/coordenadas"
+    },
+    "playwright": "await page.goto('/guruja/coordenadas');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Professor Bruno Castilho",
+      "within": {
+        "role": "navigation",
+        "name": "Menu de navegação"
+      }
+    },
+    "playwright": "await page.getByRole('navigation', { name: 'Menu de navegação' }).getByRole('button', { name: 'Professor Bruno Castilho' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x650"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 650 });",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "press",
+    "target": {
+      "role": "tabpanel",
+      "name": "Perfil de trabalho"
+    },
+    "playwright": "await page.getByRole('tabpanel', { name: 'Perfil de trabalho' }).press('End');",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar por aluno, e-mail ou telefone' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar por aluno, e-mail ou telefone' }).press('Enter');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "navigate",
+    "target": {
+      "url": "/guruja/alunos"
+    },
+    "playwright": "await page.goto('/guruja/alunos');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "Teste QA Guruja",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('cell', { name: 'Teste QA Guruja', exact: true }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "TQ",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('cell', { name: 'TQ', exact: true }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "row",
+      "name": "TQ Teste QA Guruja"
+    },
+    "playwright": "await page.getByRole('row', { name: 'TQ Teste QA Guruja' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "Bruno Castilho",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('cell', { name: 'Bruno Castilho', exact: true }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "navigate",
+    "target": {
+      "url": "/guruja/alunos/37541"
+    },
+    "playwright": "await page.goto('/guruja/alunos/37541');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Perfil do aluno"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Perfil do aluno' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Informações básicas"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Informações básicas' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "css": "main h3 + button"
+    },
+    "playwright": "await page.locator('main h3 + button').click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Fechar modal"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Fechar modal' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Status"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Status' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ações",
+      "within": {
+        "role": "row",
+        "name": "Teste QA Guruja"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: 'Teste QA Guruja' }).getByRole('button', { name: 'Ações' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/37541",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/37541"
+    },
+    "playwright": "await page.goto('/admin/usuarios/37541');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "exact": true,
+      "text": "Editar",
+      "within": {
+        "role": "menu",
+        "name": "Ações"
+      }
+    },
+    "playwright": "await page.getByRole('menu', { name: 'Ações' }).getByText('Editar', { exact: true }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/guruja/alunos/37541",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Assinatura"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Assinatura' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "Teste QA Guruja",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('cell', { name: 'Teste QA Guruja', exact: true }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "hover",
+    "target": {
+      "role": "menuitem",
+      "name": "Editar"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Editar' }).hover();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ações",
+      "within": {
+        "role": "row",
+        "name": "[prd]adminluby"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: '[prd]adminluby' }).getByRole('button', { name: 'Ações' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/37541",
+    "action": "navigate",
+    "target": {
+      "url": "/admin/usuarios/editar/37541"
+    },
+    "playwright": "await page.goto('/admin/usuarios/editar/37541');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/37541",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Professor"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Professor' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/37541",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Bruno Castilho"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Bruno Castilho' }).click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/37541",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Selecione um professor"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Selecione um professor' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/admin/usuarios/editar/37541",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Selecione um professor"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Selecione um professor' }).press('Escape');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "press",
+    "target": {
+      "css": "body"
+    },
+    "playwright": "await page.locator('body').press('Escape');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501",
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "text": "Li e concordo com os",
+      "within": {
+        "role": "dialog"
+      }
+    },
+    "playwright": "await page.getByRole('dialog').getByText('Li e concordo com os').click();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9224-20261031T144211"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "img",
+      "name": "Vítor Melo"
+    },
+    "playwright": "await page.getByRole('img', { name: 'Vítor Melo' }).click();",
+    "scenario": "CT-009",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Vítor Melo Professor Vítor Melo",
+      "within": {
+        "role": "navigation",
+        "name": "Menu de navegação"
+      }
+    },
+    "playwright": "await page.getByRole('navigation', { name: 'Menu de navegação' }).getByRole('button', { name: 'Vítor Melo Professor Vítor Melo' }).click();",
+    "scenario": "CT-009",
+    "validatedIn": [
+      "GURUJA-9224-20261031T163501"
+    ],
+    "lastSeen": "2026-10-31"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "placeholder": "insira o usuário"
+    },
+    "playwright": "await page.getByPlaceholder('insira o usuário').fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "css": "input[type=\"password\"]"
+    },
+    "playwright": "await page.locator('input[type=\"password\"]').fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/",
+    "action": "press",
+    "target": {
+      "css": "input[type=\"password\"]"
+    },
+    "playwright": "await page.locator('input[type=\"password\"]').press('Enter');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "css": "input[name=\"nickName\"]"
+    },
+    "playwright": "await page.locator('input[name=\"nickName\"]').fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "css": "input[name=\"password\"]"
+    },
+    "playwright": "await page.locator('input[name=\"password\"]').fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "css": "button[type=\"submit\"]"
+    },
+    "playwright": "await page.locator('button[type=\"submit\"]').click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8241-20261101T184657"
+    ],
+    "lastSeen": "2026-11-01"
   }
 ]

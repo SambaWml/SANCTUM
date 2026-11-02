@@ -1,0 +1,284 @@
+[
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "nickName"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'nickName' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "password"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'password' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/desempenho-acumulado"
+    },
+    "playwright": "await page.goto('/aluno/desempenho-acumulado');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "combobox",
+      "name": "Disciplina"
+    },
+    "playwright": "await page.getByRole('combobox', { name: 'Disciplina' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "option",
+      "name": "Direito Administrativo"
+    },
+    "playwright": "await page.getByRole('option', { name: 'Direito Administrativo' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Tempo por atividade"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Tempo por atividade' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Itens"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Itens' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Atividades",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Atividades', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Direito Constitucional"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Direito Constitucional' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "53m"
+    },
+    "playwright": "await page.getByRole('button', { name: '53m' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Direito Administrativo"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Direito Administrativo' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/v2/PerformanceReport/2536/Summary",
+    "action": "navigate",
+    "target": {
+      "url": "/v2/PerformanceReport/2536/Summary"
+    },
+    "playwright": "await page.goto('/v2/PerformanceReport/2536/Summary');",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar por aluno, e-mail ou telefone' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Buscar por aluno, e-mail ou telefone' }).press('Enter');",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "Abner Nasser Barbosa"
+    },
+    "playwright": "await page.getByRole('cell', { name: 'Abner Nasser Barbosa' }).click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "exact": true,
+      "text": "Abner Nasser Barbosa"
+    },
+    "playwright": "await page.getByText('Abner Nasser Barbosa', { exact: true }).click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "1453"
+    },
+    "playwright": "await page.getByRole('cell', { name: '1453' }).click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos/13174",
+    "action": "navigate",
+    "target": {
+      "url": "/guruja/alunos/13174"
+    },
+    "playwright": "await page.goto('/guruja/alunos/13174');",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/guruja/alunos/13174",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Desempenho",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Desempenho', exact: true }).click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8804-20261030T132348"
+    ],
+    "lastSeen": "2026-10-30"
+  }
+]

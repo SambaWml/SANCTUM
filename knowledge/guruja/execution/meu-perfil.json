@@ -1,0 +1,180 @@
+[
+  {
+    "route": "/entrar",
+    "action": "viewport",
+    "target": {
+      "viewport": "1440x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1440, height: 900 });",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha', exact: true }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "navigate",
+    "target": {
+      "url": "/meu-perfil"
+    },
+    "playwright": "await page.goto('/meu-perfil');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Informações básicas",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Informações básicas', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Outras Plataformas",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Outras Plataformas', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Editar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Editar', exact: true }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Cancelar', exact: true }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Editar outras plataformas",
+        "exact": true
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Editar outras plataformas', exact: true }).getByRole('button', { name: 'Cancelar', exact: true }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/design/oA09ntizpxDclL0wfbTwLy/Aluno---Guruja",
+    "action": "navigate",
+    "target": {
+      "url": "/design/oA09ntizpxDclL0wfbTwLy/Aluno---Guruja"
+    },
+    "playwright": "await page.goto('/design/oA09ntizpxDclL0wfbTwLy/Aluno---Guruja');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "viewport",
+    "target": {
+      "viewport": "390x844"
+    },
+    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9087-20261030T154603"
+    ],
+    "lastSeen": "2026-10-30"
+  }
+]

@@ -56,6 +56,16 @@ describe('ingestão e atribuição por run', () => {
     expect(transcriptDirs('c:\\Users\\ana\\NEW QA', home)).toEqual([join(home, '.claude', 'projects', 'C--Users-ana-NEW-QA')]);
   });
 
+  it('Codex não ingere transcripts do Claude nem com pasta explicitamente configurada', () => {
+    const home = join(root, 'home');
+    const dir = join(home, '.claude', 'projects', 'C--Users-ana-NEW-QA');
+    mkdirSync(dir, { recursive: true });
+    const project = 'c:\\Users\\ana\\NEW QA';
+    expect(transcriptDirs(project, home, undefined, 'codex')).toEqual([]);
+    expect(transcriptDirs(project, home, dir, 'codex')).toEqual([]);
+    expect(transcriptDirs(project, home, dir)).toEqual([dir]);
+  });
+
   it('atribui tokens ao run, aos cenários e ignora sessões e horários de fora', () => {
     // descoberta (antes do run_start) → run → cenários
     at('2026-10-23T09:55:00Z');

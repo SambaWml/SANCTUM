@@ -40,7 +40,7 @@ async function metrics(arg?: string): Promise<number> {
   }
   const db = openDb(process.env.NOVO_QA_DB ?? join(ROOT, 'data', 'novo-qa.db'));
   const store = new StateStore(db, config);
-  const ingested = ingestTranscripts(db, transcriptDirs(ROOT, homedir(), process.env.NOVO_QA_TRANSCRIPTS_DIR || undefined));
+  const ingested = ingestTranscripts(db, transcriptDirs(ROOT, homedir(), process.env.NOVO_QA_TRANSCRIPTS_DIR || undefined, process.env.NOVO_QA_CLIENT));
   const run = store.resolveRun(arg);
   const m = computeRunMetrics(db, store, run.id);
   console.log(`${run.issue_key} · ${run.id} (${ingested.calls} chamadas lidas de ${ingested.files} transcript(s))\n`);

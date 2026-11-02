@@ -27,7 +27,7 @@ const KNOWN_ERRORS = [StateError, SecretError, BrowserError, TargetError, GuardE
  * Registro comum: entrada e saída sanitizadas, erros de regra devolvidos como mensagem
  * (não exceção) e um evento por chamada (base das métricas).
  */
-export function createRegistrar(server: McpServer, deps: { store: StateStore; redactor: Redactor }): RegisterTool {
+export function createRegistrar(server: McpServer, deps: { store: StateStore; redactor: Redactor; requireHumanApproval?: boolean }): RegisterTool {
   const { store, redactor } = deps;
   return (name, description, shape, handler) => {
     const callback = async (rawArgs: unknown): Promise<CallToolResult> => {
@@ -35,6 +35,23 @@ export function createRegistrar(server: McpServer, deps: { store: StateStore; re
       const runId = (args as { runId?: unknown }).runId;
       store.logEvent(typeof runId === 'string' ? runId : null, null, `tool.${name}`, null);
       try {
+        if (deps.requireHumanApproval && (name === 'plan_approve' || name === 'act_approved')) {
+          if (!server.server.getClientCapabilities()?.elicitation?.form) {
+            throw new GuardError('confirmação humana indisponível: este cliente precisa oferecer MCP elicitation form; ação bloqueada');
+          }
+          const result = await server.server.elicitInput({
+            mode: 'form',
+            message: redactor.text(`NOVO QA — autorizar ${name}? Confira o plano apresentado ou a ação específica antes de confirmar.\n${JSON.stringify(args)}`),
+            requestedSchema: {
+              type: 'object',
+              properties: { confirm: { type: 'boolean', title: 'Autorizo esta operação específica', default: false } },
+              required: ['confirm'],
+            },
+          });
+          if (result.action !== 'accept' || result.content?.confirm !== true) {
+            throw new GuardError('operação não autorizada pelo usuário; nenhuma ação executada');
+          }
+        }
         const result = await handler(args);
         if (result instanceof ToolContent) {
           return { content: result.content.map((c) => (c.type === 'text' ? { ...c, text: redactor.text(c.text) } : c)) };

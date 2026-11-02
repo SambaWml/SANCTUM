@@ -26,7 +26,10 @@ interface TranscriptLine {
 }
 
 /** Pastas de transcript do projeto: o nome é o caminho com tudo que não é letra/dígito trocado por "-". */
-export function transcriptDirs(rootDir: string, homeDir: string, override?: string): string[] {
+export function transcriptDirs(rootDir: string, homeDir: string, override?: string, client = 'claude'): string[] {
+  // O formato e a atribuição abaixo são específicos do Claude. Um MCP do Codex
+  // não deve atribuir chamadas de outra sessão/cliente à execução corrente.
+  if (client !== 'claude') return [];
   if (override) return existsSync(override) ? [override] : [];
   const base = join(homeDir, '.claude', 'projects');
   if (!existsSync(base)) return [];

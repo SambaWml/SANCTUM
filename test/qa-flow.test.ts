@@ -221,6 +221,20 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     const again = await h.ok('report_build', { runId });
     expect(readFileSync(join(h.root, again.report), 'utf8')).toMatch(/## Bugs explicados[\s\S]*### 1\. Salvar com erro não avisa \(CT-002\)/);
     expect(readFileSync(join(h.root, again.html), 'utf8')).toContain('<dt>O que acontece</dt><dd>Nada aparece</dd>');
+    expect(again.missingSummaries).toEqual(['CT-001', 'CT-002']);
+
+    // Resumo simples por cenário, severidade e card criado: somam por código e geram filtro e selos no HTML.
+    await h.ok('report_build', { runId, summaries: [{ code: 'CT-002', verdict: 'Bug (alta)', text: 'Salvar com erro não mostra mensagem nenhuma ao usuário.', severity: 'alta', jira: 'FIX-12' }] });
+    const withSummary = await h.ok('report_build', { runId, summaries: [{ code: 'CT-001', verdict: 'Passou', text: 'Cadastro com dados válidos salva e aparece na lista.' }] });
+    expect(withSummary.missingSummaries).toEqual([]);
+    const page = readFileSync(join(h.root, withSummary.html), 'utf8');
+    expect(page).toContain('<b>Em palavras simples — Bug (alta):</b> Salvar com erro não mostra mensagem nenhuma ao usuário.');
+    expect(page).toContain('<b>Em palavras simples — Passou:</b>');
+    expect(page).toContain('href="https://luby.atlassian.net/browse/FIX-12"');
+    expect(page).toMatch(/<details class="scenario" id="CT-002" data-group="alta" data-jira="1"/);
+    expect(page).toContain('<button data-f="alta">Alta (1)</button>');
+    expect(page).toContain('<button data-f="jira">Bug criado (1)</button>');
+    expect(readFileSync(join(h.root, withSummary.report), 'utf8')).toContain('- Severidade: Alta · Bug criado: FIX-12');
 
     // Próximo card do módulo já recebe o execution knowledge no briefing
     const next = (await h.ok('run_start', { issueKey: 'FIX-51', env: 'fixture-local', mode: 'manual' })).runId;

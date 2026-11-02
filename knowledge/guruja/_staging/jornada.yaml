@@ -1,0 +1,80 @@
+module: jornada
+reviewed: false
+proposals:
+  - statement: "RN48: na Jornada, 1 atividade = 2 aprofundamentos = 4 reforços para a cor do dia e o tooltip; a ponderação não é exibida ao aluno."
+    kind: business_rule
+    status: DOCUMENTED
+    confidence: HIGH
+    source:
+      type: jira
+      reference: GURUJA-9040
+  - statement: "API da Jornada: GET /v2/Planning/{planningId}/Journey/DaysOfStudy?studyMonth=AAAA/MM/01 devolve por dia totalActivities, totalReinforcements, totalDeepDives, studyTimeInMinutes e studyLevel (Light/Strong/Extreme)."
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261027T181641
+  - statement: "Faixas observadas da Jornada (carga em atividades equivalentes): 1–2 = Estudo leve (level-1/Light); 3–4 = Estudo forte (level-2/Strong); carga 0,5 (1 aprofundamento) também fica Light."
+    kind: behavior
+    status: OBSERVED
+    confidence: MEDIUM
+    source:
+      type: run
+      reference: GURUJA-9040-20261027T181641
+  - statement: Média ativ. por dia da Jornada = atividades / dias de estudo; dia só com aprofundamento entra no divisor.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261027T181641
+  - statement: "Risco de massa: cumprir itens da meta é irreversível e 'Antecipar meta' grava sem confirmação e ignora reforços restantes ao iniciar a próxima meta; usar aluno alternativo (Belmiro/Celular) e nunca antecipar meta sem combinar."
+    kind: risk
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261027T181641
+  - statement: O tooltip do botão Legenda da Jornada explica a ponderação (1 atividade = 2 aprofundamentos = 4 reforços) ao aluno; não tratado como bug, pendente de validação do PO quanto ao texto final.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261027T181641
+  - statement: "GET /v2/Students/Me/DeepDives sem parâmetro lista só os aprofundamentos da meta atual; com ?targetId=<id da meta> lista os da meta pedida (ex.: meta 4 encerrada)."
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261028T162120
+  - statement: Aprofundamento pendente não soma na Jornada (totalDeepDives, tooltip, contadores do mês).
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261028T162120
+  - statement: Meta > Sequência de estudos (/v3/Target/StudyStreak) não conta dia só com aprofundamentos; aceito pelo QA lead em 28/10 como não-bug, sem fonte de regra.
+    kind: behavior
+    status: OBSERVED
+    confidence: MEDIUM
+    source:
+      type: run
+      reference: GURUJA-9040-20261028T162120
+  - statement: "Regressão a retestar: contador de Aprofundamentos 0 na Meta x 6 no Arquivo da mesma meta (GURUJA-9197); Média ativ. por dia com ponto e sem arredondar (GURUJA-9198); tooltip da Legenda cortado em 390px (GURUJA-9199)."
+    kind: regression
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261028T162120
+  - statement: A Jornada mostra averageActivitiesPerDay da API sem formatar; média só parece correta quando é inteira. Dia só com aprofundamentos entra no divisor da média (3,18 → 3 em out/2026 do Belmiro).
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9040-20261028T162120

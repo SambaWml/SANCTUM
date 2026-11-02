@@ -1,0 +1,24 @@
+module: feature-flags
+reviewed: false
+proposals:
+  - statement: No run GURUJA-8905-20261030T160609 em DEV, listagem e edição de flags não exibiram a data de criação exigida; ordenação por data também ausente.
+    kind: regression
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-8905-20261030T160609
+  - statement: Flag restrita Administrator com aluno13174 explícito não apresentou alerta de usuário fora dos perfis na edição/listagem, apesar da RN07/CA06.
+    kind: regression
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-8905-20261030T160609
+  - statement: Após ADM salvar flag de teste restrita somente a ID13174, novo login desse aluno retornou true no avaliador; ADM não contemplado retornou false. Não estabelece prazo máximo de propagação nem regra geral OU/E.
+    kind: behavior
+    status: OBSERVED
+    confidence: MEDIUM
+    source:
+      type: run
+      reference: GURUJA-8905-20261030T160609

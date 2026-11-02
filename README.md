@@ -4,6 +4,10 @@ Agente local de QA que roda dentro do [Claude Code](https://claude.com/claude-co
 
 Tudo roda na sua máquina. Evidências, banco e relatórios ficam em pastas locais fora do git.
 
+Também pode ser comandado pelo **Codex local**, mantendo o uso pelo Claude Code.
+Configuração, autenticação do Jira, comandos e limites: [Usar pelo Codex](docs/CODEX.md).
+Use apenas um cliente por vez no mesmo workspace.
+
 ## O que ele faz
 
 - **Testa um card:** lê o Jira (critérios de aceite e comentários relevantes), monta um plano por risco e **espera sua aprovação** antes de abrir o navegador.

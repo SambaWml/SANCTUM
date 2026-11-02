@@ -7,7 +7,7 @@ import { executionHints } from '../../knowledge/execution.ts';
 import { proposeKnowledge, ProposedStatement } from '../../knowledge/staging.ts';
 import { computeRunMetrics, formatMetrics } from '../../metrics/run-metrics.ts';
 import { ingestTranscripts } from '../../metrics/transcripts.ts';
-import { buildReport } from '../../reporting/report.ts';
+import { buildReport, SEVERITIES } from '../../reporting/report.ts';
 import type { Redactor } from '../../security/redact.ts';
 import type { SecretStore } from '../../security/secrets.ts';
 import type { DigestCache, JiraDigest } from '../../sources/digest.ts';
@@ -117,9 +117,11 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
 
   tool(
     'report_build',
-    'Gera reports/<card>/<runId>.md (cenários, falhas com evidências, guard, limpeza, métricas, rascunho de comentário Jira) e devolve o resumo para o terminal. ' +
-      'explanations: um item por problema, em linguagem simples para quem não acompanhou o teste (onde/como ver, o que acontece, o que o card pede, ressalva); ' +
-      'fica salvo no run e reaparece nas próximas gerações.',
+    'Gera reports/<card>/<runId>.md e .html (cenários, falhas com evidências, guard, limpeza, métricas, rascunho de comentário Jira) e devolve o resumo para o terminal. ' +
+      'explanations: um item por problema, em linguagem simples para quem não acompanhou o teste (onde/como ver, o que acontece, o que o card pede, ressalva). ' +
+      'summaries: um por cenário (todos, inclusive os que passaram), em linguagem simples para um dev de fora: veredito, o que foi visto, para onde olhar; ' +
+      'severity e jira (card criado) alimentam o filtro e os selos do HTML. Ambos ficam salvos no run (summaries somam por código) e reaparecem nas próximas gerações; ' +
+      'missingSummaries lista os cenários ainda sem resumo.',
     {
       runId: z.string(),
       // Aceita JSON em texto: cliente com schema em cache (antes do recarregamento do servidor) envia assim.
@@ -130,12 +132,26 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
         happens: z.string().min(3),
         expected: z.string().min(3),
         note: z.string().optional(),
+        severity: z.enum(SEVERITIES).optional(),
+        jira: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).optional().describe('card de bug criado, ex.: GURUJA-9239'),
+      })).optional()),
+      summaries: z.preprocess((v) => (typeof v === 'string' ? JSON.parse(v) : v), z.array(z.object({
+        code: z.string(),
+        verdict: z.string().min(3).describe('ex.: "Passou", "Bug (alta)", "Não é bug (decisão do QA lead)"'),
+        text: z.string().min(10).describe('o que foi visto, sem jargão, com exemplo concreto'),
+        next: z.string().optional().describe('para onde olhar / o que decidir'),
+        severity: z.enum(SEVERITIES).optional(),
+        jira: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).optional(),
       })).optional()),
     },
     (a) => {
       if (a.explanations) {
         for (const e of a.explanations) store.getScenario(a.runId, e.code);
         store.logEvent(a.runId, null, 'report.explain', a.explanations);
+      }
+      if (a.summaries) {
+        for (const s of a.summaries) store.getScenario(a.runId, s.code);
+        store.logEvent(a.runId, null, 'report.summaries', a.summaries);
       }
       // Uso de modelo vem dos transcripts do Claude Code; a chamada em curso pode ainda não estar gravada.
       ingestTranscripts(deps.db, deps.transcriptDirs ?? []);

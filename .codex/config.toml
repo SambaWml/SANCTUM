@@ -1,0 +1,21 @@
+# Apenas o Codex lê esta camada. Atualize cwd se mover o projeto.
+[mcp_servers.novo-qa]
+command = "node"
+args = ["--import", "tsx", "src/mcp/launcher.ts"]
+cwd = 'C:\Users\wesml\NEW QA'
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+
+[mcp_servers.novo-qa.env]
+NOVO_QA_CLIENT = "codex"
+
+[mcp_servers.novo-qa.tools.plan_approve]
+approval_mode = "prompt"
+
+[mcp_servers.novo-qa.tools.act_approved]
+approval_mode = "prompt"
+
+# Autenticação OAuth própria do Codex; não copia credenciais do Claude.
+[mcp_servers.atlassian]
+url = "https://mcp.atlassian.com/v1/mcp/authv2"
+default_tools_approval_mode = "writes"

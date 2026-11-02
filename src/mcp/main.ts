@@ -26,8 +26,11 @@ const store = new StateStore(db, config);
 const browser = new BrowserService({
   rootDir: ROOT, config, store, secrets, redactor, channel: process.env.NOVO_QA_BROWSER_CHANNEL || undefined,
 });
-const transcripts = transcriptDirs(ROOT, homedir(), process.env.NOVO_QA_TRANSCRIPTS_DIR || undefined);
-const server = createServer({ store, redactor, rootDir: ROOT, config, db, secrets, browser, transcriptDirs: transcripts });
+const transcripts = transcriptDirs(ROOT, homedir(), process.env.NOVO_QA_TRANSCRIPTS_DIR || undefined, process.env.NOVO_QA_CLIENT);
+const server = createServer({
+  store, redactor, rootDir: ROOT, config, db, secrets, browser, transcriptDirs: transcripts,
+  requireHumanApproval: process.env.NOVO_QA_CLIENT === 'codex',
+});
 
 // Não deixar navegador órfão quando o Claude Code encerra o servidor.
 const shutdown = async () => {

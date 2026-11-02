@@ -133,5 +133,29 @@ describe('reteste', () => {
     expect(md).toContain('| CT-002 | FAILED | PASSED | corrigido |');
     expect(md).toContain('| CT-003 | BLOCKED | BLOCKED | sem mudança |');
     expect(md).toContain('| CT-001 | PASSED | FAILED | **regressão** |');
+
+    // Relatório do pai regerado: o que passou no reteste aparece aprovado, citando o reteste; o resto não muda.
+    const parentReport = await h.ok('report_build', { runId: parent });
+    expect(parentReport.summary).toContain('PASS: 2  FAIL: 0  BLOCKED: 1');
+    expect(parentReport.summary).toContain(`Aprovados depois em reteste: CT-002 (${runId})`);
+    const parentMd = readFileSync(join(h.root, parentReport.report), 'utf8');
+    expect(parentMd).toContain('| CT-002 | Cenário CT-002 | P2 | ✅ PASSED |');
+    expect(parentMd).toContain(`Aprovado no reteste ${runId} (neste run: FAILED/PRODUCT_BUG)`);
+    expect(parentMd).not.toContain('## Falhas');
+    expect(parentMd).toContain('| CT-001 | Cenário CT-001 | P2 | ✅ PASSED |');
+
+    // Uma reclassificação posterior pode esclarecer que o filho verificou outro comportamento.
+    // A aprovação antiga do filho não pode esconder a falha explicitamente restaurada no pai.
+    await h.ok('scenario_reclassify', {
+      runId: parent, code: 'CT-002', status: 'FAILED', classification: 'PRODUCT_BUG',
+      justification: 'Revisão posterior confirmou que o reteste do mesmo código avaliou outro alvo; a falha original permanece.',
+      observed: 'link Exportar continua ausente; o reteste verificou Relatórios',
+    });
+    const revised = await h.ok('report_build', { runId: parent });
+    expect(revised.summary).toContain('PASS: 1  FAIL: 1  BLOCKED: 1');
+    expect(revised.summary).not.toContain('Aprovados depois em reteste: CT-002');
+    const revisedMd = readFileSync(join(h.root, revised.report), 'utf8');
+    expect(revisedMd).toContain('| CT-002 | Cenário CT-002 | P2 | ❌ FAILED |');
+    expect(revisedMd).toContain('## Falhas');
   }, 90_000);
 });

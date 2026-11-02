@@ -71,3 +71,31 @@ proposals:
     source:
       type: run
       reference: GURUJA-8968-20261026T160952
+  - statement: "Usuário sem assinatura não entra no portal: POST /v1/User/login 400 e tela /entrar?reason=without_subscription; o cenário 'aba Assinatura oculta para role User' não se aplica (QA lead 29/10)."
+    kind: behavior
+    status: CONFIRMED
+    confidence: HIGH
+    source:
+      type: manual
+      reference: QA lead 29/10/2026
+  - statement: Alterar senha exige 8–15 caracteres, número, especial da lista !@#$^*()_+-=.,?:{}[] e maiúscula+minúscula; a senha padrão dos alunos de DEV é recusada ('caracteres não permitidos'). A conta Celular ficou com a senha temporária GURUJA_DEV_CELULAR_NEW_PASSWORD.
+    kind: risk
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-8968-20261029T144503
+  - statement: Preferências da Visão geral em /v3/UserPreference; Gestão de tempo controla o cronômetro do cabeçalho (Hidden/OnlyInsideActivity/Always) e 'Nunca mostrar' para e zera o cronômetro rodando.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-8968-20261029T144503
+  - statement: "Massa: AbraaoGR11 não tem faturas; aluno com >10 faturas para paginação ainda não identificado. aluno-belmiro e aluno-faturas têm ofertas de upgrade na API."
+    kind: risk
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-8968-20261029T144503

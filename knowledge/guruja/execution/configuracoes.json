@@ -40,9 +40,13 @@
     "playwright": "await page.goto('/configuracoes');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T172520",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/meu-perfil",
@@ -53,9 +57,10 @@
     "playwright": "await page.goto('/meu-perfil');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/meu-perfil",
@@ -83,9 +88,12 @@
     "valueType": "username",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T172520",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/",
@@ -98,9 +106,12 @@
     "valueType": "password",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T172520",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/",
@@ -112,9 +123,12 @@
     "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T172520",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/aluno/visao-geral",
@@ -126,9 +140,11 @@
     "playwright": "await page.getByRole('link', { name: 'Configurações' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -140,10 +156,11 @@
     "playwright": "await page.getByRole('combobox', { name: 'Gestão de tempo' }).click();",
     "scenario": "CT-003",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T163847",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -155,10 +172,11 @@
     "playwright": "await page.getByRole('option', { name: 'Nunca mostrar' }).click();",
     "scenario": "CT-003",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T163847",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -185,9 +203,10 @@
     "playwright": "await page.getByRole('option', { name: 'Mostrar durante o estudo' }).click();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/aluno/visao-geral",
@@ -199,9 +218,10 @@
     "playwright": "await page.getByRole('cell', { name: 'Segurança da Informação (Assinatura Digital e Certificado Digital)' }).click();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/aluno/visao-geral",
@@ -217,9 +237,10 @@
     "playwright": "await page.getByRole('dialog', { name: 'Atividade' }).getByRole('button', { name: 'Fechar' }).click();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -231,10 +252,11 @@
     "playwright": "await page.getByRole('option', { name: 'Sempre mostrar' }).click();",
     "scenario": "CT-005",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T163847",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -263,9 +285,11 @@
     "playwright": "await page.goto('/aluno/visao-geral');",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -277,9 +301,10 @@
     "playwright": "await page.getByRole('combobox', { name: 'Métricas da sua meta' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -291,9 +316,10 @@
     "playwright": "await page.getByRole('option', { name: 'Mostrar resumo' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -305,9 +331,10 @@
     "playwright": "await page.getByRole('switch', { name: 'SMS' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -319,9 +346,10 @@
     "playwright": "await page.getByRole('switch', { name: 'WhatsApp' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -333,9 +361,10 @@
     "playwright": "await page.getByRole('switch', { name: 'Newsletter' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -347,9 +376,10 @@
     "playwright": "await page.getByRole('switch', { name: 'Pesquisas de opinião e satisfação' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -361,9 +391,10 @@
     "playwright": "await page.getByRole('switch', { name: 'Aplicação automática de descontos' }).click();",
     "scenario": "CT-007",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -375,9 +406,10 @@
     "playwright": "await page.getByRole('switch', { name: 'Recebimento de informações de desempenho' }).click();",
     "scenario": "CT-007",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -389,9 +421,11 @@
     "playwright": "await page.getByRole('button', { name: 'Alterar senha' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -404,9 +438,11 @@
     "valueType": "literal",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -419,9 +455,11 @@
     "valueType": "literal",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -435,9 +473,11 @@
     "valueType": "literal",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -453,9 +493,11 @@
     "playwright": "await page.getByRole('dialog', { name: 'Alterar senha' }).getByRole('button', { name: 'Enviar' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -467,9 +509,11 @@
     "playwright": "await page.getByRole('button', { name: 'Tentar novamente' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -485,9 +529,10 @@
     "playwright": "await page.getByRole('dialog', { name: 'Alterar senha' }).getByRole('button', { name: 'Fechar' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -499,9 +544,12 @@
     "playwright": "await page.getByRole('button', { name: 'Alterar email' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -513,9 +561,12 @@
     "playwright": "await page.getByRole('tab', { name: 'Assinatura' }).click();",
     "scenario": "CT-009",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -527,9 +578,10 @@
     "playwright": "await page.getByRole('link', { name: 'Ver fatura de 23 de Outubro de 2026' }).click();",
     "scenario": "CT-009",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/fatura/17DMPESQ54A2M",
@@ -540,9 +592,10 @@
     "playwright": "await page.goto('/fatura/17DMPESQ54A2M');",
     "scenario": "CT-009",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -555,9 +608,10 @@
     "playwright": "await page.getByRole('button', { name: 'Alterar', exact: true }).click();",
     "scenario": "CT-010",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -569,9 +623,10 @@
     "playwright": "await page.getByRole('button', { name: 'Adicionar cartão' }).click();",
     "scenario": "CT-010",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -583,9 +638,11 @@
     "playwright": "await page.getByRole('tab', { name: 'Termos e Privacidade' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -601,9 +658,10 @@
     "playwright": "await page.getByRole('row', { name: 'Termos de uso Versão 6 26/08/2026 - Linux Alterações Downloads de Termos de uso versão 6' }).getByRole('button', { name: 'Alterações' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -618,9 +676,10 @@
     "playwright": "await page.getByRole('dialog').getByRole('button', { name: 'Fechar' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261029T173151",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -632,9 +691,10 @@
     "playwright": "await page.getByRole('button', { name: 'Downloads de Termos de uso versão 6' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -646,9 +706,11 @@
     "playwright": "await page.getByRole('menuitem', { name: 'Comprovante de aceite' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-30"
   },
   {
     "route": "/configuracoes",
@@ -664,9 +726,10 @@
     "playwright": "await page.getByRole('row', { name: 'Termos de uso Versão 8 22/10/2026 13.82.102.15 Windows Alterações Downloads de Termos de uso versão 8' }).getByRole('button', { name: 'Downloads de Termos de uso versão 8' }).click();",
     "scenario": "CT-011",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -706,9 +769,10 @@
     "playwright": "await page.getByRole('option', { name: 'Sempre mostrar tudo' }).click();",
     "scenario": "CT-012",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T160952"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/aluno/visao-geral",
@@ -738,9 +802,10 @@
     "playwright": "await page.getByRole('banner').getByRole('button', { name: 'Iniciar', exact: true }).click();",
     "scenario": "CT-013",
     "validatedIn": [
+      "GURUJA-8968-20261029T144503",
       "GURUJA-8968-20261026T163847"
     ],
-    "lastSeen": "2026-10-26"
+    "lastSeen": "2026-10-29"
   },
   {
     "route": "/configuracoes",
@@ -777,5 +842,685 @@
       "GURUJA-8968-20261026T163847"
     ],
     "lastSeen": "2026-10-26"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Copiar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Copiar' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "textbox",
+      "name": "Senha atual"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha atual' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Senha atual"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha atual' }).press('Control+V');",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Termos de Uso"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Termos de Uso' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/desempenho-acumulado"
+    },
+    "playwright": "await page.goto('/aluno/desempenho-acumulado');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "nickName"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'nickName' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "password"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'password' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "within": {
+        "role": "dialog",
+        "name": "Alterar senha"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Alterar senha' }).getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Pix"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Pix' }).click();",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Cartão"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Cartão' }).click();",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Salvar cartão"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Salvar cartão' }).click();",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Voltar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Voltar' }).click();",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "within": {
+        "role": "dialog",
+        "name": "Alterar forma de pagamento"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Alterar forma de pagamento' }).getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Fechar",
+      "within": {
+        "role": "dialog",
+        "name": "Principais alterações da versão"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Principais alterações da versão' }).getByRole('button', { name: 'Fechar' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Termos de uso"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Termos de uso' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Tentar novamente",
+      "within": {
+        "role": "tabpanel",
+        "name": "Assinatura"
+      }
+    },
+    "playwright": "await page.getByRole('tabpanel', { name: 'Assinatura' }).getByRole('button', { name: 'Tentar novamente' }).click();",
+    "scenario": "CT-020",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Tentar novamente",
+      "within": {
+        "role": "tabpanel",
+        "name": "Termos e Privacidade"
+      }
+    },
+    "playwright": "await page.getByRole('tabpanel', { name: 'Termos e Privacidade' }).getByRole('button', { name: 'Tentar novamente' }).click();",
+    "scenario": "CT-020",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "viewport",
+    "target": {
+      "viewport": "390x844"
+    },
+    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "hover",
+    "target": {
+      "role": "link",
+      "name": "Política de Privacidade"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Política de Privacidade' }).hover();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Abrir menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Abrir menu' }).click();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Fechar menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Fechar menu' }).click();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "hover",
+    "target": {
+      "role": "link",
+      "name": "suporte@guruja.com.br"
+    },
+    "playwright": "await page.getByRole('link', { name: 'suporte@guruja.com.br' }).hover();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Alterações",
+      "within": {
+        "role": "row",
+        "name": "Termos de uso Versão 5 Alterações Downloads de Termos de uso versão 5"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: 'Termos de uso Versão 5 Alterações Downloads de Termos de uso versão 5' }).getByRole('button', { name: 'Alterações' }).click();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "viewport",
+    "target": {
+      "viewport": "768x1024"
+    },
+    "playwright": "await page.setViewportSize({ width: 768, height: 1024 });",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/politicas-de-privacidade",
+    "action": "navigate",
+    "target": {
+      "url": "/politicas-de-privacidade"
+    },
+    "playwright": "await page.goto('/politicas-de-privacidade');",
+    "scenario": "EXP-001",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/politicas-de-privacidade",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Tentar novamente"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Tentar novamente' }).click();",
+    "scenario": "EXP-001",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/entrar",
+    "action": "navigate",
+    "target": {
+      "url": "/entrar"
+    },
+    "playwright": "await page.goto('/entrar');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828",
+      "GURUJA-8968-20261029T173151",
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Enviar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Enviar' }).click();",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-8968-20261029T144503"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/entrar",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x768"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 768 });",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-8968-20261029T173151"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x768"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 768 });",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-8968-20261029T173151"
+    ],
+    "lastSeen": "2026-10-29"
+  },
+  {
+    "route": "/aluno/configuracoes",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/configuracoes"
+    },
+    "playwright": "await page.goto('/aluno/configuracoes');",
+    "scenario": "CT-018",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Termos de Uso",
+      "within": {
+        "role": "tabpanel",
+        "name": "Visão geral"
+      }
+    },
+    "playwright": "await page.getByRole('tabpanel', { name: 'Visão geral' }).getByRole('link', { name: 'Termos de Uso' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/termos-de-uso",
+    "action": "navigate",
+    "target": {
+      "url": "/termos-de-uso"
+    },
+    "playwright": "await page.goto('/termos-de-uso');",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "https://portal-guruja-dev.azurewebsites.net/bea8d311-ffc6-424e-a4ae-721ebd86850f",
+    "action": "viewport",
+    "target": {
+      "viewport": "390x844"
+    },
+    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Cancelar",
+      "within": {
+        "role": "dialog"
+      }
+    },
+    "playwright": "await page.getByRole('dialog').getByRole('button', { name: 'Cancelar' }).click();",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Termos de uso"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Termos de uso' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Comprovante de aceite"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Comprovante de aceite' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Termos de uso",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Termos de uso', exact: true }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/meu-perfil",
+    "action": "viewport",
+    "target": {
+      "viewport": "1366x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Assinatura",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Assinatura', exact: true }).click();",
+    "scenario": "CT-018",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Upgrade de plano"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Upgrade de plano' }).click();",
+    "scenario": "CT-018",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/fatura/160NYAXHUCJDX",
+    "action": "navigate",
+    "target": {
+      "url": "/fatura/160NYAXHUCJDX"
+    },
+    "playwright": "await page.goto('/fatura/160NYAXHUCJDX');",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Downloads de Termos de uso versão 8"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Downloads de Termos de uso versão 8' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "GURUJA-8968-20261030T114828"
+    ],
+    "lastSeen": "2026-10-30"
   }
 ]

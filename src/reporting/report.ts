@@ -18,7 +18,13 @@ const STATUS_ICON: Record<string, string> = {
 
 interface Row { [k: string]: unknown }
 
-export interface Explanation { code: string; title: string; howToSee: string; happens: string; expected: string; note?: string }
+const SEVERITY_LABEL: Record<string, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa', 'nao-bug': 'Não é bug' };
+
+export const SEVERITIES = ['alta', 'media', 'baixa', 'nao-bug'] as const;
+export type Severity = (typeof SEVERITIES)[number];
+export interface Explanation { code: string; title: string; howToSee: string; happens: string; expected: string; note?: string; severity?: Severity; jira?: string }
+/** Resumo em linguagem simples de um cenário, para quem não acompanhou o teste. */
+export interface Summary { code: string; verdict: string; text: string; next?: string; severity?: Severity; jira?: string }
 
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
 
@@ -28,7 +34,39 @@ export function buildReport(
 ) {
   const { db, store, cache, rootDir, redactor } = deps;
   const run = store.getRun(runId);
-  const scenarios = store.scenarioDetails(runId);
+  const recorded = store.scenarioDetails(runId);
+
+  const all = (sql: string, ...p: (string | number)[]) => db.prepare(sql).all(...p) as Row[];
+  const one = (sql: string, ...p: (string | number)[]) => db.prepare(sql).get(...p) as Row;
+
+  // Reteste posterior (filho concluído deste run): vale o resultado mais recente de cada código.
+  // O que não passou aqui e passou lá aparece como aprovado, citando o reteste; o registro deste run não muda.
+  const laterRetests = all(`SELECT id FROM runs WHERE parent_run_id = ? AND status = 'COMPLETED' ORDER BY started_at`, runId).map((r) => String(r.id));
+  const resolvedBy = new Map<string, string>();
+  const reclassifiedAfter = new Map<string, number>();
+  for (const r of all(`SELECT s.code, MAX(e.id) AS id FROM events e JOIN scenarios s ON s.id = e.scenario_id WHERE e.run_id = ? AND e.type = 'scenario.reclassify' GROUP BY s.code`, runId)) {
+    reclassifiedAfter.set(String(r.code), Number(r.id));
+  }
+  for (const child of laterRetests) {
+    const completedAtEvent = Number(one(`SELECT MAX(id) AS id FROM events WHERE run_id = ? AND type = 'run.complete'`, child)?.id ?? 0);
+    for (const s of store.scenarioDetails(child)) {
+      // Uma decisão explícita posterior ao reteste prevalece sobre sua aprovação automática.
+      if ((reclassifiedAfter.get(s.code) ?? 0) > completedAtEvent) {
+        resolvedBy.delete(s.code);
+        continue;
+      }
+      if (s.status === 'PASSED') resolvedBy.set(s.code, child);
+      else if (['FAILED', 'BLOCKED', 'NEEDS_REVIEW'].includes(s.status)) resolvedBy.delete(s.code);
+    }
+  }
+  const scenarios = recorded.map((s): ScenarioDetails => {
+    const child = s.status !== 'PASSED' ? resolvedBy.get(s.code) : undefined;
+    if (!child) return s;
+    const here = `${s.status}${s.classification ? `/${s.classification}` : ''}`;
+    return { ...s, status: 'PASSED' as const, reason: `Aprovado no reteste ${child} (neste run: ${here}).${s.reason ? ` ${s.reason}` : ''}` };
+  });
+  const resolvedLater = recorded.filter((s) => s.status !== 'PASSED' && resolvedBy.has(s.code));
+
   const count = (pred: (s: ScenarioDetails) => boolean) => scenarios.filter(pred).length;
   const by = (status: string) => count((s) => s.status === status);
 
@@ -37,8 +75,6 @@ export function buildReport(
   const executed = count((s) => ['PASSED', 'FAILED', 'BLOCKED', 'NEEDS_REVIEW'].includes(s.status));
   const bugs = scenarios.filter((s) => s.status === 'FAILED' && s.classification === 'PRODUCT_BUG');
 
-  const all = (sql: string, ...p: (string | number)[]) => db.prepare(sql).all(...p) as Row[];
-  const one = (sql: string, ...p: (string | number)[]) => db.prepare(sql).get(...p) as Row;
   const guardBlocks = all(`SELECT type, payload FROM events WHERE run_id = ? AND type IN ('guard.block','guard.network_block') ORDER BY id`, runId);
   const approvals = all(`SELECT action, target, level, decision FROM approvals WHERE run_id = ? AND level <> 'PLAN' ORDER BY id`, runId);
   const created = store.listCreatedData(runId);
@@ -52,7 +88,7 @@ export function buildReport(
 
   // Reteste: compara cada cenário com o resultado do run pai.
   const before = new Map(run.parent_run_id ? store.scenarioDetails(run.parent_run_id).map((s) => [s.code, s.status] as const) : []);
-  const compared = scenarios.filter((s) => before.has(s.code)).map((s) => ({ s, was: before.get(s.code)! }));
+  const compared = recorded.filter((s) => before.has(s.code)).map((s) => ({ s, was: before.get(s.code)! }));
   const fixed = compared.filter(({ s, was }) => was !== 'PASSED' && s.status === 'PASSED').length;
   const stillFailing = compared.filter(({ s, was }) => was === 'FAILED' && s.status === 'FAILED').length;
   const regressed = compared.filter(({ s, was }) => was === 'PASSED' && s.status === 'FAILED').length;
@@ -63,6 +99,7 @@ export function buildReport(
     `PASS: ${by('PASSED')}  FAIL: ${by('FAILED')}  BLOCKED: ${by('BLOCKED')}  NEEDS_REVIEW: ${by('NEEDS_REVIEW')}  NOT_EXECUTED: ${by('NOT_EXECUTED')}`,
     `Exploratory scenarios: ${exploratory.length}  Bugs confirmed: ${bugs.length}`,
     ...(run.parent_run_id ? [`Retest de ${run.parent_run_id}: corrigidos ${fixed} · ainda falham ${stillFailing} · regressões ${regressed}`] : []),
+    ...(resolvedLater.length ? [`Aprovados depois em reteste: ${resolvedLater.map((s) => `${s.code} (${resolvedBy.get(s.code)})`).join(', ')}`] : []),
     `Guard: ${guardBlocks.length} bloqueio(s), ${approvals.length} aprovação(ões) RED · Limpeza: ${created.filter((d) => d.cleanup_status === 'VERIFIED').length}/${created.filter((d) => d.cleanup_status !== 'KEPT').length} verificada(s)`,
     `Recommendation: ${run.recommendation ?? '(run não concluído)'}`,
   ].join('\n');
@@ -78,6 +115,15 @@ export function buildReport(
   // Explicação em linguagem simples (a mais recente gravada via report_build).
   const explainRow = all(`SELECT payload FROM events WHERE run_id = ? AND type = 'report.explain' ORDER BY id DESC LIMIT 1`, runId)[0];
   const explanations = explainRow ? (JSON.parse(String(explainRow.payload)) as Explanation[]) : [];
+  // Resumos simples somam por código: o mais recente de cada cenário vale.
+  const summaries = new Map<string, Summary>();
+  for (const r of all(`SELECT payload FROM events WHERE run_id = ? AND type = 'report.summaries' ORDER BY id`, runId)) {
+    for (const s of JSON.parse(String(r.payload)) as Summary[]) summaries.set(s.code, s);
+  }
+  const explained = new Map(explanations.map((e) => [e.code, e]));
+  const severityOf = (code: string) => summaries.get(code)?.severity ?? explained.get(code)?.severity;
+  const jiraOf = (code: string) => summaries.get(code)?.jira ?? explained.get(code)?.jira;
+  const missingSummaries = scenarios.filter((s) => !summaries.has(s.code)).map((s) => s.code);
 
   const md: string[] = [];
   md.push(`# ${run.issue_key} — ${issue?.title ?? 'relatório de QA'}`, '');
@@ -86,7 +132,11 @@ export function buildReport(
   if (explanations.length) {
     md.push('## Bugs explicados', '');
     explanations.forEach((e, i) => {
-      md.push(`### ${i + 1}. ${e.title} (${e.code})`, '', `- Como ver: ${e.howToSee}`, `- O que acontece: ${e.happens}`, `- O que o card pede: ${e.expected}`);
+      md.push(`### ${i + 1}. ${e.title} (${e.code})`, '');
+      const sev = severityOf(e.code);
+      const jira = jiraOf(e.code);
+      if (sev || jira) md.push(`- ${[sev && `Severidade: ${SEVERITY_LABEL[sev]}`, jira && `Bug criado: ${jira}`].filter(Boolean).join(' · ')}`);
+      md.push(`- Como ver: ${e.howToSee}`, `- O que acontece: ${e.happens}`, `- O que o card pede: ${e.expected}`);
       if (e.note) md.push(`- Observação: ${e.note}`);
       md.push('');
     });
@@ -98,12 +148,27 @@ export function buildReport(
   }
   md.push('');
 
+  if (summaries.size) {
+    md.push('## Em palavras simples', '');
+    for (const s of scenarios) {
+      const p = summaries.get(s.code);
+      if (p) md.push(`- **${s.code} — ${p.verdict}:** ${p.text}${p.next ? ` ${p.next}` : ''}${p.jira ? ` (${p.jira})` : ''}`);
+    }
+    md.push('');
+  }
+
   if (compared.length) {
     md.push(`## Comparação com ${run.parent_run_id}`, '', '| Cenário | Antes | Agora | |', '| --- | --- | --- | --- |');
     for (const { s, was } of compared) {
       const note = was !== 'PASSED' && s.status === 'PASSED' ? 'corrigido' : was === 'PASSED' && s.status === 'FAILED' ? '**regressão**' : was === s.status ? 'sem mudança' : '';
       md.push(`| ${s.code} | ${was} | ${s.status} | ${note} |`);
     }
+    md.push('');
+  }
+
+  if (resolvedLater.length) {
+    md.push('## Aprovados depois em reteste', '');
+    for (const s of resolvedLater) md.push(`- **${s.code}** ${s.title} — ${scenarios.find((x) => x.code === s.code)!.reason}`);
     md.push('');
   }
 
@@ -205,7 +270,7 @@ export function buildReport(
     mode: run.mode,
     recommendation: run.recommendation,
     conclusion: run.summary,
-    explanations,
+    explanations: explanations.map((e) => ({ ...e, severity: severityOf(e.code), jira: jiraOf(e.code) })),
     counts: {
       planned, executed, passed: by('PASSED'), failed: by('FAILED'), blocked: by('BLOCKED'), review: by('NEEDS_REVIEW'),
       notExecuted: by('NOT_EXECUTED'), exploratory: exploratory.length, bugs: bugs.length,
@@ -215,6 +280,8 @@ export function buildReport(
       code: s.code, title: s.title, priority: s.priority, risk: s.risk, status: s.status, origin: s.origin, parent: s.parent_code,
       confidence: s.confidence, classification: s.classification, expected: s.expected, observed: s.observed, reason: s.reason,
       preconditions: s.preconditions, steps: s.steps,
+      plain: summaries.get(s.code) ? { verdict: summaries.get(s.code)!.verdict, text: summaries.get(s.code)!.text, next: summaries.get(s.code)!.next } : undefined,
+      severity: severityOf(s.code), jira: jiraOf(s.code),
       checks: [...verificationsOf(s, 1), ...verificationsOf(s, 0)]
         .map((v) => ({ id: Number(v.id), kind: String(v.kind), description: String(v.description), expected: String(v.expected ?? ''), actual: String(v.actual ?? ''), passed: Number(v.passed) === 1 }))
         .sort((a, b) => a.id - b.id),
@@ -236,5 +303,5 @@ export function buildReport(
     generatedAt: new Date().toLocaleString('pt-BR'),
   };
   writeFileSync(join(dir, `${run.id}.html`), redactor.text(renderHtml(model)));
-  return { summary, report: `reports/${run.issue_key}/${run.id}.md`, html: `reports/${run.issue_key}/${run.id}.html` };
+  return { summary, report: `reports/${run.issue_key}/${run.id}.md`, html: `reports/${run.issue_key}/${run.id}.html`, missingSummaries };
 }

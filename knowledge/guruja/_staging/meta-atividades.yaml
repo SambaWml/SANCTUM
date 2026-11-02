@@ -1,0 +1,53 @@
+module: meta-atividades
+reviewed: false
+proposals:
+  - statement: Em DEV, pílula de 100% usa border-colours-green-800 em Meta/Arquivo e border-colours-green-900 em Desempenho por disciplina. CT-007 foi reclassificado para NEEDS_REVIEW após o usuário esclarecer que diferença isolada de token não reprova a aderência visual; não representa bug confirmado.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T142118
+  - statement: "Validação de limites em Meta/Arquivo exige massa preparada: nesta execução, respostas truncadas pelo network impediram simulação fiel do contrato. Dimensões exatas das linhas também não foram mensuráveis pelas ferramentas disponíveis."
+    kind: risk
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T142118
+  - statement: Novo status de nenhuma questão proposta resolvida (RN21) ficou fora da entrega do GURUJA-9215 por falta de texto/cor definidos; comentário 62367 descreve comportamento atual com ícone laranja e tooltip.
+    kind: business_rule
+    status: DOCUMENTED
+    confidence: HIGH
+    source:
+      type: jira
+      reference: GURUJA-9215#comment-62367
+      version: 2026-11-01T00:30:27.290-0300
+  - statement: Tooltip de status não apareceu em Aprofundamentos no CT-006 em duas verificações registradas. Após decisões intermediárias, o usuário confirmou que é bug; a classificação final foi restaurada para FAILED/PRODUCT_BUG. O botão Informações foi aprovado em outra checagem, mas não substitui o tooltip da bolinha.
+    kind: regression
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T151931
+  - statement: Massa pode ser preparada pela modal Finalizar/Registrar Desempenho com contagens e tempo. 0 acertos exige confirmação adicional na UI; ausência de PUT antes dessa confirmação não é bug. Cinco faixas reais em Docampo foram refletidas nas3telas.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T151931
+  - statement: Atividade com questões propostas concluída com0resolvidas/0acertos mostrou ícone laranja e descrição 'Nenhuma das questões propostas foi resolvida.' emMeta/Arquivo, traço emDesempenho, sem badge percentual.0acertos de1respondida é0%vermelho, caso distinto.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T151931
+  - statement: Em Aprofundamentos, o botão Informações ao lado do contador de vagas abre a modal 'Como funcionam os aprofundamentos'. Ela explica até20 pendentes e liberação de vaga ao cumprir/remover. Não contém legenda da bolinha de status nem substitui o tooltip da linha.
+    kind: behavior
+    status: OBSERVED
+    confidence: MEDIUM
+    source:
+      type: run
+      reference: GURUJA-9233-20261101T183515

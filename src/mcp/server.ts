@@ -26,6 +26,8 @@ export interface ServerDeps {
   browser?: BrowserService;
   /** Pastas de transcript do Claude Code (métricas de tokens). */
   transcriptDirs?: string[];
+  /** Codex: confirmação humana por elicitation, bloqueando clientes sem suporte. */
+  requireHumanApproval?: boolean;
   /** Só para testes: baseUrl da suíte de automação (porta dinâmica do fixture). */
   automationBaseUrl?: string;
 }

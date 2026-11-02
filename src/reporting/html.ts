@@ -10,11 +10,12 @@ export interface HtmlScenario {
   code: string; title: string; priority: string; risk: string; status: string; origin: string; parent: string | null;
   confidence: string | null; classification: string | null; expected: string; observed: string | null; reason: string | null;
   preconditions: string | null; steps: string[]; checks: HtmlCheck[]; evidence: HtmlEvidence[];
+  plain?: { verdict: string; text: string; next?: string } | undefined; severity?: string | undefined; jira?: string | undefined;
 }
 export interface HtmlVideo { path: string; chapters: { code: string; atSec: number }[] }
 export interface HtmlModel {
   issueKey: string; title: string; runId: string; env: string; mode: string; recommendation: string | null; conclusion: string | null;
-  explanations: { code: string; title: string; howToSee: string; happens: string; expected: string; note?: string }[];
+  explanations: { code: string; title: string; howToSee: string; happens: string; expected: string; note?: string; severity?: string | undefined; jira?: string | undefined }[];
   counts: { planned: number; executed: number; passed: number; failed: number; blocked: number; review: number; notExecuted: number; exploratory: number; bugs: number };
   retest?: { parent: string; fixed: number; stillFailing: number; regressed: number; rows: { code: string; was: string; now: string }[] };
   scenarios: HtmlScenario[];
@@ -37,6 +38,15 @@ const STATUS_LABEL: Record<string, string> = {
   PASSED: 'Passou', FAILED: 'Falhou', BLOCKED: 'Bloqueado', NEEDS_REVIEW: 'Em revisão', NOT_EXECUTED: 'Não executado', PENDING: 'Pendente', IN_PROGRESS: 'Em andamento',
 };
 const RECOMMENDATION_CLASS: Record<string, string> = { APROVADO: 'ok', REPROVADO: 'bad', INCONCLUSIVO: 'warn' };
+const SEVERITY_LABEL: Record<string, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa', 'nao-bug': 'Não é bug' };
+const JIRA_BROWSE = 'https://luby.atlassian.net/browse/';
+
+/** Grupo do filtro: severidade informada; sem ela, cenário do plano ou achado sem severidade. */
+const filterGroup = (code: string, origin: string | undefined, severity: string | undefined) =>
+  severity ?? (origin === 'exploratory' || code.startsWith('EXP-') ? 'sem-severidade' : 'cenario');
+const FILTERS: [string, string][] = [
+  ['alta', 'Alta'], ['media', 'Média'], ['baixa', 'Baixa'], ['nao-bug', 'Não é bug'], ['sem-severidade', 'Sem severidade'], ['cenario', 'Cenários do plano'],
+];
 
 export function renderHtml(m: HtmlModel): string {
   const videoId = (path: string) => `v${m.videos.findIndex((v) => v.path === path)}`;
@@ -45,6 +55,11 @@ export function renderHtml(m: HtmlModel): string {
     `<button class="seek" onclick="seek('${videoId(path)}',${at})">▶ ${esc(label)}</button>`;
 
   const card = (label: string, value: number, cls = '') => `<div class="card ${cls}"><div class="n">${value}</div><div class="l">${esc(label)}</div></div>`;
+  const tags = (severity?: string, jira?: string) =>
+    `${severity ? `<span class="sev sev-${esc(severity)}">${esc(SEVERITY_LABEL[severity] ?? severity)}</span>` : ''}` +
+    `${jira ? `<a class="jira" href="${JIRA_BROWSE}${esc(jira)}" target="_blank" onclick="event.stopPropagation()">Bug criado: ${esc(jira)}</a>` : ''}`;
+  const filterAttrs = (code: string, origin: string | undefined, severity?: string, jira?: string) =>
+    ` data-group="${esc(filterGroup(code, origin, severity))}" data-jira="${jira ? 1 : 0}"`;
 
   const scenarioHtml = (s: HtmlScenario) => {
     const video = s.evidence.find((e) => e.kind === 'video' && e.atSec !== undefined);
@@ -52,13 +67,14 @@ export function renderHtml(m: HtmlModel): string {
     const other = s.evidence.filter((e) => e.kind !== 'screenshot' && e.kind !== 'video');
     const open = s.status === 'FAILED' || s.status === 'NEEDS_REVIEW' ? ' open' : '';
     return `
-<details class="scenario" id="${esc(s.code)}"${open}>
+<details class="scenario" id="${esc(s.code)}"${filterAttrs(s.code, s.origin, s.severity, s.jira)}${open}>
   <summary>
-    ${badge(s.status)} <b>${esc(s.code)}</b> ${esc(s.title)}
+    ${badge(s.status)} <b>${esc(s.code)}</b> ${esc(s.title)} ${tags(s.severity, s.jira)}
     <span class="meta">${esc(s.priority)} · risco ${esc(s.risk)}${s.confidence ? ` · confiança ${esc(s.confidence)}` : ''}${s.classification ? ` · ${esc(s.classification)}` : ''}${s.parent ? ` · de ${esc(s.parent)}` : ''}</span>
     ${video ? seek(video.path, video.atSec!, clock(video.atSec!)) : ''}
   </summary>
   <div class="body">
+    ${s.plain ? `<div class="plain"><p><b>Em palavras simples — ${esc(s.plain.verdict)}:</b> ${esc(s.plain.text)}</p>${s.plain.next ? `<p>${esc(s.plain.next)}</p>` : ''}</div>` : ''}
     ${s.preconditions ? `<p><b>Pré-condições:</b> ${esc(s.preconditions)}</p>` : ''}
     <p><b>Passos:</b></p><ol>${s.steps.map((p) => `<li>${esc(p)}</li>`).join('')}</ol>
     <p><b>Esperado:</b> ${esc(s.expected)}</p>
@@ -77,6 +93,14 @@ export function renderHtml(m: HtmlModel): string {
     items.length ? `<section><h2>${esc(title)}</h2><ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul></section>` : '';
 
   const c = m.counts;
+  const origins = new Map(m.scenarios.map((s) => [s.code, s.origin]));
+  const groups = m.scenarios.map((s) => filterGroup(s.code, s.origin, s.severity));
+  const created = m.scenarios.filter((s) => s.jira).length;
+  const filterBar = `<div class="filters" id="filtros"><b>Filtrar:</b>
+<button class="on" data-f="all">Todos (${m.scenarios.length})</button>
+${FILTERS.filter(([g]) => groups.includes(g)).map(([g, label]) => `<button data-f="${g}">${esc(label)} (${groups.filter((x) => x === g).length})</button>`).join('\n')}
+${created ? `<button data-f="jira">Bug criado (${created})</button>` : ''}
+</div>`;
   return `<!doctype html>
 <html lang="pt-BR">
 <head>
@@ -121,6 +145,14 @@ h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 10px; 
 .muted { color:var(--muted); font-size:13px; }
 pre { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; white-space:pre-wrap; font-size:13px; }
 table.cmp { border-collapse:collapse; } table.cmp td, table.cmp th { padding:4px 10px; border-bottom:1px solid var(--line); }
+.plain { background:var(--soft); border-left:4px solid var(--info); border-radius:6px; padding:8px 12px; margin:10px 0; } .plain p { margin:4px 0; }
+.sev { font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; color:#fff; white-space:nowrap; }
+.sev-alta{background:var(--bad)} .sev-media{background:var(--warn)} .sev-baixa{background:#667085} .sev-nao-bug{background:var(--ok)}
+.jira { font-size:12px; font-weight:700; padding:2px 8px; border-radius:999px; background:var(--info); color:#fff; text-decoration:none; white-space:nowrap; }
+.filters { position:sticky; top:0; z-index:5; background:var(--bg); padding:10px 0; margin-top:16px; display:flex; gap:6px; flex-wrap:wrap; align-items:center; border-bottom:1px solid var(--line); }
+.filters button { font:inherit; font-size:13px; border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:999px; padding:4px 12px; cursor:pointer; }
+.filters button.on { background:var(--fg); color:var(--bg); }
+.filtered-out { display:none !important; }
 </style>
 </head>
 <body><main>
@@ -135,9 +167,11 @@ ${card('Bloqueados', c.blocked, c.blocked ? 'warn' : '')}${card('Em revisão', c
 
 ${m.conclusion ? `<h2>Conclusão</h2><div class="conclusion">${esc(m.conclusion)}</div>` : ''}
 
+${filterBar}
+
 ${m.explanations.length ? `<h2>Bugs explicados</h2>${m.explanations.map((e, i) => `
-<div class="explain">
-  <h3>${i + 1}. ${esc(e.title)} <a class="muted" href="#${esc(e.code)}">${esc(e.code)}</a></h3>
+<div class="explain"${filterAttrs(e.code, origins.get(e.code), e.severity, e.jira)}>
+  <h3>${i + 1}. ${esc(e.title)} <a class="muted" href="#${esc(e.code)}">${esc(e.code)}</a> ${tags(e.severity, e.jira)}</h3>
   <dl>
     <dt>Como ver</dt><dd>${esc(e.howToSee)}</dd>
     <dt>O que acontece</dt><dd>${esc(e.happens)}</dd>
@@ -176,6 +210,16 @@ function seek(id, t) {
   v.scrollIntoView({ behavior: 'smooth', block: 'center' });
   v.play();
 }
+document.querySelectorAll('#filtros button').forEach(function (b) {
+  b.onclick = function () {
+    document.querySelectorAll('#filtros button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    var f = b.dataset.f;
+    document.querySelectorAll('[data-group]').forEach(function (el) {
+      var show = f === 'all' || (f === 'jira' ? el.dataset.jira === '1' : el.dataset.group === f);
+      el.classList.toggle('filtered-out', !show);
+    });
+  };
+});
 </script>
 </body></html>`;
 }
