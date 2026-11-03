@@ -34,8 +34,9 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
   tool(
     'batch_brief',
     'Briefing do próximo lote de cenários para um test-executor (YAML): ambiente, estado do navegador, critérios do card, ' +
-      'cenários do lote (tamanho conforme o risco) e execution knowledge do módulo. Vazio quando não há cenários pendentes.',
-    { runId: z.string() },
+      'cenários do lote (tamanho conforme o risco) e execution knowledge do módulo. Vazio quando não há cenários pendentes. ' +
+      'compact=true: só run, navegador e cenários — para o executor que já recebeu critérios, regras e conhecimento neste run.',
+    { runId: z.string(), compact: z.boolean().optional() },
     (a) => {
       const run = store.getRun(a.runId);
       const batch = store.nextBatch(run.id, config.policy.execution.batchSize);
@@ -44,18 +45,20 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
 
       const env = config.environments[run.env]!;
       const modules = JSON.parse(run.modules) as string[];
-      const digest = cache.get('jira', run.issue_key);
+      const digest = cache.get('jira', run.issue_key, undefined, { internal: true });
       const issue = digest.hit ? (digest.digest as JiraDigest) : undefined;
       const brief = {
         run: { id: run.id, issue: run.issue_key, mode: run.mode, progress: status.progress },
         environment: { id: run.env, type: env.type, allowDataCreation: env.allowDataCreation, roles: Object.keys(env.roles), ...(env.notes ? { notes: env.notes } : {}) },
         browser: deps.browser?.status() ?? { open: false },
-        issue: issue && {
-          title: issue.title,
-          acceptanceCriteria: issue.acceptanceCriteria,
-          businessRules: issue.businessRules,
-          ...(issue.environmentHints.length ? { environmentHints: issue.environmentHints } : {}),
-        },
+        ...(a.compact ? { note: 'lote compacto: critérios, regras e execution knowledge são os do primeiro brief deste run' } : {
+          issue: issue && {
+            title: issue.title,
+            acceptanceCriteria: issue.acceptanceCriteria,
+            businessRules: issue.businessRules,
+            ...(issue.environmentHints.length ? { environmentHints: issue.environmentHints } : {}),
+          },
+        }),
         batch: batch.map((s) => ({
           code: s.code, title: s.title, priority: s.priority, risk: s.risk, types: s.types,
           // Cenário interrompido: diz o que já foi verificado para não refazer.
@@ -64,7 +67,7 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
           ...(s.preconditions ? { preconditions: s.preconditions } : {}),
           steps: s.steps, expected: s.expected,
         })),
-        executionKnowledge: executionHints(rootDir, run.project, modules),
+        ...(a.compact ? {} : { executionKnowledge: executionHints(rootDir, run.project, modules) }),
       };
       store.logEvent(run.id, null, 'batch.brief', { codes: batch.map((s) => s.code) });
       return new ToolContent([{ type: 'text', text: stringify(brief, { lineWidth: 0 }) }]);
@@ -120,10 +123,11 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
     'Gera reports/<card>/<runId>.md e .html (cenários, falhas com evidências, guard, limpeza, métricas, rascunho de comentário Jira) e devolve o resumo para o terminal. ' +
       'explanations: um item por problema, em linguagem simples para quem não acompanhou o teste (onde/como ver, o que acontece, o que o card pede, ressalva). ' +
       'summaries: um por cenário (todos, inclusive os que passaram), em linguagem simples para um dev de fora: veredito, o que foi visto, para onde olhar; ' +
-      'severity e jira (card criado) alimentam o filtro e os selos do HTML. Ambos ficam salvos no run (summaries somam por código) e reaparecem nas próximas gerações; ' +
+      'severity e jira (card criado) alimentam o filtro e os selos do HTML. Ambos ficam salvos no run e somam por código (o mais recente de cada código vale); removeExplanations tira explicações por código; ' +
       'missingSummaries lista os cenários ainda sem resumo.',
     {
       runId: z.string(),
+      removeExplanations: z.array(z.string()).optional().describe('códigos cujas explicações saem do relatório (ex.: achado que deixou de ser bug)'),
       // Aceita JSON em texto: cliente com schema em cache (antes do recarregamento do servidor) envia assim.
       explanations: z.preprocess((v) => (typeof v === 'string' ? JSON.parse(v) : v), z.array(z.object({
         code: z.string().describe('cenário de origem, ex.: CT-003'),
@@ -149,6 +153,7 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
         for (const e of a.explanations) store.getScenario(a.runId, e.code);
         store.logEvent(a.runId, null, 'report.explain', a.explanations);
       }
+      if (a.removeExplanations?.length) store.logEvent(a.runId, null, 'report.explain_remove', a.removeExplanations);
       if (a.summaries) {
         for (const s of a.summaries) store.getScenario(a.runId, s.code);
         store.logEvent(a.runId, null, 'report.summaries', a.summaries);

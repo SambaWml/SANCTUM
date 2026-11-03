@@ -1,9 +1,10 @@
-import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { ConfigError, isEnvRef, loadConfig } from '../config/load.ts';
 import type { Config } from '../config/schema.ts';
 import { chromium } from 'playwright';
 import { loadSqlite } from '../state/sqlite.ts';
+import { runsUsage } from '../storage/prune.ts';
 
 export type CheckStatus = 'ok' | 'warn' | 'fail';
 
@@ -144,7 +145,54 @@ export function runDoctor(input: DoctorInput): CheckResult[] {
   const results: CheckResult[] = [checkNode(input.nodeVersion), checkSqlite(), checkPlaywright(), checkGit(input.rootDir)];
   const { result, config } = checkConfig(input.rootDir);
   results.push(result, checkDotEnv(input.rootDir));
-  if (config) results.push(...checkEnvironments(config, input.env));
+  if (config) results.push(...checkEnvironments(config, input.env), checkStorage(input.rootDir, config));
+  results.push(checkStrayDrivers(input.rootDir), checkCodexPaths(input.rootDir));
   results.push(checkAtlassianMcp(input.rootDir, input.homeDir));
   return results;
+}
+
+/**
+ * O Codex precisa de caminho absoluto (cwd do MCP e comando do hook). Projeto movido ou clonado em
+ * outra máquina deixa esses caminhos velhos: o hook some em silêncio. Avisa quando não batem.
+ */
+export function checkCodexPaths(rootDir: string): CheckResult {
+  const norm = (p: string) => resolve(p.replace(/\\\\/g, '\\')).toLowerCase().replace(/[\\/]+$/, '');
+  const root = norm(rootDir);
+  const problems: string[] = [];
+  const config = join(rootDir, '.codex', 'config.toml');
+  if (existsSync(config)) {
+    const cwd = /^\s*cwd\s*=\s*['"]([^'"]+)['"]/m.exec(readFileSync(config, 'utf8'))?.[1];
+    if (cwd && norm(cwd) !== root) problems.push(`.codex/config.toml cwd = ${cwd}`);
+  }
+  const hooks = join(rootDir, '.codex', 'hooks.json');
+  if (existsSync(hooks)) {
+    for (const m of readFileSync(hooks, 'utf8').matchAll(/node \\"([^"\\]+)\/\.codex\/hooks/g)) {
+      if (norm(m[1]!) !== root) problems.push(`.codex/hooks.json aponta para ${m[1]}`);
+    }
+  }
+  return problems.length
+    ? { name: 'Codex', status: 'warn', detail: `${problems.join('; ')} — atualize para ${rootDir}` }
+    : { name: 'Codex', status: 'ok', detail: existsSync(config) ? 'caminhos do .codex conferem' : 'sem .codex' };
+}
+
+/** Evidências acima do limite da política: sugere a retenção (npm run storage). */
+export function checkStorage(rootDir: string, config: Config): CheckResult {
+  const max = config.policy.evidence.retention.maxStorageGB;
+  const { usage } = runsUsage(rootDir, max);
+  const gb = (usage.totalBytes / 1e9).toFixed(1);
+  return usage.overLimit
+    ? { name: 'Evidências', status: 'warn', detail: `runs/ com ${gb} GB (limite ${max} GB): veja npm run storage` }
+    : { name: 'Evidências', status: 'ok', detail: `runs/ com ${gb} GB` };
+}
+
+/** Script solto na raiz que abre navegador opera o app por fora do Action Guard. */
+const DRIVER = /require\(['"](?:playwright|puppeteer)|from ['"](?:playwright|puppeteer)|\.launch\(/;
+
+export function checkStrayDrivers(rootDir: string): CheckResult {
+  const stray = readdirSync(rootDir)
+    .filter((name) => /\.(?:c|m)?js$/.test(name))
+    .filter((name) => DRIVER.test(readFileSync(join(rootDir, name), 'utf8')));
+  return stray.length
+    ? { name: 'Scripts avulsos', status: 'warn', detail: `${stray.join(', ')} abrem navegador por fora do Action Guard: remova` }
+    : { name: 'Scripts avulsos', status: 'ok', detail: 'nenhum script de navegador na raiz' };
 }

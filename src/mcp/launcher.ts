@@ -28,7 +28,11 @@ let initializeMsg: Message | undefined;
 let initializedMsg: Message | undefined;
 /** Chamada do cliente sem resposta ainda → quando foi enviada. */
 const inflight = new Map<string | number, number>();
-const STALE_MS = 120_000;
+// Chamada sem resposta há mais que isso é considerada perdida (cliente cancelou): não trava a recarga,
+// mas recebe erro na troca de processo. Chamadas longas legítimas (automation_run, act lento) ficam abaixo.
+const STALE_MS = 15 * 60_000;
+// Tempo para o servidor velho fechar navegador, salvar vídeo e banco antes de ser morto.
+const SHUTDOWN_MS = 20_000;
 let pending = false;
 let restarting = false;
 let closing = false;
@@ -104,10 +108,10 @@ function browserOpen(): boolean {
 }
 
 function safeToRestart(): boolean {
-  // Uma chamada perdida não pode travar a recarga para sempre.
+  // Uma chamada perdida não pode travar a recarga para sempre; as recentes, sim.
   const now = Date.now();
-  for (const [id, sentAt] of inflight) if (now - sentAt > STALE_MS) inflight.delete(id);
-  return inflight.size === 0 && !browserOpen();
+  const fresh = [...inflight.values()].filter((sentAt) => now - sentAt <= STALE_MS).length;
+  return fresh === 0 && !browserOpen();
 }
 
 function tryRestart(): void {
@@ -116,7 +120,9 @@ function tryRestart(): void {
   restarting = true;
   ready = false; // daqui até o handshake do filho novo, o que o cliente mandar fica na fila
   const old = child;
-  const timer = setTimeout(() => old.kill(), 5000);
+  // Só sobram chamadas perdidas (safeToRestart): respondem com erro em vez de ficar penduradas.
+  failInflight('servidor novo-qa recarregou o código; repita a chamada');
+  const timer = setTimeout(() => old.kill(), SHUTDOWN_MS);
   old.once('exit', () => {
     clearTimeout(timer);
     restarting = false;

@@ -104,3 +104,44 @@ describe('Redactor.value', () => {
     expect(r.value({ cpf: '123.456.789-00', nome: 'Ana' })).toEqual({ cpf: REDACTED, nome: 'Ana' });
   });
 });
+
+describe('Redactor: lacunas da auditoria 02/11', () => {
+  it('senha minúscula em query string é redigida; prosa com ":" continua', () => {
+    expect(redactor.text('GET /entrar?nickName=joao&password=minhasenha')).toBe(`GET /entrar?nickName=joao&password=${REDACTED}`);
+    expect(redactor.text('senha: requisitos de segurança')).toBe('senha: requisitos de segurança');
+  });
+
+  it('chaves curtas de cartão e senha são redigidas por nome exato, sem pegar palavras parecidas', () => {
+    const out = redactor.text('pan=4111111111111112&exp=12/30&expiry=1230&pass=abc&company=Luby&span=3');
+    expect(out).toBe(`pan=${REDACTED}&exp=${REDACTED}&expiry=${REDACTED}&pass=${REDACTED}&company=Luby&span=3`);
+    expect(redactor.value({ pan: '4111111111111112', cardNo: '4111 1111 1111 1112', passed: true, company: 'Luby', expiry: '12/30' }))
+      .toEqual({ pan: REDACTED, cardNo: REDACTED, passed: true, company: 'Luby', expiry: REDACTED });
+  });
+
+  it('cartão de teste que não passa no Luhn é redigido quando a chave indica cartão', () => {
+    expect(redactor.value({ card_number: '1234 5678 9012 3456', credit_card: '4111111111111112' }))
+      .toEqual({ card_number: REDACTED, credit_card: REDACTED });
+    expect(redactor.text('{"creditCardNumber":"4111111111111112"}')).toBe(`{"creditCardNumber":"${REDACTED}"}`);
+  });
+
+  it('bloco PEM de chave privada é redigido', () => {
+    const pem = '-----BEGIN RSA PRIVATE KEY-----\nMIIBOgIBAAJBAKj34GkxFhD90vcNLYLInFEX6Ppy1tPf9Cnzj4p4WGeKLs1Pt8Qu\n-----END RSA PRIVATE KEY-----';
+    expect(redactor.text(`chave:\n${pem}\nfim`)).toBe(`chave:\n${REDACTED}\nfim`);
+  });
+
+  it('segredo conhecido em form-urlencoded e base64 também é redigido', () => {
+    const form = new URLSearchParams({ p: SECRET }).toString().slice(2);
+    const b64 = Buffer.from(SECRET).toString('base64');
+    const out = redactor.text(`body=${form} basic=${b64}`);
+    expect(out).not.toContain(form);
+    expect(out).not.toContain(b64);
+  });
+});
+
+describe('Redactor: chaves curtas não corrompem resumos', () => {
+  it('"PASS: 1" e "exp: 3 cenários" ficam intactos', () => {
+    expect(redactor.text('PASS: 1  FAIL: 0')).toBe('PASS: 1  FAIL: 0');
+    expect(redactor.text('exp: 3 cenários')).toBe('exp: 3 cenários');
+    expect(redactor.text('{"pan": "4111111111111112"}')).toBe(`{"pan": "${REDACTED}"}`);
+  });
+});

@@ -148,6 +148,12 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     expect(brief.batch.map((s: { code: string }) => s.code)).toEqual(['CT-001', 'CT-002']);
     expect(brief.issue.acceptanceCriteria).toHaveLength(2);
     expect(brief.browser).toEqual({ open: false });
+    // Executor que já recebeu o contexto do card pede o lote compacto: sem critérios, regras e conhecimento repetidos.
+    const compact = parse((await h.call('batch_brief', { runId, compact: true })).text);
+    expect(compact.batch.map((s: { code: string }) => s.code)).toEqual(['CT-001', 'CT-002']);
+    expect(compact.issue).toBeUndefined();
+    expect(compact.executionKnowledge).toBeUndefined();
+    expect(compact.note).toMatch(/compacto/);
 
     // 4. Execução (o que o test-executor faria)
     await h.ok('browser_open', { runId, role: 'admin' });
@@ -234,7 +240,24 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     expect(page).toMatch(/<details class="scenario" id="CT-002" data-group="alta" data-jira="1"/);
     expect(page).toContain('<button data-f="alta">Alta (1)</button>');
     expect(page).toContain('<button data-f="jira">Bug criado (1)</button>');
+    // Filtro por código/trecho (ex.: um lote "EXP-017..EXP-024") e o código em cada bloco para o filtro achar.
+    expect(page).toContain('id="filtro-codigo"');
+    expect(page).toMatch(/<details class="scenario" id="CT-002"[^>]* data-code="CT-002"/);
     expect(readFileSync(join(h.root, withSummary.report), 'utf8')).toContain('- Severidade: Alta · Bug criado: FIX-12');
+
+    // Explicações somam por código (uma chamada com um item não apaga as outras) e podem ser removidas.
+    await h.ok('report_build', {
+      runId,
+      explanations: [{ code: 'CT-001', title: 'Lista demora a atualizar', howToSee: 'Salve um aluno', happens: 'Aparece após 3 s', expected: 'Na hora' }],
+    });
+    const both = readFileSync(join(h.root, (await h.ok('report_build', { runId })).report), 'utf8');
+    expect(both).toContain('Salvar com erro não avisa (CT-002)');
+    expect(both).toContain('Lista demora a atualizar (CT-001)');
+    const removed = readFileSync(join(h.root, (await h.ok('report_build', { runId, removeExplanations: ['CT-001'] })).report), 'utf8');
+    expect(removed).not.toContain('Lista demora a atualizar');
+    expect(removed).toContain('Salvar com erro não avisa (CT-002)');
+    // Teto da recomendação e o porquê, calculados pelo core.
+    expect(removed).toMatch(/Teto da recomendação: (REPROVADO|INCONCLUSIVO|APROVADO)/);
 
     // Próximo card do módulo já recebe o execution knowledge no briefing
     const next = (await h.ok('run_start', { issueKey: 'FIX-51', env: 'fixture-local', mode: 'manual' })).runId;

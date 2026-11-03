@@ -207,6 +207,32 @@ const MIGRATIONS: string[] = [
     error              TEXT
   );
   `,
+  // 5: integridade (gatilhos no lugar de CHECK: SQLite não altera CHECK sem recriar a tabela)
+  //    e o agente que operou o run e cada aprovação (JSON {client, version, model}).
+  `
+  CREATE TRIGGER scenarios_status_ins BEFORE INSERT ON scenarios
+    WHEN NEW.status NOT IN ('PENDING','IN_PROGRESS','PASSED','FAILED','BLOCKED','NOT_EXECUTED','NEEDS_REVIEW')
+    BEGIN SELECT RAISE(ABORT, 'status de cenário inválido'); END;
+  CREATE TRIGGER scenarios_status_upd BEFORE UPDATE OF status ON scenarios
+    WHEN NEW.status NOT IN ('PENDING','IN_PROGRESS','PASSED','FAILED','BLOCKED','NOT_EXECUTED','NEEDS_REVIEW')
+    BEGIN SELECT RAISE(ABORT, 'status de cenário inválido'); END;
+  CREATE TRIGGER scenarios_class_ins BEFORE INSERT ON scenarios
+    WHEN NEW.classification IS NOT NULL AND NEW.classification NOT IN
+      ('PRODUCT_BUG','AUTOMATION_FAILURE','ENVIRONMENT_FAILURE','TEST_DATA_FAILURE','REQUIREMENT_AMBIGUITY','EXPECTED_BEHAVIOR','UNKNOWN')
+    BEGIN SELECT RAISE(ABORT, 'classificação inválida'); END;
+  CREATE TRIGGER scenarios_class_upd BEFORE UPDATE OF classification ON scenarios
+    WHEN NEW.classification IS NOT NULL AND NEW.classification NOT IN
+      ('PRODUCT_BUG','AUTOMATION_FAILURE','ENVIRONMENT_FAILURE','TEST_DATA_FAILURE','REQUIREMENT_AMBIGUITY','EXPECTED_BEHAVIOR','UNKNOWN')
+    BEGIN SELECT RAISE(ABORT, 'classificação inválida'); END;
+  CREATE TRIGGER created_data_status_ins BEFORE INSERT ON created_data
+    WHEN NEW.cleanup_status NOT IN ('UNREGISTERED','PENDING','VERIFIED','FAILED','KEPT')
+    BEGIN SELECT RAISE(ABORT, 'cleanup_status inválido'); END;
+  CREATE TRIGGER created_data_status_upd BEFORE UPDATE OF cleanup_status ON created_data
+    WHEN NEW.cleanup_status NOT IN ('UNREGISTERED','PENDING','VERIFIED','FAILED','KEPT')
+    BEGIN SELECT RAISE(ABORT, 'cleanup_status inválido'); END;
+  ALTER TABLE runs ADD COLUMN agent TEXT;
+  ALTER TABLE approvals ADD COLUMN agent TEXT;
+  `,
 ];
 
 export function openDb(path: string): Db {

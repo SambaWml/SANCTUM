@@ -21,19 +21,35 @@ export class ToolContent {
   constructor(readonly content: CallToolResult['content']) {}
 }
 
+/** Ferramentas que operam a sessão do navegador (sem runId nos argumentos). */
+const SESSION_TOOLS = /^(navigate|act|act_approved|verify|snapshot|screenshot|network|network_simulate|network_simulate_clear|console|browser_viewport|browser_save_auth|browser_close)$/;
+
 const KNOWN_ERRORS = [StateError, SecretError, BrowserError, TargetError, GuardError, DigestError, ContextError, KnowledgeError, ConfigError];
 
 /**
  * Registro comum: entrada e saída sanitizadas, erros de regra devolvidos como mensagem
  * (não exceção) e um evento por chamada (base das métricas).
  */
-export function createRegistrar(server: McpServer, deps: { store: StateStore; redactor: Redactor; requireHumanApproval?: boolean }): RegisterTool {
+export function createRegistrar(
+  server: McpServer,
+  deps: { store: StateStore; redactor: Redactor; requireHumanApproval?: boolean; currentRun?: () => string | null },
+): RegisterTool {
   const { store, redactor } = deps;
   return (name, description, shape, handler) => {
     const callback = async (rawArgs: unknown): Promise<CallToolResult> => {
       const args = redactor.value(rawArgs) as Parameters<typeof handler>[0];
+      // Quem está operando (metadado do run e das aprovações): clientInfo do MCP + NOVO_QA_MODEL.
+      const client = server.server.getClientVersion();
+      store.agent = {
+        ...(client?.name || process.env.NOVO_QA_CLIENT ? { client: client?.name ?? process.env.NOVO_QA_CLIENT } : {}),
+        ...(client?.version ? { version: client.version } : {}),
+        ...(process.env.NOVO_QA_MODEL ? { model: process.env.NOVO_QA_MODEL } : {}),
+      };
       const runId = (args as { runId?: unknown }).runId;
-      store.logEvent(typeof runId === 'string' ? runId : null, null, `tool.${name}`, null);
+      // Ferramenta de navegador não recebe runId: vale o run da sessão aberta (base de métricas e timeline).
+      const scoped = typeof runId === 'string' ? runId : SESSION_TOOLS.test(name) ? deps.currentRun?.() ?? null : null;
+      const eventId = store.logEvent(scoped, null, `tool.${name}`, null);
+      const started = Date.now();
       try {
         if (deps.requireHumanApproval && (name === 'plan_approve' || name === 'act_approved')) {
           if (!server.server.getClientCapabilities()?.elicitation?.form) {
@@ -53,6 +69,7 @@ export function createRegistrar(server: McpServer, deps: { store: StateStore; re
           }
         }
         const result = await handler(args);
+        store.finishEvent(eventId, { ok: true, ms: Date.now() - started });
         if (result instanceof ToolContent) {
           return { content: result.content.map((c) => (c.type === 'text' ? { ...c, text: redactor.text(c.text) } : c)) };
         }
@@ -61,6 +78,8 @@ export function createRegistrar(server: McpServer, deps: { store: StateStore; re
         const known = KNOWN_ERRORS.some((E) => err instanceof E);
         const first = ((err as Error).message ?? String(err)).split('\n').slice(0, known ? 12 : 1).join('\n');
         const message = known ? first : `erro: ${first.slice(0, 500)}`;
+        // Recusa de regra/guard também é fato do run: fica no evento (redigida e curta).
+        store.finishEvent(eventId, { ok: false, ms: Date.now() - started, error: redactor.text(message.split('\n')[0]!.slice(0, 200)) });
         return { isError: true, content: [{ type: 'text', text: redactor.text(message) }] };
       }
     };

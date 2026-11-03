@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const GUARD_LEVELS = ['GREEN', 'YELLOW', 'RED'] as const;
 export const ENV_TYPES = ['local', 'dev', 'staging', 'prod'] as const;
+export const MUTATION_MODES = ['flag', 'block'] as const;
 
 const id = z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'use letras minúsculas, números e hífen');
 
@@ -27,6 +28,8 @@ const Environment = z.strictObject({
   mfa: z.boolean().default(false),
   captcha: z.boolean().default(false),
   roles: z.record(id, Role),
+  // Trechos de caminho que não contam como alteração (ex.: leitura via POST do projeto).
+  mutationIgnore: z.array(z.string().min(1)).default([]),
   notes: z.string().optional(),
 });
 export type Environment = z.infer<typeof Environment>;
@@ -58,6 +61,15 @@ export const PolicyFile = z.strictObject({
     }),
     yellowKeywords: z.array(z.string().min(1)),
     redKeywords: z.array(z.string().min(1)),
+    mutationPolicy: z
+      .strictObject({
+        local: z.enum(MUTATION_MODES),
+        dev: z.enum(MUTATION_MODES),
+        staging: z.enum(MUTATION_MODES),
+        prod: z.literal('block'),
+      })
+      .default({ local: 'flag', dev: 'flag', staging: 'flag', prod: 'block' }),
+    mutationIgnore: z.array(z.string().min(1)).default([]),
   }),
   redaction: z.strictObject({
     extraSensitiveKeys: z.array(z.string().min(1)),
@@ -77,8 +89,19 @@ export const PolicyFile = z.strictObject({
     .strictObject({
       // always: grava a sessão do navegador inteira (capítulos por cenário); off: não grava.
       video: z.enum(['always', 'off']),
+      // Retenção de vídeo/trace (novo-qa storage). PNG, .txt e relatórios nunca saem;
+      // runs/_* (pastas montadas à mão) nunca são tocadas.
+      retention: z
+        .strictObject({
+          videoDays: z.number().int().min(1),
+          traceDays: z.number().int().min(1),
+          // Vídeo de run com PRODUCT_BUG e trace do cenário com bug ficam mais tempo.
+          bugDays: z.number().int().min(1),
+          maxStorageGB: z.number().positive(),
+        })
+        .default({ videoDays: 14, traceDays: 14, bugDays: 60, maxStorageGB: 10 }),
     })
-    .default({ video: 'always' }),
+    .default({ video: 'always', retention: { videoDays: 14, traceDays: 14, bugDays: 60, maxStorageGB: 10 } }),
 });
 export type Policy = z.infer<typeof PolicyFile>;
 

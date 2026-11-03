@@ -44,7 +44,7 @@ export function registerStateTools(tool: RegisterTool, deps: { store: StateStore
 
   tool(
     'run_complete',
-    'Conclui o run (exige todos os cenários com status final), grava o execution knowledge e fecha o navegador.',
+    'Conclui o run (exige todos os cenários com status final), grava o execution knowledge e fecha o navegador. A recomendação não pode passar do teto calculado pelos cenários: PRODUCT_BUG em P0/P1 → só REPROVADO; P0/P1 FAILED/BLOCKED/NEEDS_REVIEW ou nenhum PASSED → no máximo INCONCLUSIVO.',
     {
       runId: z.string(),
       recommendation: z.enum(['APROVADO', 'REPROVADO', 'INCONCLUSIVO']),

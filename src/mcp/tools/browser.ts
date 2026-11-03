@@ -39,7 +39,7 @@ export function registerBrowserTools(tool: RegisterTool, browser: BrowserService
     valueRef: z.string().optional(),
     valueType: z.string().optional().describe('tipo semântico do dado, ex.: studentName'),
     key: z.string().optional().describe('para press, ex.: Enter'),
-    files: z.array(z.string()).optional().describe('para upload, relativos ao projeto'),
+    files: z.array(z.string()).optional().describe('para upload: relativos a fixtures/uploads (nada fora dessa pasta)'),
     dialog: z.enum(['accept', 'dismiss']).optional(),
   };
 

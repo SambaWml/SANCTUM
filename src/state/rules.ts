@@ -174,3 +174,37 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
   }
   return { ok: true, confidence, score: confidence ? CONFIDENCE_SCORE[confidence] : null, notes };
 }
+
+/**
+ * Teto da recomendação do run (execute-and-close.md): o agente escolhe, o core limita.
+ * Ordem APROVADO > INCONCLUSIVO > REPROVADO; vale qualquer recomendação igual ou abaixo do teto.
+ * PRODUCT_BUG em P0/P1 → REPROVADO; P0/P1 FAILED (sem bug), BLOCKED ou NEEDS_REVIEW (salvo
+ * EXPECTED_BEHAVIOR) → INCONCLUSIVO; sem nenhum PASSED → INCONCLUSIVO. P2/P3 e NOT_EXECUTED
+ * (exige motivo) não travam.
+ */
+export const RECOMMENDATIONS = ['REPROVADO', 'INCONCLUSIVO', 'APROVADO'] as const;
+export type Recommendation = (typeof RECOMMENDATIONS)[number];
+
+export interface RecommendationFact {
+  code: string;
+  priority: 'P0' | 'P1' | 'P2' | 'P3';
+  status: ScenarioStatus;
+  classification: Classification | null;
+}
+
+export function recommendationCeiling(scenarios: RecommendationFact[]): { ceiling: Recommendation; reasons: string[] } {
+  const critical = scenarios.filter((s) => s.priority === 'P0' || s.priority === 'P1');
+  const bugs = critical.filter((s) => s.status === 'FAILED' && s.classification === 'PRODUCT_BUG');
+  if (bugs.length > 0) {
+    return { ceiling: 'REPROVADO', reasons: bugs.map((s) => `${s.code} (${s.priority}) FAILED/PRODUCT_BUG`) };
+  }
+  const open = critical.filter((s) =>
+    s.status === 'FAILED' || s.status === 'BLOCKED' || (s.status === 'NEEDS_REVIEW' && s.classification !== 'EXPECTED_BEHAVIOR'));
+  const reasons = open.map((s) => `${s.code} (${s.priority}) ${s.status}${s.classification ? `/${s.classification}` : ''}`);
+  if (!scenarios.some((s) => s.status === 'PASSED')) reasons.push('nenhum cenário PASSED');
+  return reasons.length > 0 ? { ceiling: 'INCONCLUSIVO', reasons } : { ceiling: 'APROVADO', reasons: [] };
+}
+
+export function recommendationAllowed(recommendation: Recommendation, ceiling: Recommendation): boolean {
+  return RECOMMENDATIONS.indexOf(recommendation) <= RECOMMENDATIONS.indexOf(ceiling);
+}

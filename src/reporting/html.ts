@@ -59,7 +59,7 @@ export function renderHtml(m: HtmlModel): string {
     `${severity ? `<span class="sev sev-${esc(severity)}">${esc(SEVERITY_LABEL[severity] ?? severity)}</span>` : ''}` +
     `${jira ? `<a class="jira" href="${JIRA_BROWSE}${esc(jira)}" target="_blank" onclick="event.stopPropagation()">Bug criado: ${esc(jira)}</a>` : ''}`;
   const filterAttrs = (code: string, origin: string | undefined, severity?: string, jira?: string) =>
-    ` data-group="${esc(filterGroup(code, origin, severity))}" data-jira="${jira ? 1 : 0}"`;
+    ` data-group="${esc(filterGroup(code, origin, severity))}" data-jira="${jira ? 1 : 0}" data-code="${esc(code)}"`;
 
   const scenarioHtml = (s: HtmlScenario) => {
     const video = s.evidence.find((e) => e.kind === 'video' && e.atSec !== undefined);
@@ -100,6 +100,8 @@ export function renderHtml(m: HtmlModel): string {
 <button class="on" data-f="all">Todos (${m.scenarios.length})</button>
 ${FILTERS.filter(([g]) => groups.includes(g)).map(([g, label]) => `<button data-f="${g}">${esc(label)} (${groups.filter((x) => x === g).length})</button>`).join('\n')}
 ${created ? `<button data-f="jira">Bug criado (${created})</button>` : ''}
+<input id="filtro-codigo" type="search" placeholder="Códigos: EXP-017..EXP-024, CT-003" aria-label="Filtrar por código ou intervalo">
+${groups.includes('nao-bug') ? '<label><input id="esconder-naobug" type="checkbox"> Esconder "não é bug"</label>' : ''}
 </div>`;
   return `<!doctype html>
 <html lang="pt-BR">
@@ -153,6 +155,8 @@ table.cmp { border-collapse:collapse; } table.cmp td, table.cmp th { padding:4px
 .filters button { font:inherit; font-size:13px; border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:999px; padding:4px 12px; cursor:pointer; }
 .filters button.on { background:var(--fg); color:var(--bg); }
 .filtered-out { display:none !important; }
+.filters input[type=search] { font:inherit; font-size:13px; border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:999px; padding:4px 12px; min-width:240px; }
+.filters label { font-size:13px; display:flex; gap:4px; align-items:center; }
 </style>
 </head>
 <body><main>
@@ -210,16 +214,41 @@ function seek(id, t) {
   v.scrollIntoView({ behavior: 'smooth', block: 'center' });
   v.play();
 }
+// Filtros combinados: grupo (botões) + códigos/intervalos (campo) + esconder "não é bug".
+var group = 'all';
+function codeKey(c) { var m = /^([A-Z]+)-(\\d+)$/.exec(c.trim().toUpperCase()); return m ? [m[1], Number(m[2])] : null; }
+function matchesCodes(code, query) {
+  if (!query.trim()) return true;
+  return query.split(',').some(function (part) {
+    var range = part.split('..');
+    if (range.length === 2) {
+      var a = codeKey(range[0]), b = codeKey(range[1]), c = codeKey(code);
+      return !!(a && b && c && c[0] === a[0] && c[1] >= a[1] && c[1] <= b[1]);
+    }
+    return part.trim() !== '' && code.toUpperCase().indexOf(part.trim().toUpperCase()) !== -1;
+  });
+}
+function applyFilters() {
+  var q = (document.getElementById('filtro-codigo') || { value: '' }).value;
+  var hide = document.getElementById('esconder-naobug');
+  document.querySelectorAll('[data-group]').forEach(function (el) {
+    var show = (group === 'all' || (group === 'jira' ? el.dataset.jira === '1' : el.dataset.group === group))
+      && matchesCodes(el.dataset.code || '', q)
+      && !(hide && hide.checked && el.dataset.group === 'nao-bug');
+    el.classList.toggle('filtered-out', !show);
+  });
+}
 document.querySelectorAll('#filtros button').forEach(function (b) {
   b.onclick = function () {
     document.querySelectorAll('#filtros button').forEach(function (x) { x.classList.toggle('on', x === b); });
-    var f = b.dataset.f;
-    document.querySelectorAll('[data-group]').forEach(function (el) {
-      var show = f === 'all' || (f === 'jira' ? el.dataset.jira === '1' : el.dataset.group === f);
-      el.classList.toggle('filtered-out', !show);
-    });
+    group = b.dataset.f;
+    applyFilters();
   };
 });
+var codeInput = document.getElementById('filtro-codigo');
+if (codeInput) codeInput.oninput = applyFilters;
+var hideBox = document.getElementById('esconder-naobug');
+if (hideBox) hideBox.onchange = applyFilters;
 </script>
 </body></html>`;
 }

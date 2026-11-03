@@ -11,13 +11,22 @@ guard:
   # A comparação ignora caixa e acento. Na dúvida, o nível sobe.
   yellowKeywords:
     [salvar, criar, cadastrar, adicionar, novo, editar, alterar, atualizar, importar,
-     upload, anexar, publicar, duplicar, save, create, add, new, edit, update, import, submit]
+     upload, anexar, publicar, duplicar, save, create, add, new, edit, update, import, submit,
+     concluir, finalizar, registrar, confirmar, enviar]
   redKeywords:
     [excluir, deletar, apagar, remover, delete, remove, destroy,
+     antecipar, adiar, aceito os termos, aceitar os termos, aceitar termos,
      pagar, pagamento, comprar, compra, checkout, contratar, assinar, pay, purchase, subscribe,
      enviar email, enviar e-mail, disparar, notificar todos, send email,
      revogar, conceder permissao, alterar permissao, tornar admin, revoke, grant,
      resetar, redefinir, cancelar assinatura, encerrar conta, reset]
+  # Alteração percebida pela rede (POST/PUT/PATCH/DELETE da página), independente do texto do alvo.
+  # flag: sinaliza na resposta do act e registra como dado a resolver; block: barra na rede
+  # (só passa durante ação RED aprovada). DELETE continua barrado em todo ambiente.
+  mutationPolicy: { local: flag, dev: flag, staging: flag, prod: block }
+  # Trechos de caminho (sem caixa) que não contam como alteração de dados: autenticação.
+  # Endpoints de leitura via POST de cada projeto vão em mutationIgnore do ambiente.
+  mutationIgnore: [login, logout, auth, token, refresh, signin, signout]
 
 redaction:
   # Somadas às chaves padrão (password, token, secret, authorization, cookie, api key, cvv, card).

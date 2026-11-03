@@ -87,6 +87,8 @@ describe('DigestCache', () => {
     expect(cache.get('jira', 'FIX-42', '2026-10-22T09:00:00.000-0300')).toEqual({
       hit: false, stale: true, cachedVersion: '2026-10-20T10:00:00.000-0300',
     });
+    // Leitura interna do core (brief, relatório, Context Package) não é decisão do agente: não conta na métrica.
+    expect(cache.get('jira', 'FIX-42', undefined, { internal: true })).toMatchObject({ hit: true });
     const events = (db.prepare("SELECT type FROM events WHERE type LIKE 'cache.%' ORDER BY id").all() as { type: string }[]).map((e) => e.type);
     expect(events).toEqual(['cache.miss', 'cache.hit', 'cache.stale']);
   });

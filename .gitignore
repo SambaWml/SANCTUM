@@ -17,3 +17,6 @@ reports/
 test-results/
 playwright-report/
 blob-report/
+
+# Scripts avulsos na raiz operam o app por fora do Action Guard (auditoria 02/11).
+/*.cjs

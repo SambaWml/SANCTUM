@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { parseReport } from '../src/automation/runner.ts';
+import { parseReport, qualify, type ParsedReport } from '../src/automation/runner.ts';
 import { assessSuitability } from '../src/automation/suitability.ts';
 import { assertionFor } from '../src/automation/spec.ts';
 import { createHarness, loggedInRun, PASSWORD, type Harness } from './harness.ts';
@@ -53,6 +53,38 @@ describe('relatório do Playwright', () => {
       ['CT-001', 'passed', 2], ['CT-002', 'flaky', 2], ['CT-003', 'failed', 2], [null, 'skipped', 1],
     ]);
     expect(parsed.tests[2]).toMatchObject({ error: 'Timeout 5000ms\n  at x', blocked: ['DELETE /api/students/1'] });
+  });
+});
+
+describe('qualificação da entrega (só com evidência completa)', () => {
+  const ok = (scenario: string) => ({ file: 'a.spec.ts', title: `${scenario} — x`, scenario, status: 'passed' as const, attempts: 2, durationMs: 1 });
+  const report = (tests: ParsedReport['tests'], errors: string[] = []): ParsedReport => ({ tests, errors });
+
+  it('entrega: exit 0, sem erro global, todos passaram, todos os cenários aprovados cobertos, sem grep', () => {
+    expect(qualify(report([ok('CT-001'), ok('CT-002')]), 0, { approvedCodes: ['CT-001', 'CT-002'] })).toEqual({ delivered: true, problems: [] });
+  });
+
+  it.each([
+    ['exit code diferente de 0', report([ok('CT-001')]), 1, {}, /exit code 1/],
+    ['erro global (spec que não compila)', report([ok('CT-001')], ['SyntaxError']), 0, {}, /erro global/],
+    ['nenhum teste', report([]), 0, {}, /nenhum teste/],
+    ['skip', report([ok('CT-001'), { ...ok('CT-002'), status: 'skipped' as const }]), 0, { approvedCodes: ['CT-001', 'CT-002'] }, /CT-002.*skipped/],
+    ['cenário aprovado sem teste', report([ok('CT-001')]), 0, { approvedCodes: ['CT-001', 'CT-003'] }, /CT-003/],
+    ['validação filtrada por grep', report([ok('CT-001')]), 0, { grep: 'CT-001' }, /grep/],
+  ] as const)('não entrega com %s', (_l, r, exit, opts, why) => {
+    const q = qualify(r, exit, { approvedCodes: ['CT-001'], ...(opts as { approvedCodes?: string[]; grep?: string }) });
+    expect(q.delivered).toBe(false);
+    expect(q.problems.join(' ')).toMatch(why);
+  });
+
+  it('test.fail() e skip misturado com passou não contam como passou', () => {
+    const parsed = parseReport({
+      suites: [{ specs: [
+        { title: 'CT-001 — esperado falhar', file: 'a.spec.ts', tests: [{ status: 'expected', annotations: [{ type: 'fail' }], results: [{ status: 'failed', duration: 1 }] }] },
+        { title: 'CT-002 — meio pulado', file: 'a.spec.ts', tests: [{ status: 'expected', results: [{ status: 'passed', duration: 1 }] }, { status: 'skipped', results: [{ status: 'skipped', duration: 0 }] }] },
+      ] }],
+    });
+    expect(parsed.tests.map((t) => [t.scenario, t.status])).toEqual([['CT-001', 'failed'], ['CT-002', 'skipped']]);
   });
 });
 

@@ -9,7 +9,12 @@ const DEFAULT_SENSITIVE_KEYS = [
   'password', 'passwd', 'pwd', 'senha', 'secret', 'token', 'apikey', 'api_key', 'api-key',
   'authorization', 'cookie', 'cvv', 'cvc', 'cardnumber', 'card_number', 'privatekey',
   'private_key', 'credential', 'sessionid', 'session_id',
+  'creditcard', 'credit_card', 'paymentcard', 'payment_card', 'cardno', 'card_no',
 ];
+
+/** Chaves curtas demais para busca por trecho ("pan" está em "company"): só o nome exato. */
+const EXACT_SENSITIVE_KEYS = new Set(['pan', 'pass', 'exp', 'expiry', 'expdate', 'exp_date', 'expiration', 'expiration_date']);
+const EXACT_TEXT_KEYS = 'pan|pass|exp|expiry|exp_?date|expiration(?:_?date)?';
 
 /** Chaves usadas no padrão `chave=valor` / `"chave": "valor"` dentro de texto livre. */
 const TEXT_KEY_PATTERN =
@@ -18,10 +23,12 @@ const TEXT_KEY_PATTERN =
 const JWT = /\beyJ[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\.[A-Za-z0-9_-]{5,}\b/g;
 const AUTH_SCHEME = /\b(Bearer|Basic|Token)\s+[A-Za-z0-9._~+/=-]{8,}/gi;
 const HEADER_LINE = /^(\s*(?:cookie|set-cookie|authorization|proxy-authorization|x-api-key|x-auth-token)\s*:\s*).+$/gim;
-const KEY_VALUE = new RegExp(
-  `((["']?)[\\w.-]*(?:${TEXT_KEY_PATTERN})[\\w.-]*\\2\\s*[:=]\\s*)("(?:[^"\\\\]|\\\\.)*"|'[^']*'|[^\\s&,;}"']+)`,
-  'gi',
-);
+const VALUE = `("(?:[^"\\\\]|\\\\.)*"|'[^']*'|[^\\s&,;}"']+)`;
+const KEY_VALUE = new RegExp(`((["']?)[\\w.-]*(?:${TEXT_KEY_PATTERN})[\\w.-]*\\2\\s*[:=]\\s*)${VALUE}`, 'gi');
+// Chave curta só quando é o nome inteiro (início, depois de ?, &, espaço, {, vírgula ou ;).
+// Sem "i": "PASS: 1" de um resumo não é campo de senha.
+const EXACT_KEY_VALUE = new RegExp(`((?:^|(?<=[?&\\s{,;(]))(["']?)(?:${EXACT_TEXT_KEYS})\\2\\s*[:=]\\s*)${VALUE}`, 'gm');
+const PEM = /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?-----END [A-Z ]*PRIVATE KEY-----/g;
 // Candidatos a cartão no formato em que cartões aparecem: 15–16 dígitos contínuos,
 // 4-4-4-4(-3) com o mesmo separador, ou Amex 4-6-5. Sequências arbitrárias de dígitos com
 // hífen (datas, timestamps, ids compostos) não entram — evita corromper ids nas respostas.
@@ -77,8 +84,14 @@ export class Redactor {
     const secrets = [...byValue].map(([value, names]) => ({ value, name: [...new Set(names)].sort().join('|') }))
       .sort((a, b) => b.value.length - a.value.length);
     this.exact = secrets.flatMap(({ name, value }) => {
-      // Também as formas codificadas em URL e escapadas em JSON, como aparecem em network/logs.
-      const variants = new Set([value, encodeURIComponent(value), JSON.stringify(value).slice(1, -1)]);
+      // Também as formas codificadas (URL, form-urlencoded, JSON, base64), como aparecem em network/logs.
+      const variants = new Set([
+        value,
+        encodeURIComponent(value),
+        new URLSearchParams({ v: value }).toString().slice(2),
+        JSON.stringify(value).slice(1, -1),
+        ...(value.length >= 6 ? [Buffer.from(value).toString('base64').replace(/=+$/, '')] : []),
+      ]);
       return [...variants].map((v) => ({ pattern: new RegExp(escapeRegExp(v), 'g'), label: `[REDACTED:${name}]` }));
     });
     this.sensitiveKeys = [...DEFAULT_SENSITIVE_KEYS, ...(options.extraSensitiveKeys ?? []).map((k) => k.toLowerCase())];
@@ -86,23 +99,28 @@ export class Redactor {
 
   isSensitiveKey(key: string): boolean {
     const k = key.toLowerCase();
-    return this.sensitiveKeys.some((s) => k.includes(s));
+    return EXACT_SENSITIVE_KEYS.has(k) || this.sensitiveKeys.some((s) => k.includes(s));
   }
 
   text(input: string): string {
     let out = input;
     for (const { pattern, label } of this.exact) out = out.replace(pattern, label);
+    out = out.replace(PEM, REDACTED);
     out = out.replace(HEADER_LINE, `$1${REDACTED}`);
     out = out.replace(AUTH_SCHEME, `$1 ${REDACTED}`);
     out = out.replace(JWT, REDACTED);
-    out = out.replace(KEY_VALUE, (match, prefix: string, _q: string, value: string) => {
+    const keyValue = (match: string, prefix: string, _q: string, value: string) => {
       if (/^["']?\[REDACTED/.test(value)) return match; // já redigido (mantém o rótulo com o nome)
-      // Prosa ("senha: requisitos de segurança"): palavra comum sem aspas não é segredo.
-      // Segredos conhecidos já foram trocados pelo valor exato acima.
-      if (/^\p{Ll}+$/u.test(value)) return match;
+      // Prosa ("senha: requisitos de segurança"): palavra comum sem aspas depois de ":" não é segredo.
+      // Em "chave=valor" (query string, form) a minúscula também é redigida.
+      if (prefix.trimEnd().endsWith(':') && /^\p{Ll}+$/u.test(value)) return match;
       const quote = value.startsWith('"') ? '"' : value.startsWith("'") ? "'" : '';
       return `${prefix}${quote}${REDACTED}${quote}`;
-    });
+    };
+    out = out.replace(KEY_VALUE, keyValue);
+    // Chave curta: em "chave=valor" sempre; com ":" só valor entre aspas (JSON), não texto livre.
+    out = out.replace(EXACT_KEY_VALUE, (match, prefix: string, q: string, value: string) =>
+      prefix.trimEnd().endsWith(':') && !/^["']/.test(value) ? match : keyValue(match, prefix, q, value));
     out = out.replace(CARD_CANDIDATE, (m) => (looksLikeCard(m) ? '[REDACTED:CARD]' : m));
     return out;
   }

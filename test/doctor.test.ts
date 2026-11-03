@@ -57,3 +57,46 @@ describe('doctor', () => {
     expect(results.filter((r) => r.status === 'fail')).toEqual([]);
   });
 });
+
+describe('doctor: configuração do Codex', () => {
+  it('caminho fixo do projeto no .codex que não bate com a pasta atual vira aviso', async () => {
+    const { checkCodexPaths } = await import('../src/doctor/checks.ts');
+    const { mkdirSync } = await import('node:fs');
+    const d = tempDir();
+    expect(checkCodexPaths(d).status).toBe('ok'); // sem .codex: nada a conferir
+    mkdirSync(join(d, '.codex'));
+    writeFileSync(join(d, '.codex', 'config.toml'), `[mcp_servers.novo-qa]\ncwd = '${d}'\n`);
+    writeFileSync(join(d, '.codex', 'hooks.json'), JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ command: `node "${d.replace(/\\/g, '/')}/.codex/hooks/guard-shell.mjs"` }] }] } }));
+    expect(checkCodexPaths(d).status).toBe('ok');
+    writeFileSync(join(d, '.codex', 'config.toml'), "[mcp_servers.novo-qa]\ncwd = 'C:\\\\outra\\\\pasta'\n");
+    expect(checkCodexPaths(d)).toMatchObject({ status: 'warn', detail: expect.stringContaining('config.toml') });
+  });
+
+  it('o .codex deste repositório aponta para esta pasta', async () => {
+    const { checkCodexPaths } = await import('../src/doctor/checks.ts');
+    expect(checkCodexPaths(REPO_ROOT).status).toBe('ok');
+  });
+});
+
+describe('doctor: higiene e disco', () => {
+  it('script solto que abre navegador vira aviso', async () => {
+    const { checkStrayDrivers } = await import('../src/doctor/checks.ts');
+    const d = tempDir();
+    writeFileSync(join(d, 'ok.cjs'), 'console.log(1)');
+    expect(checkStrayDrivers(d).status).toBe('ok');
+    writeFileSync(join(d, 'pay.cjs'), "const { chromium } = require('play' + 'wright'); chromium.launch();");
+    expect(checkStrayDrivers(d)).toMatchObject({ status: 'warn', detail: expect.stringContaining('pay.cjs') });
+  });
+
+  it('runs/ acima do limite da política vira aviso', async () => {
+    const { checkStorage } = await import('../src/doctor/checks.ts');
+    const { mkdirSync } = await import('node:fs');
+    const d = tempDir();
+    mkdirSync(join(d, 'runs', 'X-1'), { recursive: true });
+    writeFileSync(join(d, 'runs', 'X-1', 'v.webm'), Buffer.alloc(2000));
+    const config = loadConfig(REPO_ROOT);
+    expect(checkStorage(d, config).status).toBe('ok');
+    const tiny = { ...config, policy: { ...config.policy, evidence: { ...config.policy.evidence, retention: { ...config.policy.evidence.retention, maxStorageGB: 0.000001 } } } };
+    expect(checkStorage(d, tiny).status).toBe('warn');
+  });
+});

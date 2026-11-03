@@ -179,6 +179,9 @@ describe('ferramentas de navegador (ponta a ponta no app fixture)', () => {
     // A resposta 500 virou evidência em arquivo, com o corpo (antes só existia em memória).
     const httpError = db.prepare(`SELECT path, meta FROM evidence WHERE kind = 'http-error' AND path LIKE '%CT-003-http-500-%'`).get() as { path: string; meta: string };
     expect(JSON.parse(httpError.meta)).toMatchObject({ status: 500, method: 'POST', path: '/api/students' });
+    // E também evento na linha do tempo do run.
+    const ev = db.prepare(`SELECT payload FROM events WHERE type = 'http.error' ORDER BY id DESC LIMIT 1`).get() as { payload: string };
+    expect(JSON.parse(ev.payload)).toMatchObject({ status: 500, method: 'POST', path: '/api/students' });
     const saved = readFileSync(join(root, httpError.path), 'utf8');
     expect(saved).toMatch(/^POST http:\/\/localhost:\d+\/api\/students\nstatus: 500/);
     expect(saved).toContain('{"error":"falha interna"}');

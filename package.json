@@ -11,6 +11,8 @@
     "doctor": "tsx src/cli.ts doctor",
     "fixture": "tsx test/fixture-app/main.ts",
     "metrics": "tsx src/cli.ts metrics",
+    "storage": "tsx src/cli.ts storage",
+    "knowledge": "tsx src/cli.ts knowledge",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

@@ -4,6 +4,10 @@ import { transaction, type Db } from './db.ts';
 import {
   evaluateCompletion,
   FINAL_STATUSES,
+  recommendationAllowed,
+  recommendationCeiling,
+  type Recommendation,
+  type RecommendationFact,
   type Classification,
   type CompletionFacts,
   type CompletionRequest,
@@ -40,6 +44,14 @@ export interface RunRow {
   ended_at: string | null;
   /** JSON: módulos de conhecimento do run. */
   modules: string;
+  /** JSON {client, version, model}: quem operou o run (metadado; não muda regra). */
+  agent: string | null;
+}
+
+export interface AgentInfo {
+  client?: string;
+  version?: string;
+  model?: string;
 }
 
 export interface ScenarioDetails extends ScenarioRow {
@@ -97,6 +109,8 @@ export interface StoreOptions {
 
 export class StateStore {
   private readonly now: () => Date;
+  /** Agente da sessão MCP (clientInfo + NOVO_QA_MODEL), gravado no run e nas aprovações. */
+  agent: AgentInfo | null = null;
 
   constructor(
     private readonly db: Db,
@@ -108,6 +122,10 @@ export class StateStore {
 
   private ts(): string {
     return this.now().toISOString();
+  }
+
+  private agentJson(): string | null {
+    return this.agent ? JSON.stringify(this.agent) : null;
   }
 
   // ── Runs ────────────────────────────────────────────────────────────
@@ -142,11 +160,11 @@ export class StateStore {
 
     this.db
       .prepare(
-        `INSERT INTO runs (id, issue_key, project, env, mode, parent_run_id, status, started_at)
-         VALUES (?, ?, ?, ?, ?, ?, 'PLANNING', ?)`,
+        `INSERT INTO runs (id, issue_key, project, env, mode, parent_run_id, status, started_at, agent)
+         VALUES (?, ?, ?, ?, ?, ?, 'PLANNING', ?, ?)`,
       )
-      .run(id, input.issueKey, env.project, input.env, input.mode, input.parentRunId ?? null, started);
-    this.logEvent(id, null, 'run.start', { mode: input.mode, env: input.env });
+      .run(id, input.issueKey, env.project, input.env, input.mode, input.parentRunId ?? null, started, this.agentJson());
+    this.logEvent(id, null, 'run.start', { mode: input.mode, env: input.env, agent: this.agent });
     return this.getRun(id);
   }
 
@@ -184,23 +202,35 @@ export class StateStore {
     };
   }
 
-  completeRun(runId: string, recommendation: 'APROVADO' | 'REPROVADO' | 'INCONCLUSIVO', summary: string): RunRow {
+  completeRun(runId: string, recommendation: Recommendation, summary: string): RunRow {
     const run = this.getRun(runId);
     if (run.status !== 'EXECUTING') throw new StateError(`run está ${run.status}; só runs EXECUTING podem ser concluídos`);
     const open = this.listScenarios(runId).filter((s) => s.status === 'PENDING' || s.status === 'IN_PROGRESS');
     if (open.length > 0) {
       throw new StateError(`cenários sem status final: ${open.map((s) => s.code).join(', ')} — conclua ou marque NOT_EXECUTED`);
     }
+    const gate = recommendationCeiling(this.recommendationFacts(runId));
+    if (!recommendationAllowed(recommendation, gate.ceiling)) {
+      throw new StateError(`recomendação ${recommendation} não permitida: o teto é ${gate.ceiling} (${gate.reasons.join('; ')})`);
+    }
     const dirty = this.listCreatedData(runId).filter((d) => OPEN_CLEANUP.includes(d.cleanup_status));
     if (dirty.length > 0) {
       const list = dirty.map((d) => `#${d.id} ${d.resource}${d.ext_id ? ` (${d.ext_id})` : ''}: ${d.cleanup_status}`).join('; ');
       throw new StateError(`dados criados sem limpeza resolvida: ${list} — use data_register e cleanup_run (ou keep com motivo)`);
     }
-    this.db
-      .prepare(`UPDATE runs SET status = 'COMPLETED', recommendation = ?, summary = ?, current_scenario = NULL, ended_at = ? WHERE id = ?`)
-      .run(recommendation, summary, this.ts(), runId);
-    this.logEvent(runId, null, 'run.complete', { recommendation });
+    transaction(this.db, () => {
+      this.db
+        .prepare(`UPDATE runs SET status = 'COMPLETED', recommendation = ?, summary = ?, current_scenario = NULL, ended_at = ? WHERE id = ?`)
+        .run(recommendation, summary, this.ts(), runId);
+      this.logEvent(runId, null, 'run.complete', { recommendation, ceiling: gate.ceiling, reasons: gate.reasons });
+    });
     return this.getRun(runId);
+  }
+
+  private recommendationFacts(runId: string): RecommendationFact[] {
+    return this.db
+      .prepare('SELECT code, priority, status, classification FROM scenarios WHERE run_id = ? ORDER BY seq')
+      .all(runId) as unknown as RecommendationFact[];
   }
 
   abortRun(runId: string, reason: string): RunRow {
@@ -209,7 +239,10 @@ export class StateStore {
     this.db
       .prepare(`UPDATE runs SET status = 'ABORTED', summary = ?, ended_at = ? WHERE id = ?`)
       .run(reason, this.ts(), runId);
-    this.logEvent(runId, null, 'run.abort', { reason });
+    // Abortar não exige limpeza (é a saída de emergência), mas o que ficou pendente fica registrado.
+    const pending = this.listCreatedData(runId).filter((d) => OPEN_CLEANUP.includes(d.cleanup_status))
+      .map((d) => `#${d.id} ${d.resource}${d.ext_id ? ` (${d.ext_id})` : ''}: ${d.cleanup_status}`);
+    this.logEvent(runId, null, 'run.abort', { reason, ...(pending.length ? { pendingData: pending } : {}) });
     return this.getRun(runId);
   }
 
@@ -254,8 +287,8 @@ export class StateStore {
     transaction(this.db, () => {
       this.db.prepare(`UPDATE runs SET status = 'EXECUTING', plan_approved_at = ? WHERE id = ?`).run(ts, runId);
       this.db
-        .prepare(`INSERT INTO approvals (run_id, action, target, level, decision, ts) VALUES (?, 'plan', ?, 'PLAN', 'APPROVED', ?)`)
-        .run(runId, run.issue_key, ts);
+        .prepare(`INSERT INTO approvals (run_id, action, target, level, decision, ts, agent) VALUES (?, 'plan', ?, 'PLAN', 'APPROVED', ?, ?)`)
+        .run(runId, run.issue_key, ts, this.agentJson());
     });
     this.logEvent(runId, null, 'plan.approve', null);
     return this.getRun(runId);
@@ -368,14 +401,32 @@ export class StateStore {
       throw new StateError(`reclassificação só entre ${allowed.join('/')} (${code} está ${s.status}; pedido: ${req.status})`);
     }
     if (justification.trim().length < 15) throw new StateError('reclassificação exige justificativa (por que a classificação anterior estava errada)');
-    const before = this.db.prepare('SELECT status, classification FROM scenarios WHERE id = ?').get(s.id) as { status: string; classification: string | null };
+    const before = this.db.prepare('SELECT status, classification, started_at FROM scenarios WHERE id = ?').get(s.id) as { status: string; classification: string | null; started_at: string | null };
+    if (req.status === 'FAILED' && !before.started_at) {
+      throw new StateError(`${code} nunca foi iniciado: FAILED exige uma tentativa executada (reabra e execute)`);
+    }
     const result = evaluateCompletion(req, { ...this.completionFacts(s), currentStatus: 'IN_PROGRESS' });
     if (!result.ok) throw new StateError(`${code} não pode ser ${req.status}:\n- ${result.problems.join('\n- ')}`);
-    this.db
-      .prepare(`UPDATE scenarios SET status = ?, classification = ?, observed = COALESCE(?, observed), reason = COALESCE(?, reason), confidence = ?, confidence_score = ? WHERE id = ?`)
-      .run(req.status, req.classification ?? null, req.observed ?? null, req.reason ?? null, result.confidence, result.score, s.id);
-    this.logEvent(runId, s.id, 'scenario.reclassify', { from: before, to: { status: req.status, classification: req.classification ?? null }, justification });
-    return { code, from: before, to: { status: req.status, classification: req.classification ?? null } };
+    const from = { status: before.status, classification: before.classification };
+    const to = { status: req.status, classification: req.classification ?? null };
+    // Mudança, evento e ajuste da recomendação na mesma transação: nada fica pela metade.
+    return transaction(this.db, () => {
+      this.db
+        .prepare(`UPDATE scenarios SET status = ?, classification = ?, observed = COALESCE(?, observed), reason = COALESCE(?, reason), confidence = ?, confidence_score = ? WHERE id = ?`)
+        .run(req.status, req.classification ?? null, req.observed ?? null, req.reason ?? null, result.confidence, result.score, s.id);
+      this.logEvent(runId, s.id, 'scenario.reclassify', { from, to, justification });
+      // Run já concluído: a recomendação gravada não pode ficar acima do novo teto.
+      if (run.status === 'COMPLETED' && run.recommendation) {
+        const gate = recommendationCeiling(this.recommendationFacts(runId));
+        const current = run.recommendation as Recommendation;
+        if (!recommendationAllowed(current, gate.ceiling)) {
+          this.db.prepare('UPDATE runs SET recommendation = ? WHERE id = ?').run(gate.ceiling, runId);
+          this.logEvent(runId, null, 'run.recommendation_lowered', { from: current, to: gate.ceiling, reasons: gate.reasons });
+          return { code, from, to, recommendation: { from: current, to: gate.ceiling } };
+        }
+      }
+      return { code, from, to };
+    });
   }
 
   addExploratory(runId: string, input: ExploratoryInput): ScenarioRow {
@@ -455,8 +506,8 @@ export class StateStore {
         .run(req.status, req.classification ?? null, req.observed ?? null, req.reason ?? null,
           result.confidence, result.score, this.ts(), scenario.id);
       this.db.prepare('UPDATE runs SET current_scenario = NULL WHERE id = ? AND current_scenario = ?').run(runId, code);
+      this.logEvent(runId, scenario.id, 'scenario.complete', { status: req.status, confidence: result.confidence });
     });
-    this.logEvent(runId, scenario.id, 'scenario.complete', { status: req.status, confidence: result.confidence });
     const status = this.runStatus(runId);
     return { code, status: req.status as FinalStatus, confidence: result.confidence, notes: result.notes, progress: status.progress, next: status.next };
   }
@@ -507,8 +558,8 @@ export class StateStore {
 
   recordApproval(runId: string, a: { action: string; target: string; level: string; justification: string }): number {
     const result = this.db
-      .prepare(`INSERT INTO approvals (run_id, action, target, level, decision, ts) VALUES (?, ?, ?, ?, ?, ?)`)
-      .run(runId, a.action, a.target, a.level, `APPROVED: ${a.justification}`, this.ts());
+      .prepare(`INSERT INTO approvals (run_id, action, target, level, decision, ts, agent) VALUES (?, ?, ?, ?, ?, ?, ?)`)
+      .run(runId, a.action, a.target, a.level, `APPROVED: ${a.justification}`, this.ts(), this.agentJson());
     return Number(result.lastInsertRowid);
   }
 
@@ -532,11 +583,32 @@ export class StateStore {
     if (id !== undefined) {
       const row = this.getCreatedData(runId, id);
       if (row.cleanup_status === 'VERIFIED') throw new StateError(`#${id} já foi limpo e verificado`);
+      // Desistir da limpeza depois de ela falhar não pode ser silencioso: o motivo diz por que falhou.
+      if (row.cleanup_status === 'FAILED' && input.cleanup.method === 'keep') {
+        if (!/falh/i.test(input.cleanup.reason) || input.cleanup.reason.trim().length < 30) {
+          throw new StateError(`#${id}: a limpeza falhou; keep exige motivo explicando a falha e quem resolve (ex.: "limpeza falhou: API devolve 500; dev remove pelo banco")`);
+        }
+        this.logEvent(runId, row.scenario_id, 'data.keep_after_failure', { id, resource: row.resource, reason: input.cleanup.reason });
+      }
+      if (input.cleanup.method === 'api') {
+        // A requisição de limpeza só pode mirar o próprio dado: o id dele, ou o recurso detectado.
+        const extId = input.extId ?? row.ext_id;
+        const path = input.cleanup.request.path;
+        const resourcePath = row.resource.replace(/^[A-Z]+ /, '').split('?')[0]!;
+        if (extId ? !path.split('?')[0]!.split('/').includes(extId) : !path.startsWith(resourcePath)) {
+          throw new StateError(extId
+            ? `limpeza de #${id}: o caminho precisa conter o id do dado criado (${extId})`
+            : `limpeza de #${id}: o caminho precisa começar pelo recurso detectado (${resourcePath})`);
+        }
+      }
       this.db
         .prepare('UPDATE created_data SET cleanup_json = ?, cleanup_status = ?, ext_id = COALESCE(?, ext_id) WHERE id = ?')
         .run(JSON.stringify(input.cleanup), status, input.extId ?? null, id);
     } else {
       if (!input.resource) throw new StateError('informe id (candidato detectado) ou resource');
+      if (input.cleanup.method === 'api') {
+        throw new StateError('limpeza via API só para dados detectados pelo act (use o id do candidato); dado registrado à mão: manual (desfeito pela UI) ou keep');
+      }
       const code = this.getRun(runId).current_scenario;
       const scenarioId = code ? this.getScenario(runId, code).id : null;
       id = Number(
@@ -584,10 +656,15 @@ export class StateStore {
       .all(runId) as unknown as ValidatedActionRow[];
   }
 
-  logEvent(runId: string | null, scenarioId: number | null, type: string, payload: unknown): void {
-    this.db
+  logEvent(runId: string | null, scenarioId: number | null, type: string, payload: unknown): number {
+    return Number(this.db
       .prepare('INSERT INTO events (run_id, scenario_id, type, payload, ts) VALUES (?, ?, ?, ?, ?)')
-      .run(runId, scenarioId, type, payload === null || payload === undefined ? null : JSON.stringify(payload), this.ts());
+      .run(runId, scenarioId, type, payload === null || payload === undefined ? null : JSON.stringify(payload), this.ts()).lastInsertRowid);
+  }
+
+  /** Completa o evento de uma chamada de ferramenta com o desfecho (ok/erro, duração). */
+  finishEvent(id: number, payload: unknown): void {
+    this.db.prepare('UPDATE events SET payload = ? WHERE id = ?').run(JSON.stringify(payload), id);
   }
 }
 

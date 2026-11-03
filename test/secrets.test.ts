@@ -16,8 +16,9 @@ describe('SecretStore', () => {
     expect(store.resolve('secret:APP_ADMIN_PASSWORD')).toBe('p4ssw0rd!');
   });
 
-  it('aceita variáveis com nome de segredo mesmo sem referência na config', () => {
-    expect(store.resolve('secret:JIRA_API_TOKEN')).toBe('tok-abcdef');
+  it('não resolve segredo que a config não referencia (ex.: token pessoal no .env), mas ainda o redige', () => {
+    expect(() => store.resolve('secret:JIRA_API_TOKEN')).toThrow(/não é referenciada pela config/);
+    expect(store.valuesForRedaction().map((s) => s.name)).toContain('JIRA_API_TOKEN');
   });
 
   it('recusa variável que não é segredo nem referenciada', () => {

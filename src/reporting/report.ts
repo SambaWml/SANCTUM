@@ -5,7 +5,8 @@ import type { Redactor } from '../security/redact.ts';
 import { renderHtml, type HtmlModel } from './html.ts';
 import type { DigestCache, JiraDigest } from '../sources/digest.ts';
 import type { Db } from '../state/db.ts';
-import type { ScenarioDetails, StateStore } from '../state/store.ts';
+import { recommendationCeiling, type RecommendationFact } from '../state/rules.ts';
+import type { AgentInfo, ScenarioDetails, StateStore } from '../state/store.ts';
 
 /**
  * Relatório gerado só a partir do que foi registrado (cenários, verificações, evidências,
@@ -83,7 +84,7 @@ export function buildReport(
   const actions = Number(one(`SELECT COUNT(*) AS n FROM actions WHERE run_id = ?`, runId).n);
   const minutes = run.ended_at ? Math.round((Date.parse(run.ended_at) - Date.parse(run.started_at)) / 60000) : undefined;
 
-  const digest = cache.get('jira', run.issue_key);
+  const digest = cache.get('jira', run.issue_key, undefined, { internal: true });
   const issue = digest.hit ? (digest.digest as JiraDigest) : undefined;
 
   // Reteste: compara cada cenário com o resultado do run pai.
@@ -92,6 +93,10 @@ export function buildReport(
   const fixed = compared.filter(({ s, was }) => was !== 'PASSED' && s.status === 'PASSED').length;
   const stillFailing = compared.filter(({ s, was }) => was === 'FAILED' && s.status === 'FAILED').length;
   const regressed = compared.filter(({ s, was }) => was === 'PASSED' && s.status === 'FAILED').length;
+
+  // Teto calculado pelo core sobre o gravado neste run (o reteste não sobe a recomendação daqui).
+  const gate = recommendationCeiling(recorded as unknown as RecommendationFact[]);
+  const agent = run.agent ? (JSON.parse(run.agent) as AgentInfo) : undefined;
 
   const summary = [
     `${run.issue_key} · ${run.id} · ${run.env} (${run.mode})`,
@@ -102,6 +107,8 @@ export function buildReport(
     ...(resolvedLater.length ? [`Aprovados depois em reteste: ${resolvedLater.map((s) => `${s.code} (${resolvedBy.get(s.code)})`).join(', ')}`] : []),
     `Guard: ${guardBlocks.length} bloqueio(s), ${approvals.length} aprovação(ões) RED · Limpeza: ${created.filter((d) => d.cleanup_status === 'VERIFIED').length}/${created.filter((d) => d.cleanup_status !== 'KEPT').length} verificada(s)`,
     `Recommendation: ${run.recommendation ?? '(run não concluído)'}`,
+    `Teto da recomendação: ${gate.ceiling}${gate.reasons.length ? ` (${gate.reasons.join('; ')})` : ''}`,
+    ...(agent ? [`Agente: ${[agent.client, agent.version && `v${agent.version}`, agent.model].filter(Boolean).join(' · ')}`] : []),
   ].join('\n');
 
   const evidenceOf = (s: ScenarioDetails) =>
@@ -112,9 +119,13 @@ export function buildReport(
   const verificationsOf = (s: ScenarioDetails, passed: 0 | 1) =>
     all(`SELECT id, kind, description, expected, actual, passed FROM verifications WHERE scenario_id = ? AND passed = ? AND ts >= COALESCE((SELECT started_at FROM scenarios WHERE id = scenario_id), '') ORDER BY id`, s.id, passed);
 
-  // Explicação em linguagem simples (a mais recente gravada via report_build).
-  const explainRow = all(`SELECT payload FROM events WHERE run_id = ? AND type = 'report.explain' ORDER BY id DESC LIMIT 1`, runId)[0];
-  const explanations = explainRow ? (JSON.parse(String(explainRow.payload)) as Explanation[]) : [];
+  // Explicações em linguagem simples: somam por código (a mais recente de cada vale); remoção explícita.
+  const explainedByCode = new Map<string, Explanation>();
+  for (const r of all(`SELECT type, payload FROM events WHERE run_id = ? AND type IN ('report.explain', 'report.explain_remove') ORDER BY id`, runId)) {
+    if (r.type === 'report.explain_remove') for (const c of JSON.parse(String(r.payload)) as string[]) explainedByCode.delete(c);
+    else for (const e of JSON.parse(String(r.payload)) as Explanation[]) explainedByCode.set(e.code, e);
+  }
+  const explanations = [...explainedByCode.values()];
   // Resumos simples somam por código: o mais recente de cada cenário vale.
   const summaries = new Map<string, Summary>();
   for (const r of all(`SELECT payload FROM events WHERE run_id = ? AND type = 'report.summaries' ORDER BY id`, runId)) {

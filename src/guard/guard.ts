@@ -34,3 +34,15 @@ export function decide(level: GuardLevel, env: Environment, policy: Policy, appr
   }
   return { allowed: true };
 }
+
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+/**
+ * Requisição que altera dados no servidor, percebida pela rede (não pelo texto do alvo).
+ * Autenticação e leituras via POST configuradas (mutationIgnore da política e do ambiente) não contam.
+ */
+export function isMutation(method: string, path: string, env: Environment, policy: Policy): boolean {
+  if (!MUTATING_METHODS.has(method.toUpperCase())) return false;
+  const p = path.toLowerCase();
+  return ![...policy.guard.mutationIgnore, ...env.mutationIgnore].some((s) => p.includes(s.toLowerCase()));
+}

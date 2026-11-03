@@ -48,6 +48,8 @@ const STUDENTS = page(
   <button id="new">Novo aluno</button>
   <button id="clear">Limpar filtros</button>
   <button id="archive">Arquivar antigos</button>
+  <button id="feature">Destacar primeiro</button>
+  <button id="stats">Ver vídeo</button>
   <button id="icon">🗑</button>
   <section id="form" hidden aria-label="Cadastro de aluno">
     <label for="name">Nome</label><input id="name">
@@ -71,6 +73,15 @@ const STUDENTS = page(
   document.getElementById('clear').onclick = async () => {
     q.value = ''; render();
     await fetch('/api/students/1', { method: 'DELETE' }).catch(() => undefined);
+    await load();
+  };
+  // Player embutido de terceiro: POST de estatística para outra origem, sem o token do app (como o YouTube).
+  document.getElementById('stats').onclick = async () => {
+    await fetch('http://127.0.0.1:' + location.port + '/stats', { method: 'POST', mode: 'no-cors', body: 'evento=play' }).catch(() => undefined);
+  };
+  // Nome sem palavra de risco que altera dados (PUT), como o "Antecipar meta" do Guruja.
+  document.getElementById('feature').onclick = async () => {
+    await fetch('/api/students/1', { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ featured: true }) }).catch(() => undefined);
     await load();
   };
   // Nome inofensivo, mas a confirmação revela a ação destrutiva.
@@ -139,6 +150,7 @@ export async function startFixtureServer(options: { password: string; port?: num
     const route = `${req.method} ${url.pathname}`;
 
     if (route === 'GET /' || route === 'GET /login') return send(res, 200, LOGIN);
+    if (route === 'POST /stats') return send(res, 204, '', 'text/plain');
     if (route === 'POST /api/login') {
       const body = await readJson(req);
       if (body.username !== username || body.password !== options.password) return json(res, 401, { error: 'invalid' });
@@ -163,6 +175,13 @@ export async function startFixtureServer(options: { password: string; port?: num
       const student = { id: nextId++, name };
       students.push(student);
       return json(res, 201, student);
+    }
+    const put = /^PUT \/api\/students\/(\d+)$/.exec(route);
+    if (put) {
+      const student = students.find((s) => s.id === Number(put[1]));
+      if (!student) return json(res, 404, { error: 'não existe' });
+      Object.assign(student, await readJson(req));
+      return json(res, 200, student);
     }
     const del = /^DELETE \/api\/students\/(\d+)$/.exec(route);
     if (del) {

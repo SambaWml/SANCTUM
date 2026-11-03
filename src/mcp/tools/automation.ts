@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { runPlaywright, recordAutomationRun } from '../../automation/runner.ts';
+import { qualify, runPlaywright, recordAutomationRun } from '../../automation/runner.ts';
 import { scaffoldProject } from '../../automation/scaffold.ts';
 import { buildAutomationSpec } from '../../automation/spec.ts';
 import { assessSuitability, SuitabilityFactors } from '../../automation/suitability.ts';
@@ -71,7 +71,7 @@ export function registerAutomationTools(tool: RegisterTool, deps: AutomationDeps
   tool(
     'automation_run',
     'Executa a suíte gerada do card. validate=false: tentativa (conta no limite de correções). validate=true: validação final ' +
-      '(cada teste 2×; flaky não passa) — só depois de uma tentativa 100% verde. Entregue = validação sem falha nem flaky.',
+      '(cada teste 2×; flaky não passa) — só depois de uma tentativa 100% verde. Entregue = exit 0, sem erro global, todos passaram (sem skip/flaky/test.fail), sem grep e todo cenário aprovado coberto.',
     { issueKey: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/), validate: z.boolean().optional(), grep: z.string().optional() },
     async (a) => {
       const run = sourceRun(a.issueKey);
@@ -95,7 +95,9 @@ export function registerAutomationTools(tool: RegisterTool, deps: AutomationDeps
       });
       const id = recordAutomationRun(db, { issueKey: a.issueKey, project: run.project, runId: run.id, kind: validation ? 'validation' : 'attempt', startedAt, endedAt: now(), exitCode: out.exitCode, reportPath: out.reportPath, report: out.report });
       const t = out.report.tests;
-      const allGreen = t.length > 0 && t.every((x) => x.status === 'passed');
+      const approvedCodes = (db.prepare('SELECT code FROM scenarios WHERE run_id = ? AND automation_approved = 1').all(run.id) as { code: string }[]).map((r) => r.code);
+      const q = qualify(out.report, out.exitCode, { approvedCodes, grep: a.grep });
+      const allGreen = q.delivered;
       if (validation && allGreen) store.logEvent(run.id, null, 'automation.validated', { automationRunId: id });
 
       return {
@@ -108,6 +110,7 @@ export function registerAutomationTools(tool: RegisterTool, deps: AutomationDeps
         ...(t.length === 0 ? { output: out.output } : {}),
         report: out.reportPath,
         ...(validation ? { delivered: allGreen } : {}),
+        ...(q.problems.length ? { notDeliveredBecause: q.problems } : {}),
       };
     },
   );

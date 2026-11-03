@@ -5,7 +5,9 @@ import { resolveValue } from '../config/load.ts';
 import type { Config, Environment } from '../config/schema.ts';
 import { displayPath, evidencePath, writeEvidence } from '../evidence/files.ts';
 import { classifyAction } from '../guard/classify.ts';
-import { decide, GuardError } from '../guard/guard.ts';
+import { decide, GuardError, isMutation } from '../guard/guard.ts';
+import { containedPath, UPLOAD_DIR } from '../security/paths.ts';
+import { CURSOR_SCRIPT } from './cursor.ts';
 import { extractId, type CleanupSpec } from '../state/cleanup.ts';
 import type { Redactor } from '../security/redact.ts';
 import type { SecretStore } from '../security/secrets.ts';
@@ -151,6 +153,22 @@ export class BrowserService {
     return code ? this.deps.store.getScenario(this.s.runId, code).id : null;
   }
 
+  /**
+   * Requisição para o próprio app: mesma origem do ambiente ou com o token do app (API em outro
+   * host, como api-guruja-dev). Tráfego de terceiros (player do YouTube, analytics) não é dado do teste.
+   */
+  private appRequest(session: Session, url: URL, headers?: Record<string, string>): boolean {
+    if (url.origin === new URL(session.baseUrl).origin) return true;
+    const auth = headers?.authorization ?? headers?.Authorization;
+    return auth !== undefined && auth === session.net.authorizationFor(url.origin);
+  }
+
+  /** Alvo que parece campo de senha/cartão pelo texto semântico (label, nome, placeholder, testId). */
+  private sensitiveTarget(target: Target): boolean {
+    const words = describeTarget(target).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '').split(/[^\p{L}\p{N}_]+/u);
+    return words.some((w) => w && this.deps.redactor.isSensitiveKey(w));
+  }
+
   // ── Sessão ──────────────────────────────────────────────────────────
 
   async open(input: { runId: string; role?: string; headed?: boolean; fresh?: boolean }) {
@@ -176,6 +194,8 @@ export class BrowserService {
       ...(authReused ? { storageState: statePath } : {}),
       ...(recordVideo ? { recordVideo: { dir: videoDir, size: { width: 1440, height: 900 } } } : {}),
     });
+    // Vídeo sem ponteiro não mostra onde o teste clicou: desenha cursor, clique e campo em foco.
+    if (recordVideo) await context.addInitScript({ content: CURSOR_SCRIPT });
     const page = await context.newPage();
 
     const session: Session = {
@@ -217,8 +237,11 @@ export class BrowserService {
         }
         // Só atraso: segue para o servidor (ainda sob o guard de DELETE abaixo).
       }
-      if (req.method() !== 'DELETE' || session.redApproved) return route.continue();
       const url = new URL(req.url());
+      // DELETE: barrado em todo ambiente. Demais alterações: barradas onde a política manda (prod).
+      const mutation = this.appRequest(session, url, req.headers()) && isMutation(req.method(), url.pathname, session.env, this.deps.config.policy);
+      const blockMutation = mutation && this.deps.config.policy.guard.mutationPolicy[session.env.type] === 'block';
+      if (session.redApproved || (req.method() !== 'DELETE' && !blockMutation)) return route.continue();
       session.blocked.push({ method: req.method(), path: url.pathname + url.search, ts: Date.now() });
       const code = this.session === session ? this.currentScenario() : null;
       this.deps.store.logEvent(session.runId, this.scenarioId(code), 'guard.network_block', { method: req.method(), path: url.pathname });
@@ -326,6 +349,8 @@ export class BrowserService {
       this.deps.store.recordEvidence(session.runId, code, {
         kind: 'http-error', path: displayPath(this.deps.rootDir, path), sha256, meta: { status: entry.status, method: entry.method, path: entry.path },
       });
+      // Também como evento: a linha do tempo do run mostra a anomalia no momento em que ocorreu.
+      this.deps.store.logEvent(session.runId, this.scenarioId(code), 'http.error', { status: entry.status, method: entry.method, path: r.text(entry.path) });
     } catch {
       // evidência é complementar: falha ao gravar não pode quebrar a execução
     }
@@ -378,8 +403,18 @@ export class BrowserService {
 
   // ── Observação ──────────────────────────────────────────────────────
 
+  /** Só http(s): file://, javascript:, data: etc. leriam a máquina local ou executariam código fora do app. */
+  private httpUrl(raw: string): URL {
+    const url = new URL(raw, this.s.baseUrl);
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') {
+      throw new BrowserError(`URL recusada (${url.protocol}): só http(s) ou caminho relativo ao ambiente`);
+    }
+    return url;
+  }
+
   async navigate(input: { url: string; snapshot?: boolean }, opts: { record?: boolean } = {}) {
     const { page, net } = this.s;
+    this.httpUrl(input.url);
     const started = Date.now();
     const response = await page.goto(input.url, { waitUntil: 'domcontentloaded' });
     await net.waitQuiet();
@@ -432,9 +467,11 @@ export class BrowserService {
     const mask = this.deps.config.policy.redaction.maskSelectors.map((sel) => page.locator(sel));
     const name = `${code ?? 'run'}-${Date.now()}-${(input.label ?? 'screenshot').replace(/[^\w-]+/g, '_')}.png`;
     const path = evidencePath(this.deps.rootDir, issueKey, runId, name);
+    // O cursor desenhado é para o vídeo: no print ele esconderia conteúdo.
+    const style = '[data-novo-qa-cursor]{display:none!important}';
     const shot = input.target
-      ? await (await resolveOne(page, input.target)).screenshot({ mask })
-      : await page.screenshot({ fullPage: input.fullPage ?? false, mask });
+      ? await (await resolveOne(page, input.target)).screenshot({ mask, style })
+      : await page.screenshot({ fullPage: input.fullPage ?? false, mask, style });
     const sha256 = writeEvidence(path, shot);
     const rel = displayPath(this.deps.rootDir, path);
     const evidenceId = this.deps.store.recordEvidence(runId, code, { kind: 'screenshot', path: rel, sha256, meta: { url: page.url() } });
@@ -504,7 +541,7 @@ export class BrowserService {
     if (!decision.allowed) {
       this.deps.store.recordAction(session.runId, code, {
         action: input.action, target: input.target, guardLevel: level, ok: false,
-        error: `BLOQUEADO: ${decision.reason}`, url: urlBefore,
+        error: `BLOQUEADO: ${decision.reason}`, url: this.deps.redactor.text(urlBefore),
       });
       this.deps.store.logEvent(session.runId, this.scenarioId(code), 'guard.block', { level, reason, needsApproval: decision.needsApproval });
       throw new GuardError(`${input.action} em ${describeTarget(input.target)} bloqueado (${level}: ${reason}) — ${decision.reason}`);
@@ -537,7 +574,7 @@ export class BrowserService {
     } catch (err) {
       this.deps.store.recordAction(session.runId, code, {
         action: input.action, target: input.target, valueRef: valueRecord, guardLevel: level, ok: false,
-        error: this.deps.redactor.text((err as Error).message.split('\n')[0]!.slice(0, 300)), url: urlBefore,
+        error: this.deps.redactor.text((err as Error).message.split('\n')[0]!.slice(0, 300)), url: this.deps.redactor.text(urlBefore),
         durationMs: Date.now() - started,
       });
       throw new BrowserError(`${input.action} falhou em ${describeTarget(input.target)}: ${(err as Error).message.split('\n')[0]}`);
@@ -548,20 +585,35 @@ export class BrowserService {
 
     this.deps.store.recordAction(session.runId, code, {
       action: input.action, target: input.target, valueRef: valueRecord, guardLevel: level, ok: true,
-      // Valor de valueRef é segredo/credencial: nunca vira amostra.
-      ...(input.valueRef === undefined && input.value !== undefined ? { valueSample: input.value } : {}),
-      url: urlBefore, durationMs: Date.now() - started,
+      // Valor de valueRef é segredo/credencial: nunca vira amostra. Campo cujo alvo parece senha/cartão
+      // (label, nome, placeholder) também não, mesmo digitado como literal.
+      ...(input.valueRef === undefined && input.value !== undefined && !this.sensitiveTarget(input.target)
+        ? { valueSample: this.deps.redactor.text(input.value) } : {}),
+      url: this.deps.redactor.text(urlBefore), durationMs: Date.now() - started,
     });
 
-    // Criação detectada: POST 2xx disparado por ação que altera dados vira candidato a limpeza.
+    // Alteração percebida pela rede, qualquer que seja o nível: POST/PUT/PATCH 2xx vira dado a
+    // resolver (limpeza ou keep com motivo). DELETE só passa com RED aprovado e não cria dado.
     const requests = net.since(started);
-    const createdData = level === 'GREEN' ? [] : requests
-      .filter((e) => e.method === 'POST' && e.status !== undefined && e.status >= 200 && e.status < 300)
+    const mutations = requests.filter((e) =>
+      e.status !== undefined && e.status >= 200 && e.status < 300 &&
+      this.appRequest(session, new URL(e.url), e.requestHeaders) &&
+      isMutation(e.method, new URL(e.url).pathname, session.env, this.deps.config.policy));
+    const createdData = mutations
+      .filter((e) => e.method !== 'DELETE')
       .map((e) => {
         const extId = extractId(e.responseBody);
-        const id = this.deps.store.addCreatedCandidate(session.runId, code, e.path, extId);
-        return { id, resource: e.path, extId: extId ?? null };
+        // Recurso sem query string (assinaturas e parâmetros de rastreio não identificam o dado).
+        const path = new URL(e.url).pathname;
+        const resource = e.method === 'POST' ? path : `${e.method} ${path}`;
+        const id = this.deps.store.addCreatedCandidate(session.runId, code, resource, extId);
+        return { id, resource, extId: extId ?? null };
       });
+    // Ação classificada GREEN que alterou dados: o texto do alvo enganou o guard.
+    const unexpected = level === 'GREEN' ? mutations.map((e) => `${e.method} ${new URL(e.url).pathname} → ${e.status}`) : [];
+    if (unexpected.length > 0) {
+      this.deps.store.logEvent(session.runId, this.scenarioId(code), 'guard.mutation', { level, target: describeTarget(input.target), requests: unexpected });
+    }
 
     const after = (await ariaSnapshot(page, undefined, 50_000)).text;
     const diff = diffSnapshots(before, after);
@@ -575,6 +627,10 @@ export class BrowserService {
         `${d.type} "${d.message}" → ${d.handled}${d.blocked ? ' (BLOQUEADO: confirmação destrutiva exige act_approved)' : ''}`),
       requests: requests.map(summarize),
       blockedRequests: blocked.length ? blocked.map((b) => `${b.method} ${b.path} (bloqueado pelo guard)`) : undefined,
+      unexpectedMutation: unexpected.length ? unexpected : undefined,
+      mutationWarning: unexpected.length
+        ? 'ação classificada GREEN alterou dados no servidor: não repita sem aprovação; registre o dado com data_register e trate como achado'
+        : undefined,
       createdData: createdData.length ? createdData : undefined,
       cleanupHint: createdData.length ? 'registre como desfazer cada item com data_register (id) antes de concluir o run' : undefined,
       consoleErrors: session.console.since(started, true).map((e) => e.text.slice(0, 200)),
@@ -598,9 +654,13 @@ export class BrowserService {
         if (!input.key) throw new BrowserError('press exige key (ex.: Enter)');
         return locator.press(input.key);
       case 'upload': {
-        const files = (input.files ?? []).map((f) => join(this.deps.rootDir, f));
-        const missing = files.filter((f) => !existsSync(f));
-        if (files.length === 0 || missing.length > 0) throw new BrowserError('upload exige files existentes (caminhos relativos ao projeto)');
+        if (!input.files?.length) throw new BrowserError(`upload exige files (relativos a ${UPLOAD_DIR})`);
+        let files: string[];
+        try {
+          files = input.files.map((f) => containedPath(this.deps.rootDir, f));
+        } catch (err) {
+          throw new BrowserError((err as Error).message);
+        }
         return locator.setInputFiles(files);
       }
     }
@@ -648,9 +708,12 @@ export class BrowserService {
         // Sem expectStatus, a leitura tem de dar 2xx: um 401/500 "não contém o texto" mas não prova nada.
         const statusOk = spec.verify.expectStatus === undefined ? check.ok() : String(check.status()) === spec.verify.expectStatus;
         const textOk = spec.verify.absentText === undefined || !body.includes(spec.verify.absentText);
-        ok = statusOk && textOk;
+        // Página HTML (ex.: shell de SPA com 200) nunca contém o dado: não prova a remoção.
+        const html = /text\/html/i.test(check.headers()['content-type'] ?? '');
+        ok = statusOk && textOk && !html;
         detail += `${detail ? '; ' : ''}verificação GET ${spec.verify.path} → ${check.status()}` +
-          (textOk ? '' : ` ainda contém "${spec.verify.absentText}"`);
+          (textOk ? '' : ` ainda contém "${spec.verify.absentText}"`) +
+          (html ? ' devolveu HTML (página, não API): não prova a remoção' : '');
       }
       const status = ok ? 'VERIFIED' : 'FAILED';
       this.deps.store.setCleanupStatus(runId, row.id, status, detail);
@@ -835,7 +898,7 @@ export class BrowserService {
     if (!input.path) throw new BrowserError('verify api exige path (GET)');
     const code = this.currentScenario();
     this.deps.store.logEvent(this.s.runId, this.scenarioId(code), 'inspect.api', { path: input.path });
-    const url = new URL(input.path, this.s.baseUrl);
+    const url = this.httpUrl(input.path);
     const authorization = this.s.net.authorizationFor(url.origin);
     const res = await this.s.context.request.get(url.toString(), {
       failOnStatusCode: false,

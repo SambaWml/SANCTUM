@@ -14,6 +14,8 @@ import { Redactor } from './security/redact.ts';
 import { SecretStore } from './security/secrets.ts';
 import { openDb } from './state/db.ts';
 import { StateStore } from './state/store.ts';
+import { applyPrune, planPrune } from './storage/prune.ts';
+import { promoteStaging, stagingSummary } from './knowledge/staging.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -71,12 +73,62 @@ async function schema(config: ReturnType<typeof loadConfig>): Promise<number> {
   return 0;
 }
 
-const commands: Record<string, (arg?: string) => number | Promise<number>> = { doctor, metrics };
+const gb = (b: number) => `${(b / 1e9).toFixed(2)} GB`;
+
+/** novo-qa storage [--apply]: uso de runs/ e o que a retenção removeria (só apaga com --apply). */
+function storage(arg?: string): number {
+  const config = loadConfig(ROOT);
+  const retention = config.policy.evidence.retention;
+  const db = openDb(process.env.NOVO_QA_DB ?? join(ROOT, 'data', 'novo-qa.db'));
+  const plan = planPrune(ROOT, db, retention);
+  console.log(`runs/: ${gb(plan.usage.totalBytes)}${plan.usage.overLimit ? ` (acima do limite de ${retention.maxStorageGB} GB)` : ''}`);
+  for (const [ext, bytes] of Object.entries(plan.usage.byType).sort((a, b) => b[1] - a[1])) console.log(`  ${ext.padEnd(8)} ${gb(bytes)}`);
+  const videos = plan.remove.filter((r) => r.path.endsWith('.webm')).length;
+  console.log(`
+Retenção (vídeo ${retention.videoDays}d, trace ${retention.traceDays}d, bug ${retention.bugDays}d): ${videos} vídeo(s) e ${plan.remove.length - videos} trace(s), ${gb(plan.reclaimBytes)} a liberar`);
+  if (arg !== '--apply') {
+    console.log('Simulação: nada foi apagado. Para apagar: novo-qa storage --apply');
+    return 0;
+  }
+  console.log(`Apagados: ${applyPrune(plan)} arquivo(s)`);
+  return 0;
+}
+
+/**
+ * novo-qa knowledge <projeto>                         propostas pendentes por módulo
+ * novo-qa knowledge <projeto>/<módulo> "<resumo>"     promove staging revisado (reviewed: true)
+ */
+function knowledge(arg?: string): number {
+  if (!arg) {
+    console.log('Uso: novo-qa knowledge <projeto> | <projeto>/<módulo> "<resumo do módulo>"');
+    return 1;
+  }
+  const [project, module] = arg.split('/');
+  if (!module) {
+    const rows = stagingSummary(ROOT, project!);
+    if (!rows.length) console.log(`Nenhuma proposta em knowledge/${project}/_staging`);
+    for (const r of rows) console.log(`${r.reviewed ? '✓' : '·'} ${r.module.padEnd(22)} ${r.proposals} proposta(s)${r.reviewed ? ' — revisado, pronto para promover' : ''}`);
+    console.log('\nRevise o arquivo, ajuste/remova propostas, marque reviewed: true e rode: novo-qa knowledge <projeto>/<módulo> "<resumo>"');
+    return 0;
+  }
+  const summary = process.argv[4];
+  if (!summary) {
+    console.log('Informe o resumo do módulo (uma frase): novo-qa knowledge <projeto>/<módulo> "<resumo>"');
+    return 1;
+  }
+  const r = promoteStaging(ROOT, project!, module, summary);
+  console.log(`${r.file}: ${r.promoted} afirmação(ões) promovida(s), ${r.total} no módulo`);
+  return 0;
+}
+
+const commands: Record<string, (arg?: string) => number | Promise<number>> = { doctor, metrics, storage, knowledge };
 
 const [command = 'help', arg] = process.argv.slice(2);
 const run = commands[command];
 if (!run) {
-  console.log(`Uso: novo-qa <comando>\n\nComandos:\n  doctor\n  metrics <runId|card> | --schema`);
+  console.log(`Uso: novo-qa <comando>\n\nComandos:\n  doctor\n  metrics <runId|card> | --schema
+  storage [--apply]
+  knowledge <projeto> | <projeto>/<módulo> "<resumo>"`);
   process.exit(command === 'help' ? 0 : 1);
 }
 process.exit(await run(arg));

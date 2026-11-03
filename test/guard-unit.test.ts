@@ -38,6 +38,13 @@ describe('classifyAction: alvo sem texto', () => {
   it('testId com palavra de risco é RED', () => {
     expect(classifyAction('click', 'delete student', config.policy).level).toBe('RED');
   });
+  it('ações irreversíveis de domínio são RED; concluir/finalizar/registrar sobem para YELLOW', () => {
+    expect(classifyAction('click', 'Antecipar meta', config.policy).level).toBe('RED');
+    expect(classifyAction('click', 'Adiar meta', config.policy).level).toBe('RED');
+    expect(classifyAction('click', 'Li e aceito os termos', config.policy).level).toBe('RED');
+    expect(classifyAction('click', 'Finalizar', config.policy).level).toBe('YELLOW');
+    expect(classifyAction('click', 'Concluir', config.policy).level).toBe('YELLOW');
+  });
 });
 
 describe('cleanup', () => {
@@ -63,6 +70,26 @@ describe('hook guard-shell', async () => {
     expect(check(`python -c "from playwright.sync_api import sync_playwright"`)).toMatch(/Action Guard/);
     expect(check('curl -X DELETE https://dev.app/api/users/1')).toMatch(/act_approved/);
     expect(check('Invoke-RestMethod -Uri https://x/api/1 -Method Delete')).toMatch(/act_approved/);
+  });
+
+  it('fecha contornos simples (auditoria 02/11)', () => {
+    const blocked = [
+      String.raw`node.exe -e "require('playwright')"`,
+      String.raw`"C:/Program Files/nodejs/node" -e "require('playwright')"`,
+      String.raw`cmd /c "node -e require('playwright')"`,
+      `npx vitest run x\nnode -e "require('playwright')"`,
+      String.raw`npx vitest $(node -e "require('playwright')")`,
+      'curl -X PUT https://dev.app/v1/Target/AnticipateNextTarget',
+      'curl -XPATCH https://dev.app/api/1',
+      'curl --request=DELETE https://dev.app/api/1',
+      'Invoke-RestMethod -Uri https://x/api/1 -Method:Delete',
+      String.raw`node -e "fetch('https://dev.app/api/1', { method: 'DELETE' })"`,
+      String.raw`python -c "import requests; requests.delete('https://dev.app/api/1')"`,
+      'npx playwright test --config evil.config.ts',
+    ];
+    for (const cmd of blocked) expect(check(cmd), cmd).not.toBeNull();
+    expect(check('npx playwright test --config automation/guruja/playwright.config.ts')).toBeNull();
+    expect(check('curl https://dev.app/api/students')).toBeNull();
   });
 
   it('bloqueia script que importa driver de navegador', () => {

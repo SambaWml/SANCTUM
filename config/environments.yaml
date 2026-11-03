@@ -15,6 +15,8 @@ environments:
     allowDataCreation: true
     mfa: false
     captcha: false
+    # Leitura via POST (não altera dados): vista em todos os runs de 10/2026.
+    mutationIgnore: [/v2/FeatureFlag]
     roles:
       admin:
         username: frambachadmin
@@ -92,6 +94,8 @@ environments:
     allowDataCreation: false
     mfa: false
     captcha: false
+    # Leitura via POST (chave pública do gateway), não altera dados.
+    mutationIgnore: [/payment-gateways/public-key]
     roles:
       # BF2025 vigente com oferta BF2026 (downgrade), usado no teste de 23/10; senha padrão.
       aluno-downgrade:

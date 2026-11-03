@@ -50,10 +50,13 @@ export function parseReport(json: JsonReport): ParsedReport {
 
   const tests = [...bySpec.values()].map(({ spec, tests: runs }): TestResult => {
     const statuses = runs.map((t) => t.status);
+    // test.fail()/fixme: "expected" porque falhou como previsto — não é passou.
+    const expectedFailure = runs.some((t) => (t.annotations ?? []).some((a) => a.type === 'fail' || a.type === 'fixme'));
     const status: TestOutcome =
-      statuses.every((s) => s === 'skipped') ? 'skipped'
+      expectedFailure ? 'failed'
       : statuses.includes('flaky') || (statuses.includes('expected') && statuses.includes('unexpected')) ? 'flaky'
-      : statuses.every((s) => s === 'expected' || s === 'skipped') ? 'passed'
+      : statuses.includes('skipped') ? 'skipped'
+      : statuses.every((s) => s === 'expected') ? 'passed'
       : 'failed';
     const results = runs.flatMap((t) => t.results);
     // Todos os erros do primeiro resultado com falha: o 1º costuma ser genérico ("Test timeout"), o seletor vem depois.
@@ -74,6 +77,28 @@ export function parseReport(json: JsonReport): ParsedReport {
     };
   });
   return { tests, errors: (json.errors ?? []).map((e) => stripAnsi(e.message ?? '').slice(0, 1500)) };
+}
+
+/**
+ * Entrega da automação: o agente diz "passou", o core confere. Só entrega com exit code 0,
+ * sem erro global, todos os testes passando (sem skip, flaky ou test.fail), sem filtro por grep
+ * e com todo cenário aprovado para automação coberto por pelo menos um teste.
+ */
+export function qualify(
+  report: ParsedReport,
+  exitCode: number | null,
+  o: { approvedCodes: string[]; grep?: string },
+): { delivered: boolean; problems: string[] } {
+  const problems: string[] = [];
+  if (exitCode !== 0) problems.push(`exit code ${exitCode ?? 'nulo (processo interrompido)'}`);
+  if (report.errors.length > 0) problems.push(`erro global do Playwright: ${report.errors[0]!.split('\n')[0]}`);
+  if (report.tests.length === 0) problems.push('nenhum teste executado');
+  for (const t of report.tests) if (t.status !== 'passed') problems.push(`${t.scenario ?? t.title}: ${t.status}`);
+  if (o.grep) problems.push(`validação filtrada por grep ("${o.grep}"): a entrega exige a suíte inteira`);
+  const covered = new Set(report.tests.map((t) => t.scenario));
+  const missing = o.approvedCodes.filter((c) => !covered.has(c));
+  if (missing.length > 0) problems.push(`cenários aprovados sem teste: ${missing.join(', ')}`);
+  return { delivered: problems.length === 0, problems };
 }
 
 export interface RunOptions {
@@ -98,7 +123,8 @@ export async function runPlaywright(o: RunOptions): Promise<{ exitCode: number |
   const cli = join(o.rootDir, 'node_modules', '@playwright', 'test', 'cli.js');
 
   const args = [cli, 'test', `tests/${o.issueKey}`, '--reporter=json', `--output=${join(outDir, 'test-results')}`];
-  if (o.validation) args.push('--repeat-each=2');
+  // Validação: cada teste 2× e sem retries (um retry esconderia instabilidade, mesmo que o config peça).
+  if (o.validation) args.push('--repeat-each=2', '--retries=0');
   if (o.grep) args.push('--grep', o.grep);
   const env = {
     ...process.env,

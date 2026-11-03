@@ -87,11 +87,12 @@ export class DigestCache {
    * Sem `version`, devolve o que houver. Com `version`, só é hit se a fonte não mudou —
    * é a checagem barata (getJiraIssue com fields=["updated"]) que evita reler o card.
    */
-  get(source: Source, key: string, version?: string, scope?: { runId?: string | null }): DigestLookup {
+  get(source: Source, key: string, version?: string, scope?: { runId?: string | null; internal?: boolean }): DigestLookup {
     const row = this.db
       .prepare('SELECT version, path FROM cache_entries WHERE source = ? AND key = ?')
       .get(source, key) as { version: string; path: string } | undefined;
-    const log = (type: string) =>
+    // Leitura interna do core (brief, relatório, pacote) não conta como acerto do agente na métrica.
+    const log = (type: string) => scope?.internal ? undefined :
       this.db.prepare('INSERT INTO events (run_id, scenario_id, type, payload, ts) VALUES (?, NULL, ?, ?, ?)')
         .run(scope?.runId ?? null, type, JSON.stringify({ source, key }), this.now().toISOString());
 

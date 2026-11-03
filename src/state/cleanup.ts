@@ -4,8 +4,11 @@ import { z } from 'zod';
  * Como desfazer um dado criado pelo teste e como provar que foi desfeito.
  * `verify` é obrigatório: limpeza sem verificação não conta (TEST → CLEANUP → VERIFY CLEANUP).
  */
+// Caminho da própria aplicação: começa com "/" e não é protocol-relative ("//host/...").
+const AppPath = z.string().regex(/^\/(?!\/)/, 'caminho da aplicação: começa com uma única "/"');
+
 const Verify = z.strictObject({
-  path: z.string().startsWith('/').describe('GET de leitura que prova a remoção'),
+  path: AppPath.describe('GET de leitura (JSON) que prova a remoção'),
   expectStatus: z.string().optional().describe('ex.: "404"'),
   absentText: z.string().optional().describe('texto que não pode mais aparecer na resposta'),
 }).refine((v) => v.expectStatus !== undefined || v.absentText !== undefined, 'verify precisa de expectStatus ou absentText');
@@ -15,7 +18,7 @@ export const CleanupSpec = z.discriminatedUnion('method', [
     method: z.literal('api'),
     request: z.strictObject({
       method: z.enum(['DELETE', 'POST', 'PUT', 'PATCH']),
-      path: z.string().startsWith('/'),
+      path: AppPath,
       body: z.unknown().optional(),
     }),
     verify: Verify,

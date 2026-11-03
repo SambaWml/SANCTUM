@@ -165,6 +165,40 @@ describe('limpeza de dados criados', () => {
     await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'NOT_EXECUTED', reason: 'teste de limpeza' });
     expect((await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'limpeza falhou' })).text).toMatch(/FAILED/);
   }, 60_000);
+
+  it('limpeza via API só para dado detectado, no caminho do próprio id; GET que devolve HTML não prova nada', async () => {
+    h = await createHarness();
+    const runId = await loggedInRun(h, 'FIX-27', ['CT-001']);
+    // Dado registrado à mão não pode virar DELETE arbitrário (só manual ou keep).
+    const manualDelete = await h.call('data_register', {
+      runId, resource: '/api/students', extId: '2',
+      cleanup: { method: 'api', request: { method: 'DELETE', path: '/api/students/2' }, verify: { path: '/api/students', absentText: 'Bruno Lima' } },
+    });
+    expect(manualDelete.text).toMatch(/só para dados detectados/);
+
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    await h.ok('navigate', { url: '/students', snapshot: false });
+    await h.ok('act', { action: 'click', target: { role: 'button', name: 'Novo aluno' } });
+    await h.ok('act', { action: 'fill', target: { label: 'Nome' }, value: 'Carla Dias', valueType: 'studentName' });
+    const save = await h.ok('act', { action: 'click', target: { role: 'button', name: 'Salvar' } });
+    const { id, extId } = save.createdData[0];
+    // Caminho que não é o do dado criado.
+    const other = await h.call('data_register', {
+      runId, id, cleanup: { method: 'api', request: { method: 'DELETE', path: '/api/students/1' }, verify: { path: '/api/students', absentText: 'Carla Dias' } },
+    });
+    expect(other.text).toMatch(/precisa conter o id/);
+    const protocolRelative = await h.call('data_register', {
+      runId, id, cleanup: { method: 'api', request: { method: 'DELETE', path: `//evil.example/api/students/${extId}` }, verify: { path: '/api/students', absentText: 'Carla Dias' } },
+    });
+    expect(protocolRelative.isError).toBe(true);
+    // Verificação numa página HTML (SPA devolve 200 com o shell): não conta como prova.
+    await h.ok('data_register', {
+      runId, id, cleanup: { method: 'api', request: { method: 'DELETE', path: `/api/students/${extId}` }, verify: { path: '/students', absentText: 'Carla Dias' } },
+    });
+    const cleanup = await h.ok('cleanup_run', { runId });
+    expect(cleanup.results[0]).toMatchObject({ status: 'FAILED' });
+    expect(cleanup.results[0].detail).toMatch(/HTML/);
+  }, 60_000);
 });
 
 describe('ambientes restritivos', () => {
@@ -193,5 +227,110 @@ describe('ambientes restritivos', () => {
     // Sem nada a limpar, cleanup_run responde sem exigir permissão de escrita (nem navegador aberto).
     await h.ok('browser_close');
     expect(await h.ok('cleanup_run', { runId })).toEqual({ results: [], nothingToClean: true });
+  }, 60_000);
+});
+
+describe('mutação percebida pela rede (não só pelo texto do alvo)', () => {
+  let h: Harness;
+  afterEach(async () => h?.close());
+
+  it('PUT disparado por ação GREEN é sinalizado e vira dado a resolver antes do fim do run', async () => {
+    h = await createHarness();
+    const runId = await loggedInRun(h, 'FIX-25', ['CT-001']);
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    await h.ok('navigate', { url: '/students', snapshot: false });
+    const r = await h.ok('act', { action: 'click', target: { role: 'button', name: 'Destacar primeiro' } });
+    expect(r.level).toBe('GREEN');
+    expect(r.unexpectedMutation).toEqual(['PUT /api/students/1 → 200']);
+    expect(r.createdData).toEqual([{ id: 1, resource: 'PUT /api/students/1', extId: '1' }]);
+    // O login (POST /api/login) é autenticação, não dado criado.
+    expect(h.db.prepare('SELECT COUNT(*) AS n FROM created_data').get()).toEqual({ n: 1 });
+    expect(h.db.prepare("SELECT COUNT(*) AS n FROM events WHERE type = 'guard.mutation'").get()).toEqual({ n: 1 });
+    await h.ok('verify', { kind: 'api', description: 'aluno 1 destacado', path: '/api/students', bodyContains: 'featured' });
+    await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'PASSED' });
+    const blocked = await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'mutação sem registro' });
+    expect(blocked.text).toMatch(/PUT \/api\/students\/1 \(1\): UNREGISTERED/);
+  }, 60_000);
+
+  it('POST de terceiro (outra origem, sem o token do app) não é dado criado', async () => {
+    h = await createHarness();
+    const runId = await loggedInRun(h, 'FIX-30', ['CT-001']);
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    await h.ok('navigate', { url: '/students', snapshot: false });
+    const r = await h.ok('act', { action: 'click', target: { role: 'button', name: 'Ver vídeo' } });
+    expect(r.requests.some((x: string) => /POST \/stats/.test(x))).toBe(true);
+    expect(r.unexpectedMutation).toBeUndefined();
+    expect(r.createdData).toBeUndefined();
+    expect(h.db.prepare('SELECT COUNT(*) AS n FROM created_data').get()).toEqual({ n: 0 });
+  }, 60_000);
+
+  it('prod: alteração vinda de ação GREEN é barrada na rede; o login passa', async () => {
+    h = await createHarness({ type: 'prod' });
+    const runId = await loggedInRun(h, 'FIX-26', ['CT-001']);
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    await h.ok('navigate', { url: '/students', snapshot: false });
+    const r = await h.ok('act', { action: 'click', target: { role: 'button', name: 'Destacar primeiro' } });
+    expect(r.blockedRequests).toEqual(['PUT /api/students/1 (bloqueado pelo guard)']);
+    expect(r.unexpectedMutation).toBeUndefined();
+    const api = await h.ok('verify', { kind: 'api', description: 'nada destacado', path: '/api/students', bodyContains: 'featured', timeoutMs: 300 });
+    expect(api.passed).toBe(false);
+  }, 60_000);
+});
+
+describe('o banco não guarda segredo digitado nem senha na URL', () => {
+  let h: Harness;
+  afterEach(async () => h?.close());
+
+  it('URL das ações é redigida e campo de senha digitado como literal não vira amostra', async () => {
+    h = await createHarness();
+    const runId = (await h.ok('run_start', { issueKey: 'FIX-28', env: 'fixture-local', mode: 'manual' })).runId as string;
+    await h.ok('plan_save', { runId, scenarios: [{ code: 'CT-001', title: 'login', priority: 'P2', risk: 'LOW', types: ['functional'], steps: ['entrar'], expected: 'login ok' }] });
+    await h.ok('plan_approve', { runId });
+    await h.ok('browser_open', { runId, role: 'admin' });
+    await h.ok('navigate', { url: '/login?nickName=ana&password=minhasenha', snapshot: false });
+    await h.ok('act', { action: 'fill', target: { label: 'Usuário' }, value: 'ana' });
+    await h.ok('act', { action: 'fill', target: { label: 'Senha' }, value: 'literalsecreta' });
+    const rows = h.db.prepare('SELECT url, value_sample FROM actions ORDER BY id').all() as { url: string; value_sample: string | null }[];
+    const dump = JSON.stringify(rows);
+    expect(dump).not.toContain('minhasenha');
+    expect(dump).not.toContain('literalsecreta');
+    expect(rows.find((r) => r.value_sample === 'ana')).toBeDefined();
+  }, 60_000);
+});
+
+describe('cursor visível no vídeo', () => {
+  let h: Harness;
+  afterEach(async () => h?.close());
+
+  it('com vídeo ligado, a página ganha a camada do cursor; ela não aparece no snapshot nem atrapalha o clique', async () => {
+    h = await createHarness();
+    h.config.policy.evidence.video = 'always';
+    const runId = await loggedInRun(h, 'FIX-31', ['CT-001']);
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    await h.ok('navigate', { url: '/students', snapshot: false });
+    const layer = await h.ok('verify', { kind: 'ui', description: 'camada do cursor presente e fora da acessibilidade', target: { css: '[data-novo-qa-cursor]' }, condition: 'attribute', attribute: 'aria-hidden', text: 'true', timeoutMs: 2000 });
+    expect(layer.passed).toBe(true);
+    const snap = await h.ok('snapshot', {});
+    expect(JSON.stringify(snap)).not.toContain('novo-qa-cursor');
+    // Clique continua chegando no botão (a camada não intercepta o ponteiro).
+    await h.ok('act', { action: 'click', target: { role: 'button', name: 'Novo aluno' } });
+    await h.ok('verify', { kind: 'ui', description: 'formulário abriu', target: { label: 'Nome' } });
+  }, 60_000);
+});
+
+describe('navegação e leitura de API só por http(s)', () => {
+  let h: Harness;
+  afterEach(async () => h?.close());
+
+  it('file://, javascript: e data: são recusados em navigate e verify api', async () => {
+    h = await createHarness();
+    const runId = await loggedInRun(h, 'FIX-29', ['CT-001']);
+    await h.ok('scenario_start', { runId, code: 'CT-001' });
+    for (const url of ['file:///C:/Windows/win.ini', 'javascript:alert(1)', 'data:text/html,<h1>x</h1>']) {
+      expect((await h.call('navigate', { url })).text).toMatch(/só http/);
+    }
+    expect((await h.call('verify', { kind: 'api', description: 'arquivo local', path: 'file:///C:/Windows/win.ini', bodyContains: 'x' })).text).toMatch(/só http/);
+    // Caminho relativo e http continuam.
+    await h.ok('navigate', { url: '/students', snapshot: false });
   }, 60_000);
 });

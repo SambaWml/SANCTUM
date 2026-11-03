@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { evaluateCompletion, type CompletionFacts, type VerificationFact } from '../src/state/rules.ts';
+import { evaluateCompletion, recommendationCeiling, type CompletionFacts, type RecommendationFact, type VerificationFact } from '../src/state/rules.ts';
 
 function facts(over: Partial<CompletionFacts> = {}): CompletionFacts {
   return {
@@ -148,5 +148,42 @@ describe('confidence (rubrica D3)', () => {
   it('BLOCKED não tem confidence', () => {
     const r = evaluateCompletion({ status: 'BLOCKED', reason: 'x', classification: 'UNKNOWN' }, facts());
     expect(r.ok && r.confidence).toBeNull();
+  });
+});
+
+describe('teto da recomendação do run', () => {
+  const s = (code: string, priority: RecommendationFact['priority'], status: RecommendationFact['status'], classification: RecommendationFact['classification'] = null): RecommendationFact =>
+    ({ code, priority, status, classification });
+  const pass = s('CT-001', 'P0', 'PASSED');
+
+  it('tudo passou: APROVADO', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P1', 'PASSED')]).ceiling).toBe('APROVADO');
+  });
+
+  it('PRODUCT_BUG em P0/P1 só permite REPROVADO', () => {
+    for (const p of ['P0', 'P1'] as const) {
+      const r = recommendationCeiling([pass, s('CT-002', p, 'FAILED', 'PRODUCT_BUG')]);
+      expect(r.ceiling).toBe('REPROVADO');
+      expect(r.reasons.join(' ')).toMatch(/CT-002/);
+    }
+  });
+
+  it('P0/P1 FAILED sem bug, BLOCKED ou NEEDS_REVIEW não permitem APROVADO', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'FAILED', 'ENVIRONMENT_FAILURE')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'BLOCKED', 'TEST_DATA_FAILURE')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([pass, s('CT-002', 'P1', 'NEEDS_REVIEW', 'REQUIREMENT_AMBIGUITY')]).ceiling).toBe('INCONCLUSIVO');
+  });
+
+  it('NEEDS_REVIEW como comportamento esperado e NOT_EXECUTED com motivo não travam', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'NEEDS_REVIEW', 'EXPECTED_BEHAVIOR'), s('CT-003', 'P1', 'NOT_EXECUTED')]).ceiling).toBe('APROVADO');
+  });
+
+  it('falhas em P2/P3 não travam (política do execute-and-close)', () => {
+    expect(recommendationCeiling([pass, s('EXP-001', 'P2', 'FAILED', 'PRODUCT_BUG'), s('CT-003', 'P3', 'BLOCKED', 'UNKNOWN')]).ceiling).toBe('APROVADO');
+  });
+
+  it('sem nenhum PASSED não há o que aprovar', () => {
+    expect(recommendationCeiling([s('CT-001', 'P2', 'NOT_EXECUTED')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([]).ceiling).toBe('INCONCLUSIVO');
   });
 });

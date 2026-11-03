@@ -26,13 +26,32 @@ function valueTypeOf(ref: string | null): string | undefined {
   return role ? role[1] : undefined;
 }
 
+/** Nome acessível maior que isso (ex.: termo de uso com versão, IP e navegador) não serve de seletor. */
+const MAX_NAME = 100;
+const nameOf = (t: unknown) => (t as { name?: string; label?: string } | null)?.name ?? (t as { label?: string } | null)?.label;
+
+/** Contador no nome ("Reforços 6") muda entre runs: o seletor guardado usa regex nos números. */
+function stableLocator(target: Target): string {
+  const loc = toPlaywrightCode(target);
+  const name = target.name;
+  if (name === undefined || !/\d/.test(name)) return loc;
+  const q = `'${name.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`;
+  const rx = name.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&').replace(/\d+/g, '\\d+');
+  return loc.replace(`{ name: ${q}${target.exact ? ', exact: true' : ''} }`, `{ name: /^${rx}$/ }`);
+}
+
+/** Chave de fusão: números do nome não distinguem entradas (o contador muda, o alvo é o mesmo). */
+function entryKey(route: string, action: string, target: unknown): string {
+  return `${route}|${action}|${JSON.stringify(target).replace(/\d+/g, '#')}`;
+}
+
 export function playwrightLine(action: string, target: Target | { url: string } | { viewport: string }, ref: string | null): string {
   if (action === 'navigate') return `await page.goto('${(target as { url: string }).url}');`;
   if (action === 'viewport') {
     const [width, height] = (target as { viewport: string }).viewport.split('x');
     return `await page.setViewportSize({ width: ${width}, height: ${height} });`;
   }
-  const loc = toPlaywrightCode(target as Target);
+  const loc = stableLocator(target as Target);
   const valueType = valueTypeOf(ref);
   const arg = valueType ? `<${valueType}>` : '<valor>';
   switch (action) {
@@ -48,8 +67,9 @@ export function buildExecutionKnowledge(store: StateStore, run: RunRow): Executi
   const seen = new Map<string, ExecutionEntry>();
   for (const row of store.validatedActions(run.id)) {
     const target = JSON.parse(row.target_json ?? '{}') as ExecutionEntry['target'];
+    if ((nameOf(target)?.length ?? 0) > MAX_NAME) continue;
     const route = row.url ? new URL(row.url).pathname : '';
-    const key = `${route}|${row.action}|${row.target_json}`;
+    const key = entryKey(route, row.action, target);
     if (seen.has(key)) continue;
     const valueType = valueTypeOf(row.value_ref);
     seen.set(key, {
@@ -77,14 +97,28 @@ export function mergeExecutionKnowledge(rootDir: string, project: string, module
   mkdirSync(dir, { recursive: true });
   const path = join(dir, `${module}.json`);
   const current = existsSync(path) ? (JSON.parse(readFileSync(path, 'utf8')) as ExecutionEntry[]) : [];
-  const key = (e: ExecutionEntry) => `${e.route}|${e.action}|${JSON.stringify(e.target)}`;
-  const byKey = new Map(current.map((e) => [key(e), e]));
+  const key = (e: ExecutionEntry) => entryKey(e.route, e.action, e.target);
+  const byKey = new Map<string, ExecutionEntry>();
+  // O arquivo antigo também é normalizado: contadores repetidos colapsam, nomes gigantes saem.
+  for (const e of current) {
+    if ((nameOf(e.target)?.length ?? 0) > MAX_NAME) continue;
+    const k = key(e);
+    const prev = byKey.get(k);
+    // Linha antiga com contador fixo ("Reforços 6") é regerada com regex; ações com valor/tecla ficam como estão.
+    const regenerate = ['click', 'hover', 'check', 'uncheck'].includes(e.action) && /\d/.test(nameOf(e.target) ?? '');
+    if (!prev || e.lastSeen > prev.lastSeen) byKey.set(k, regenerate ? { ...e, playwright: playwrightLine(e.action, e.target, null) } : e);
+  }
   let added = 0;
   for (const e of entries) {
+    if ((nameOf(e.target)?.length ?? 0) > MAX_NAME) continue;
     const existing = byKey.get(key(e));
     if (existing) {
       existing.validatedIn = [...new Set([...e.validatedIn, ...existing.validatedIn])].slice(0, MAX_VALIDATED_IN);
-      existing.lastSeen = e.lastSeen > existing.lastSeen ? e.lastSeen : existing.lastSeen;
+      if (e.lastSeen >= existing.lastSeen) {
+        existing.lastSeen = e.lastSeen;
+        existing.target = e.target;
+        existing.playwright = e.playwright;
+      }
       if (e.valueType) existing.valueType = e.valueType;
     } else {
       byKey.set(key(e), e);
@@ -111,11 +145,20 @@ export function writeExecutionKnowledge(rootDir: string, store: StateStore, run:
 
 /** Execution knowledge salvo dos módulos, em linhas Playwright compactas (para o briefing do executor). */
 export function executionHints(rootDir: string, project: string, modules: string[], max = 40): string[] {
-  const lines: string[] = [];
+  const best = new Map<string, ExecutionEntry>();
   for (const m of modules) {
     const path = join(projectDir(rootDir, project), 'execution', `${m}.json`);
     if (!existsSync(path)) continue;
-    for (const e of JSON.parse(readFileSync(path, 'utf8')) as ExecutionEntry[]) lines.push(`${e.route}: ${e.playwright}`);
+    for (const e of JSON.parse(readFileSync(path, 'utf8')) as ExecutionEntry[]) {
+      // Mesma linha em vários módulos (ex.: login): uma vez só, com a validação mais recente.
+      const line = `${e.route}: ${e.playwright}`;
+      const prev = best.get(line);
+      if (!prev || e.lastSeen > prev.lastSeen) best.set(line, e);
+    }
   }
-  return lines.slice(0, max);
+  // Mais recentes e mais validadas primeiro: o corte não pega só o login antigo.
+  return [...best.entries()]
+    .sort(([, a], [, b]) => b.lastSeen.localeCompare(a.lastSeen) || b.validatedIn.length - a.validatedIn.length)
+    .slice(0, max)
+    .map(([line]) => line);
 }

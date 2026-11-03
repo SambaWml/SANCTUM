@@ -31,7 +31,7 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string) {
   const { rootDir, config, db, cache } = deps;
   const env = deps.env ?? process.env;
 
-  const lookup = cache.get('jira', issueKey);
+  const lookup = cache.get('jira', issueKey, undefined, { internal: true });
   if (!lookup.hit) {
     throw new ContextError(`sem digest de ${issueKey}: leia o card pelo Atlassian MCP e grave com digest_put antes de context_build`);
   }

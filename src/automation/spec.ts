@@ -70,7 +70,7 @@ export function buildAutomationSpec(
   const approved = scenarios.filter((s) => (db.prepare('SELECT automation_approved AS a FROM scenarios WHERE id = ?').get(s.id) as { a: number }).a === 1);
   if (approved.length === 0) throw new StateError('nenhum cenário aprovado para automação — rode automation_assess antes');
 
-  const digest = cache.get('jira', run.issue_key);
+  const digest = cache.get('jira', run.issue_key, undefined, { internal: true });
   const issue = digest.hit ? (digest.digest as JiraDigest) : undefined;
   const role = (db.prepare(`SELECT payload FROM events WHERE run_id = ? AND type = 'browser.open' ORDER BY id DESC LIMIT 1`).get(runId) as { payload: string } | undefined);
   const roleName = role ? (JSON.parse(role.payload) as { role: string | null }).role : null;

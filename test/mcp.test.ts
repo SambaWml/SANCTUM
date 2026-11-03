@@ -65,6 +65,16 @@ describe('servidor MCP novo-qa', () => {
     expect(status.json.counts).toEqual({ PASSED: 1 });
   });
 
+  it('o run guarda o cliente MCP que o iniciou (e o modelo, se informado)', async () => {
+    process.env.NOVO_QA_MODEL = 'claude-opus-5-5';
+    try {
+      const runId = (await call('run_start', { issueKey: 'FIX-2', env: 'fixture-local', mode: 'manual' })).json.runId as string;
+      expect(JSON.parse(store.getRun(runId).agent!)).toEqual({ client: 'test', version: '0', model: 'claude-opus-5-5' });
+    } finally {
+      delete process.env.NOVO_QA_MODEL;
+    }
+  });
+
   it('valida entrada pelo schema', async () => {
     const bad = await call('run_start', { issueKey: 'sem-formato', env: 'fixture-local', mode: 'manual' });
     expect(bad.isError).toBe(true);
@@ -86,5 +96,17 @@ describe('servidor MCP novo-qa', () => {
       { type: 'tool.run_start', run_id: null },
       { type: 'tool.run_abort', run_id: json.runId },
     ]);
+  });
+
+  it('evento da ferramenta guarda resultado e duração; recusa de regra fica registrada', async () => {
+    const { json } = await call('run_start', { issueKey: 'FIX-4', env: 'fixture-local', mode: 'manual' });
+    await call('scenario_start', { runId: json.runId, code: 'CT-001' }); // plano não aprovado: recusa
+    const rows = db.prepare("SELECT type, payload FROM events WHERE type LIKE 'tool.%' ORDER BY id").all() as { type: string; payload: string }[];
+    const start = JSON.parse(rows[0]!.payload);
+    expect(start).toMatchObject({ ok: true });
+    expect(typeof start.ms).toBe('number');
+    const reject = JSON.parse(rows[1]!.payload);
+    expect(reject).toMatchObject({ ok: false });
+    expect(reject.error).toMatch(/run está PLANNING/);
   });
 });

@@ -5,14 +5,22 @@ import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
+// Proteção de boa-fé, não fronteira de segurança: barra os contornos óbvios do Action Guard.
 const BROWSER = /\b(playwright|puppeteer|chromium|selenium|webdriver)\b/i;
-const INTERPRETER = /(^|[\s;&|(])(node|tsx|python3?|py|deno|bun|npx)(\s|$)/i;
-const HTTP_DELETE = /(curl|wget|http|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^\n]*(-X\s*DELETE|--request\s+DELETE|-Method\s+Delete)/i;
+// Interpretador em qualquer forma: caminho, aspas, .exe (node.exe, "C:/.../node").
+const INTERPRETER = /(^|[\s;&|("'`\\/])(node|tsx|python3?|py|deno|bun|npx)(\.exe)?["']?(\s|$)/i;
+// Escrita HTTP direta (DELETE/PUT/PATCH) por cliente de linha de comando, em qualquer grafia de flag.
+const HTTP_WRITE = /(curl|wget|http|Invoke-WebRequest|Invoke-RestMethod|iwr|irm)\b[^\n]*(-X\s*(DELETE|PUT|PATCH)\b|--request[=\s]+(DELETE|PUT|PATCH)\b|-Method[:\s]+(Delete|Put|Patch)\b)/i;
+// Escrita HTTP em código inline (node -e "fetch(..., {method:'DELETE'})", python -c "requests.delete(...)").
+const INLINE_WRITE = /(method\s*:\s*['"](DELETE|PUT|PATCH)['"]|requests\.(delete|put|patch)\s*\()/i;
 
-// Usos legítimos: rodar a suíte de automação/testes e gerenciar o Playwright.
+// Usos legítimos: rodar a suíte de automação/testes e gerenciar o Playwright. O trecho permitido
+// para em ; & | nova linha, $( e crase — nada encadeado escapa junto. --config só de automation/.
+const SAFE_ARGS = '[^;&|\\n`$]*';
 const ALLOWED = [
-  /npx\s+playwright\s+(test|install|show-trace|show-report|codegen\s+--help)\b[^;&|]*/gi,
-  /npx\s+vitest\b[^;&|]*/gi,
+  new RegExp(`npx\\s+playwright\\s+test\\b(?!${SAFE_ARGS}\\s(?:--config|-c)(?:=|\\s+)(?!["']?automation[\\\\/]))${SAFE_ARGS}`, 'gi'),
+  new RegExp(`npx\\s+playwright\\s+(install|show-trace|show-report|codegen\\s+--help)\\b${SAFE_ARGS}`, 'gi'),
+  new RegExp(`npx\\s+vitest\\b${SAFE_ARGS}`, 'gi'),
 ];
 
 const INTERPRETERS = new Set(['node', 'tsx', 'deno', 'bun', 'python', 'python3', 'py']);
@@ -35,12 +43,15 @@ function executedScripts(command) {
 }
 
 export function check(command, cwd = process.cwd()) {
-  if (HTTP_DELETE.test(command)) {
-    return 'DELETE HTTP direto contorna o Action Guard. Exclusões passam por act_approved; limpeza de dados do teste, por cleanup_run.';
+  if (HTTP_WRITE.test(command)) {
+    return 'DELETE/PUT/PATCH HTTP direto contorna o Action Guard. Alterações passam pelo navegador (act/act_approved); limpeza de dados do teste, por cleanup_run.';
   }
   let residual = command;
   for (const re of ALLOWED) residual = residual.replace(re, ' ');
   if (!INTERPRETER.test(residual)) return null;
+  if (INLINE_WRITE.test(residual)) {
+    return 'Escrita HTTP (DELETE/PUT/PATCH) em código inline contorna o Action Guard. Use act_approved ou cleanup_run.';
+  }
 
   if (BROWSER.test(residual)) {
     return 'Operar o navegador por script contorna o Action Guard e a sanitização. Use as ferramentas do MCP novo-qa (navigate, act, verify…). Para automação gerada: npx playwright test.';

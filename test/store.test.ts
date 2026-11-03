@@ -153,6 +153,77 @@ describe('execução', () => {
     expect(() => store.reclassifyScenario(runId, 'CT-001', { status: 'PASSED' as never }, 'tentando virar passed sem verificar')).toThrow(/só entre/);
   });
 
+  it('recomendação não passa do teto calculado pelos cenários', () => {
+    const runId = approvedRun([scenario('CT-001', { priority: 'P0' }), scenario('CT-002', { priority: 'P0' })]);
+    store.startScenario(runId, 'CT-001');
+    store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'ok', passed: true });
+    store.completeScenario(runId, 'CT-001', { status: 'PASSED' });
+    store.completeScenario(runId, 'CT-002', { status: 'BLOCKED', reason: 'massa ausente', classification: 'TEST_DATA_FAILURE' });
+
+    expect(() => store.completeRun(runId, 'APROVADO', 'tudo certo')).toThrow(/APROVADO não permitida.*INCONCLUSIVO.*CT-002/s);
+    expect(store.getRun(runId).status).toBe('EXECUTING');
+    const done = store.completeRun(runId, 'INCONCLUSIVO', 'P0 bloqueado');
+    expect(done).toMatchObject({ status: 'COMPLETED', recommendation: 'INCONCLUSIVO' });
+  });
+
+  it('reclassificar depois de concluído rebaixa a recomendação acima do novo teto', () => {
+    const runId = approvedRun([scenario('CT-001', { priority: 'P0' }), scenario('CT-002', { priority: 'P1' })]);
+    store.startScenario(runId, 'CT-001');
+    store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'ok', passed: true });
+    store.completeScenario(runId, 'CT-001', { status: 'PASSED' });
+    store.startScenario(runId, 'CT-002');
+    store.recordVerification(runId, 'CT-002', { kind: 'ui', description: 'contador', passed: false });
+    store.recordEvidence(runId, 'CT-002', { kind: 'screenshot', path: 'x.png' });
+    store.completeScenario(runId, 'CT-002', { status: 'FAILED', classification: 'UNKNOWN', observed: 'contador zerado' });
+    store.completeRun(runId, 'INCONCLUSIVO', 'falha a investigar');
+
+    store.logEvent(runId, store.getScenario(runId, 'CT-002').id, 'inspect.network', null);
+    const r = store.reclassifyScenario(runId, 'CT-002', { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'contador zerado' }, 'API confirma o bug no contador');
+    expect(r.recommendation).toEqual({ from: 'INCONCLUSIVO', to: 'REPROVADO' });
+    expect(store.getRun(runId).recommendation).toBe('REPROVADO');
+  });
+
+  it('banco recusa status e classificação inválidos mesmo por SQL direto', () => {
+    const runId = approvedRun([scenario('CT-001')]);
+    const id = store.getScenario(runId, 'CT-001').id;
+    expect(() => db.prepare("UPDATE scenarios SET status = 'APROVADO' WHERE id = ?").run(id)).toThrow(/status de cenário inválido/);
+    expect(() => db.prepare("UPDATE scenarios SET classification = 'BUG' WHERE id = ?").run(id)).toThrow(/classificação inválida/);
+    expect(() => db.prepare("INSERT INTO created_data (run_id, resource, cleanup_status, ts) VALUES (?, 'x', 'LIMPO', 'now')").run(runId)).toThrow(/cleanup_status inválido/);
+  });
+
+  it('cenário nunca iniciado não vira FAILED por reclassificação (verificações de outra tentativa não contam)', () => {
+    const runId = approvedRun([scenario('CT-001')]);
+    store.completeScenario(runId, 'CT-001', { status: 'BLOCKED', reason: 'massa ausente', classification: 'TEST_DATA_FAILURE' });
+    expect(() => store.reclassifyScenario(runId, 'CT-001', { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'x' }, 'tentando virar FAILED sem executar'))
+      .toThrow(/nunca foi iniciado/);
+  });
+
+  it('abortar com dado criado pendente fica registrado no evento', () => {
+    const runId = approvedRun([scenario('CT-001')]);
+    store.addCreatedCandidate(runId, null, '/api/x', '9');
+    store.abortRun(runId, 'parar');
+    const ev = db.prepare("SELECT payload FROM events WHERE type = 'run.abort'").get() as { payload: string };
+    expect(JSON.parse(ev.payload)).toMatchObject({ reason: 'parar', pendingData: ['#1 /api/x (9): UNREGISTERED'] });
+  });
+
+  it('agente que rodou fica no run e nas aprovações', () => {
+    store.agent = { client: 'claude-code', version: '2.1', model: 'claude-opus-5-5' };
+    const runId = approvedRun([scenario('CT-001')]);
+    expect(JSON.parse(store.getRun(runId).agent!)).toEqual({ client: 'claude-code', version: '2.1', model: 'claude-opus-5-5' });
+    expect(db.prepare("SELECT agent FROM approvals WHERE run_id = ?").get(runId)).toEqual({ agent: JSON.stringify(store.agent) });
+  });
+
+  it('keep depois de limpeza que falhou exige dizer por que falhou e fica marcado', () => {
+    const runId = approvedRun([scenario('CT-001')]);
+    const id = store.addCreatedCandidate(runId, null, '/api/x', '9');
+    store.registerCreatedData(runId, { id, cleanup: { method: 'api', request: { method: 'DELETE', path: '/api/x/9' }, verify: { path: '/api/x', absentText: 'nove' } } });
+    store.setCleanupStatus(runId, id, 'FAILED', 'DELETE → 500');
+    expect(() => store.registerCreatedData(runId, { id, cleanup: { method: 'keep', reason: 'deixa para lá' } })).toThrow(/limpeza falhou/);
+    const kept = store.registerCreatedData(runId, { id, cleanup: { method: 'keep', reason: 'limpeza falhou: API devolve 500 no DELETE; dev remove pelo banco' } });
+    expect(kept.cleanup_status).toBe('KEPT');
+    expect(db.prepare("SELECT COUNT(*) AS n FROM events WHERE type = 'data.keep_after_failure'").get()).toEqual({ n: 1 });
+  });
+
   it('um cenário por vez; retomar o mesmo é idempotente', () => {
     const runId = approvedRun();
     store.startScenario(runId, 'CT-001');

@@ -34,7 +34,13 @@ export interface ServerDeps {
 
 export function createServer(deps: ServerDeps): McpServer {
   const server = new McpServer({ name: 'novo-qa', version: '0.1.0' });
-  const tool = createRegistrar(server, deps);
+  const tool = createRegistrar(server, {
+    ...deps,
+    currentRun: () => {
+      const status = deps.browser?.status();
+      return status?.open ? status.runId : null;
+    },
+  });
   registerStateTools(tool, deps);
   if (deps.config && deps.db) {
     const full = { ...deps, config: deps.config, db: deps.db, cache: new DigestCache(deps.db, deps.rootDir) };
