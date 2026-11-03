@@ -1,0 +1,700 @@
+[
+  {
+    "route": "/entrar",
+    "action": "viewport",
+    "target": {
+      "viewport": "1440x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1440, height: 900 });",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário', exact: true }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha', exact: true }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Ok, obrigado"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Ok, obrigado' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/visao-geral"
+    },
+    "playwright": "await page.goto('/aluno/visao-geral');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário', exact: true }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha', exact: true }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar', exact: true }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/arquivo"
+    },
+    "playwright": "await page.goto('/aluno/arquivo');",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Aprofundamentos 0",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: /^Aprofundamentos \\d+$/ }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "fill",
+    "target": {
+      "role": "searchbox",
+      "name": "Buscar em Auditoria Privada"
+    },
+    "playwright": "await page.getByRole('searchbox', { name: 'Buscar em Auditoria Privada' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Direito Administrativo",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Adicionar aprofundamento"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Adicionar aprofundamento' }).getByRole('button', { name: 'Direito Administrativo', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "press",
+    "target": {
+      "role": "dialog",
+      "name": "Adicionar aprofundamento"
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Adicionar aprofundamento' }).press('Escape');",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Direito Tributário",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Adicionar aprofundamento"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Adicionar aprofundamento' }).getByRole('button', { name: 'Direito Tributário', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Teoria",
+      "exact": true,
+      "within": {
+        "role": "group",
+        "name": "Tipo"
+      }
+    },
+    "playwright": "await page.getByRole('group', { name: 'Tipo' }).getByRole('button', { name: 'Teoria', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Anotações",
+      "exact": true,
+      "within": {
+        "role": "group",
+        "name": "Tipo"
+      }
+    },
+    "playwright": "await page.getByRole('group', { name: 'Tipo' }).getByRole('button', { name: 'Anotações', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Lei Seca",
+      "exact": true,
+      "within": {
+        "role": "group",
+        "name": "Tipo"
+      }
+    },
+    "playwright": "await page.getByRole('group', { name: 'Tipo' }).getByRole('button', { name: 'Lei Seca', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Jurisprudência",
+      "exact": true,
+      "within": {
+        "role": "group",
+        "name": "Tipo"
+      }
+    },
+    "playwright": "await page.getByRole('group', { name: 'Tipo' }).getByRole('button', { name: 'Jurisprudência', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Questões",
+      "exact": true,
+      "within": {
+        "role": "group",
+        "name": "Tipo"
+      }
+    },
+    "playwright": "await page.getByRole('group', { name: 'Tipo' }).getByRole('button', { name: 'Questões', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "check",
+    "target": {
+      "role": "checkbox",
+      "name": "Conceito de Tributo",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('checkbox', { name: 'Conceito de Tributo', exact: true }).check();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Adicionar",
+      "exact": true,
+      "within": {
+        "role": "region",
+        "name": "Seleção"
+      }
+    },
+    "playwright": "await page.getByRole('region', { name: 'Seleção' }).getByRole('button', { name: 'Adicionar', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Auditoria Privada",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Adicionar aprofundamento"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Adicionar aprofundamento' }).getByRole('button', { name: 'Auditoria Privada', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "check",
+    "target": {
+      "role": "checkbox",
+      "name": "Evidência em Auditoria",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('checkbox', { name: 'Evidência em Auditoria', exact: true }).check();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Tecnologia da Informação",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Adicionar aprofundamento"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Adicionar aprofundamento' }).getByRole('button', { name: 'Tecnologia da Informação', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Adicionar",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Adicionar', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "check",
+    "target": {
+      "role": "checkbox",
+      "name": "Modelo OSI",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('checkbox', { name: 'Modelo OSI', exact: true }).check();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "row",
+      "name": "Abrir aprofundamento DTRIB.WSF.11.T001",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento DTRIB\\.WSF\\.\\d+\\.T\\d+$/ }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Finalizar",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Direito Tributário"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Direito Tributário' }).getByRole('button', { name: 'Finalizar', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Minutos",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Minutos', exact: true }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Salvar",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Registro de tempo"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Registro de tempo' }).getByRole('button', { name: 'Salvar', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Registro",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Registro', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Editar registro",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Editar registro', exact: true }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "press",
+    "target": {
+      "role": "dialog",
+      "name": "Direito Tributário"
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Direito Tributário' }).press('Escape');",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "row",
+      "name": "Abrir aprofundamento AUD.WSF.11.A001",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento AUD\\.WSF\\.\\d+\\.A\\d+$/ }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Remover",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Auditoria Privada"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Auditoria Privada' }).getByRole('button', { name: 'Remover', exact: true }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Manter",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Manter', exact: true }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Remover",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Remover este aprofundamento?"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Remover este aprofundamento?' }).getByRole('button', { name: 'Remover', exact: true }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "row",
+      "name": "Abrir aprofundamento TINFO.WSF.11.T002",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento TINFO\\.WSF\\.\\d+\\.T\\d+$/ }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Remover",
+      "exact": true,
+      "within": {
+        "role": "dialog",
+        "name": "Tecnologia da Informação"
+      }
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Tecnologia da Informação' }).getByRole('button', { name: 'Remover', exact: true }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "1440x900"
+    },
+    "playwright": "await page.setViewportSize({ width: 1440, height: 900 });",
+    "scenario": "(setup)",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "hover",
+    "target": {
+      "role": "button",
+      "name": "Manter",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Manter', exact: true }).hover();",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "press",
+    "target": {
+      "role": "dialog",
+      "name": "Tecnologia da Informação"
+    },
+    "playwright": "await page.getByRole('dialog', { name: 'Tecnologia da Informação' }).press('Escape');",
+    "scenario": "EXP-002",
+    "validatedIn": [
+      "GURUJA-9032-20261102T181104"
+    ],
+    "lastSeen": "2026-11-02"
+  }
+]

@@ -3,14 +3,15 @@
     "route": "/",
     "action": "viewport",
     "target": {
-      "viewport": "1366x900"
+      "viewport": "1920x1080"
     },
-    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
+    "playwright": "await page.setViewportSize({ width: 1920, height: 1080 });",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9200-20261102T214950",
       "GURUJA-9200-20261031T112241"
     ],
-    "lastSeen": "2026-10-31"
+    "lastSeen": "2026-11-02"
   },
   {
     "route": "/entrar",
@@ -227,19 +228,6 @@
     "lastSeen": "2026-10-31"
   },
   {
-    "route": "/",
-    "action": "viewport",
-    "target": {
-      "viewport": "390x844"
-    },
-    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9200-20261031T112241"
-    ],
-    "lastSeen": "2026-10-31"
-  },
-  {
     "route": "/esqueci-a-senha",
     "action": "navigate",
     "target": {
@@ -259,32 +247,6 @@
       "viewport": "768x1024"
     },
     "playwright": "await page.setViewportSize({ width: 768, height: 1024 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9200-20261031T112241"
-    ],
-    "lastSeen": "2026-10-31"
-  },
-  {
-    "route": "/esqueci-a-senha",
-    "action": "viewport",
-    "target": {
-      "viewport": "1366x900"
-    },
-    "playwright": "await page.setViewportSize({ width: 1366, height: 900 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9200-20261031T112241"
-    ],
-    "lastSeen": "2026-10-31"
-  },
-  {
-    "route": "/esqueci-a-senha",
-    "action": "viewport",
-    "target": {
-      "viewport": "390x844"
-    },
-    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
     "scenario": "CT-010",
     "validatedIn": [
       "GURUJA-9200-20261031T112241"
