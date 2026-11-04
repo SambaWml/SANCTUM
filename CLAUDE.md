@@ -9,12 +9,12 @@ Agente local de QA. Você (Claude) é o QA; o código em `src/` fornece ferramen
 - Comportamento observado não vira regra de negócio sem fonte (proveniência).
 
 ## Uso
-- `/qa CARD [--explore] [--automate]`, `/qa-resume CARD`, `/retest CARD`, `/automate CARD` — skills em `.claude/skills/`; executa em lotes pelo subagente `test-executor` (`.claude/agents/`).
+- `/qa CARD [--explore] [--automate]` ou `/qa <URL> --explore` (missão sem card, qualquer sistema), `/qa-resume CARD`, `/retest CARD`, `/automate CARD` — skills em `.claude/skills/`; executa em lotes pelo subagente `test-executor` (`.claude/agents/`).
 - Ambiente novo: cadastrar em `config/environments.yaml`, senha no `.env` (com aspas se tiver `#`), `config_reload`.
 - Saídas: `runs/` (evidências), `reports/` (relatórios), `knowledge/<projeto>/` (execution knowledge e `_staging/` para revisão).
 
 ## Desenvolvimento
-- `npm test` · `npm run typecheck` · `npm run doctor` · `npm run storage` (retenção, simulação) · `npm run knowledge <projeto>` (propostas a revisar)
+- `npm test` · `npm run typecheck` · `npm run doctor` · `npm run storage` (retenção, simulação) · `npm run knowledge <projeto>` (propostas a revisar) · `npm run live` (Central de Caça em http://127.0.0.1:4777: acompanha os agentes e lança missões do Claude pela tela)
 - TypeScript ESM, imports com extensão `.ts`, executado via `tsx`. Testes em `test/` (vitest).
 - SQLite só via `src/state/sqlite.ts`. Toda saída para o modelo passa por `src/security/redact.ts`.
 - Construção por milestones (ARCHITECTURE.md §12): implementar → testar → validar → parar para aprovação.

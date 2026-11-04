@@ -8,7 +8,8 @@ as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 
 - Configuração do Codex: `.codex/config.toml`; skills: `.agents/skills/`.
   Preserve `.claude/`, `CLAUDE.md` e `.mcp.json`: continuam atendendo o Claude.
-- Antes de QA, confirme que as ferramentas `novo-qa` e Jira estão disponíveis.
+- Antes de QA, confirme que as ferramentas `novo-qa` estão disponíveis (o `novo-qa` integra
+  leitura do Jira via `digest_get`, `getJiraIssue` e TWG local, ou Atlassian MCP).
   Se faltarem, explique a conexão necessária; não simule resultados nem opere
   o app por shell, browser externo, CUA, scripts ad-hoc ou outro MCP.
 - Nunca declare PASSED sem verificação executada e registrada por `verify`.
@@ -23,6 +24,12 @@ as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 - O hook `.codex/hooks/guard-shell.mjs` reutiliza o bloqueio de shell do Claude.
   Não presuma que hooks locais estejam ativos em clientes com orquestração cloud.
   A obrigação de operar o app só pelo `novo-qa` vale em todos os clientes.
+- Siga o roteiro da skill etapa por etapa. Não crie scripts nem arquivos avulsos
+  (na raiz ou fora dela) para consultar o banco, o Jira ou montar relatórios: use
+  `run_status`, `report_build`, `digest_*` e o Atlassian MCP.
+- Bug que o usuário mandar abrir: `jira_create_issue` e, logo depois, `bug_evidence`
+  para montar a pasta do bug (`runs/_evidencias/<card>-sub-bugs/<BUG> <título>/`).
+  Roteiro em `.claude/skills/qa/references/execute-and-close.md` ("Bug no Jira").
 - Não publique comentários no Jira sem pedido explícito. Observações não viram
   regras de negócio sem fonte documental.
 

@@ -23,3 +23,12 @@ Recomendação: REPROVADO se houver PRODUCT_BUG em P0/P1 ou critério de aceite 
 - Card de bug criado ou achado reclassificado depois: chame `report_build` de novo com `summaries` só dos códigos que mudaram (somam por código).
 
 Mostre o resumo, os caminhos do relatório (`.md` e `.html`) e as dúvidas para o PO, e abra o HTML no navegador do usuário (Windows: `start "" "<caminho do .html>"`; macOS: `open`; Linux: `xdg-open`). Comentar no Jira só se o usuário pedir (o rascunho está no relatório).
+
+## Bug no Jira (só quando o usuário pedir)
+Para cada bug que o usuário mandar abrir:
+1. Confira antes contra o card: o comportamento contraria um critério ou regra escrita? E a evidência mostra mesmo o defeito (meta/tela/usuário certos)? Se o print não mostra a parte do problema, veja o vídeo antes de afirmar.
+2. `jira_create_issue` (tipo e pai que o usuário indicar; sub-bug com `parent`): título `[Tela] o que está errado (CA/RN)`; descrição com como ver (passo a passo, usuário de teste), o que acontece e o esperado pelo card. Sem citar a ferramenta de automação, sem trace.
+3. Logo em seguida, `bug_evidence(runId, issueKey, title, codes, frames)`: monta `runs/_evidencias/<card>-sub-bugs/<BUG> <título>/` com prints, quadros do vídeo, trecho do vídeo com cursor, respostas de API e LEIA-ME. Em `frames`, o momento exato em que o defeito aparece em cada cenário (`offsetSec` desde o início do cenário no vídeo), com nome que diga o que mostra. Um bug por pasta; nunca trace.
+4. `report_build` com `summaries`/`explanations` dos códigos com o `jira` novo, e mostre ao usuário os links dos cards e as pastas (abra a pasta no Explorer).
+
+Durante a execução, prefira prints que mostrem o defeito (`screenshot` com `scope` na região ou página inteira), não só o topo da tela.
