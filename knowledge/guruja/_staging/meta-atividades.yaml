@@ -51,3 +51,17 @@ proposals:
     source:
       type: run
       reference: GURUJA-9233-20261101T183515
+  - statement: Aprofundamento criado entra no dia de hoje do calendário da Meta sem redistribuir ou afetar atividades/contadores já existentes (RN39); indicadores da Meta (tempo, questões, acertos, média diária) somam os valores dos aprofundamentos cumpridos junto com as atividades normais (RN81).
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9032-20261104T113228
+  - statement: Contadores do card 'Meta atual', da aba Aprofundamentos e da barra de vagas ('{N} de 20 vagas') contam apenas itens pendentes e permanecem consistentes entre si após criar e concluir aprofundamentos; o código sequencial (RN05) incrementa sem repetição por disciplina mesmo sem itens visíveis anteriores.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9032-20261104T113228
