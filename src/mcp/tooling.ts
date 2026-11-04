@@ -11,6 +11,8 @@ import { DigestError } from '../sources/digest.ts';
 import type { Redactor } from '../security/redact.ts';
 import { SecretError } from '../security/secrets.ts';
 import { StateError, type StateStore } from '../state/store.ts';
+import type { Db } from '../state/db.ts';
+import { consumeGrant } from '../live/prompts.ts';
 
 export type Shape = Record<string, z.ZodType>;
 export type ToolHandler<S extends Shape> = (args: z.infer<z.ZodObject<S>>) => unknown;
@@ -20,6 +22,9 @@ export type RegisterTool = <S extends Shape>(name: string, description: string, 
 export class ToolContent {
   constructor(readonly content: CallToolResult['content']) {}
 }
+
+/** Exigem aprovação humana a cada chamada (plano, ação de risco, escrita no Jira). */
+const SENSITIVE = new Set(['plan_approve', 'act_approved', 'jira_create_issue', 'jira_comment', 'jira_transition']);
 
 /** Ferramentas que operam a sessão do navegador (sem runId nos argumentos). */
 const SESSION_TOOLS = /^(navigate|act|act_approved|verify|snapshot|screenshot|network|network_simulate|network_simulate_clear|console|browser_viewport|browser_save_auth|browser_close)$/;
@@ -32,7 +37,7 @@ const KNOWN_ERRORS = [StateError, SecretError, BrowserError, TargetError, GuardE
  */
 export function createRegistrar(
   server: McpServer,
-  deps: { store: StateStore; redactor: Redactor; requireHumanApproval?: boolean; currentRun?: () => string | null },
+  deps: { store: StateStore; redactor: Redactor; db?: Db; requireHumanApproval?: boolean; currentRun?: () => string | null },
 ): RegisterTool {
   const { store, redactor } = deps;
   return (name, description, shape, handler) => {
@@ -44,6 +49,7 @@ export function createRegistrar(
         ...(client?.name || process.env.NOVO_QA_CLIENT ? { client: client?.name ?? process.env.NOVO_QA_CLIENT } : {}),
         ...(client?.version ? { version: client.version } : {}),
         ...(process.env.NOVO_QA_MODEL ? { model: process.env.NOVO_QA_MODEL } : {}),
+        ...(process.env.NOVO_QA_MISSION ? { mission: process.env.NOVO_QA_MISSION } : {}),
       };
       const runId = (args as { runId?: unknown }).runId;
       // Ferramenta de navegador não recebe runId: vale o run da sessão aberta (base de métricas e timeline).
@@ -51,7 +57,7 @@ export function createRegistrar(
       const eventId = store.logEvent(scoped, null, `tool.${name}`, null);
       const started = Date.now();
       try {
-        if (deps.requireHumanApproval && (name === 'plan_approve' || name === 'act_approved')) {
+        if (deps.requireHumanApproval && SENSITIVE.has(name)) {
           if (!server.server.getClientCapabilities()?.elicitation?.form) {
             throw new GuardError('confirmação humana indisponível: este cliente precisa oferecer MCP elicitation form; ação bloqueada');
           }
@@ -66,6 +72,17 @@ export function createRegistrar(
           });
           if (result.action !== 'accept' || result.content?.confirm !== true) {
             throw new GuardError('operação não autorizada pelo usuário; nenhuma ação executada');
+          }
+        }
+        // Missão do Antigravity lançada pela Central de Caça: plano, ação de risco e escrita no Jira
+        // só com a concessão única dada no painel (o modo sem terminal dele não pergunta ao usuário).
+        // Sem run (ex.: Jira com o navegador fechado), vale a missão do Antigravity em andamento.
+        if (SENSITIVE.has(name) && deps.db && /antigravity/i.test(store.agent?.client ?? '')) {
+          const runId = typeof (args as { runId?: unknown }).runId === 'string' ? (args as { runId: string }).runId : deps.currentRun?.() ?? null;
+          const mission = (runId ? deps.db.prepare(`SELECT id FROM missions WHERE run_id = ? AND agent = 'antigravity' AND status IN ('RUNNING','WAITING')`).get(runId) : undefined)
+            ?? deps.db.prepare(`SELECT id FROM missions WHERE agent = 'antigravity' AND status = 'RUNNING' ORDER BY updated_at DESC LIMIT 1`).get() as { id: string } | undefined;
+          if (mission && !consumeGrant(deps.db, (mission as { id: string }).id, name)) {
+            throw new GuardError(`${name} sem permissão do usuário no painel da missão ${(mission as { id: string }).id}; peça e encerre o turno`);
           }
         }
         const result = await handler(args);

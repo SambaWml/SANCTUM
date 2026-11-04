@@ -1,6 +1,7 @@
 {
+  "statusLine": { "type": "command", "command": "node .claude/statusline.mjs" },
   "permissions": {
-    "ask": ["mcp__novo-qa__plan_approve", "mcp__novo-qa__act_approved"]
+    "ask": ["mcp__novo-qa__plan_approve", "mcp__novo-qa__act_approved", "mcp__novo-qa__jira_create_issue", "mcp__novo-qa__jira_comment", "mcp__novo-qa__jira_transition"]
   },
   "hooks": {
     "PreToolUse": [

@@ -10,7 +10,9 @@ import { createRegistrar } from './tooling.ts';
 import { registerAutomationTools } from './tools/automation.ts';
 import { registerBrowserTools } from './tools/browser.ts';
 import { registerContextTools } from './tools/context.ts';
+import { registerJiraTools } from './tools/jira.ts';
 import { registerQaTools } from './tools/qa.ts';
+import { registerPermissionPrompt } from './tools/permission.ts';
 import { registerStateTools } from './tools/state.ts';
 
 export interface ServerDeps {
@@ -46,8 +48,10 @@ export function createServer(deps: ServerDeps): McpServer {
     const full = { ...deps, config: deps.config, db: deps.db, cache: new DigestCache(deps.db, deps.rootDir) };
     registerContextTools(tool, full);
     registerQaTools(tool, full);
+    registerJiraTools(tool, { db: deps.db, rootDir: deps.rootDir });
     registerAutomationTools(tool, full);
   }
   if (deps.browser) registerBrowserTools(tool, deps.browser, deps.store);
+  if (deps.db) registerPermissionPrompt(server, { db: deps.db, redactor: deps.redactor, store: deps.store });
   return server;
 }

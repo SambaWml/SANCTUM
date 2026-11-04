@@ -1,0 +1,1703 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Central de Caça · NOVO QA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0c0d1c; --bg-glass: rgba(18, 20, 39, 0.75); --panel: #161830; --panel2: #1e2142;
+  --line: rgba(255, 255, 255, 0.08); --line-bright: rgba(169, 139, 255, 0.35);
+  --fg: #f3f4fc; --muted: #9aa2c8; --faint: #636b94;
+  --lime: #38ef7d; --red: #ff5370; --yellow: #ffd166; --blue: #4cc9f0; --purple: #9d4edd;
+  --purple-glow: rgba(157, 78, 221, 0.28); --orange: #ff9f1c;
+  --title-font: 'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif;
+  --body-font: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --code: 'JetBrains Mono', ui-monospace, monospace;
+  --r: 20px; --r-sm: 12px;
+  --shadow: 0 16px 40px rgba(4, 6, 18, 0.5);
+  --shadow-sm: 0 4px 14px rgba(4, 6, 18, 0.3);
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; color: var(--fg); font-family: var(--body-font); font-size: 14.5px; min-height: 100vh;
+  background:
+    radial-gradient(1100px 600px at 5% -5%, rgba(157, 78, 221, 0.22), transparent 60%),
+    radial-gradient(900px 500px at 95% 5%, rgba(76, 201, 240, 0.16), transparent 60%),
+    radial-gradient(800px 500px at 50% 105%, rgba(255, 83, 112, 0.12), transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+.scan {
+  pointer-events: none; position: fixed; inset: 0; z-index: 0;
+  background-image: radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+header {
+  display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
+  padding: 14px 28px; background: var(--bg-glass); position: sticky; top: 0; z-index: 30;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--line);
+}
+h1 {
+  font-family: var(--title-font); font-weight: 700; font-size: 22px; margin: 0; letter-spacing: 0.2px;
+  background: linear-gradient(120deg, #ffe28a, #ff7a93 45%, #b692fe);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+h1 small {
+  display: block; color: var(--muted); font-family: var(--body-font); font-weight: 600;
+  font-size: 11.5px; margin-top: 2px; letter-spacing: 0.4px; -webkit-text-fill-color: var(--muted);
+}
+.score { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line);
+  padding: 6px 13px; border-radius: 999px; white-space: nowrap; font-weight: 600; font-size: 13.5px;
+  transition: all 0.2s ease;
+}
+.chip:hover { border-color: rgba(255, 255, 255, 0.15); background: rgba(255, 255, 255, 0.08); }
+.chip b { color: var(--yellow); }
+.controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+button {
+  font-family: var(--title-font); font-weight: 600; font-size: 13.5px; cursor: pointer; border: 0;
+  padding: 9px 18px; color: #082410;
+  background: linear-gradient(135deg, #4ef289, #20bf55);
+  box-shadow: 0 4px 14px rgba(32, 191, 85, 0.3);
+  border-radius: var(--r-sm);
+  transition: transform 0.1s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+button:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 6px 18px rgba(32, 191, 85, 0.4); }
+button:active { transform: translateY(1px); box-shadow: 0 2px 6px rgba(32, 191, 85, 0.3); }
+button:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; filter: none; }
+button.ghost {
+  background: rgba(255, 255, 255, 0.07); color: var(--fg);
+  border: 1px solid rgba(255, 255, 255, 0.09); box-shadow: none;
+}
+button.ghost:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.2); }
+button.danger {
+  background: linear-gradient(135deg, #ff6b81, #ff3355); color: #fff;
+  box-shadow: 0 4px 14px rgba(255, 51, 85, 0.35);
+}
+button.danger:hover { box-shadow: 0 6px 18px rgba(255, 51, 85, 0.45); }
+button.purple {
+  background: linear-gradient(135deg, #c77dff, #7b2cbf); color: #fff;
+  box-shadow: 0 4px 14px rgba(123, 44, 191, 0.35);
+}
+button.purple:hover { box-shadow: 0 6px 18px rgba(123, 44, 191, 0.45); }
+button.notify-btn.on { border-color: var(--lime); color: var(--lime); background: rgba(56, 239, 125, 0.12); }
+
+main { padding: 24px 28px 48px; display: grid; gap: 24px; max-width: 1440px; margin: 0 auto; position: relative; z-index: 1; }
+@media (max-width: 640px) { header, main { padding-left: 16px; padding-right: 16px; } }
+h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: var(--fg); margin: 0 0 14px; letter-spacing: 0.3px; }
+
+/* ── cartões base ── */
+.box {
+  background: linear-gradient(165deg, rgba(30, 33, 66, 0.82), rgba(20, 22, 44, 0.88));
+  border: 1px solid var(--line); border-radius: var(--r); padding: 20px;
+  position: relative; box-shadow: var(--shadow);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  transition: border-color 0.2s ease;
+}
+.box:hover { border-color: rgba(255, 255, 255, 0.12); }
+
+/* ── comando & nova missão ── */
+.command { display: grid; grid-template-columns: 390px 1fr; gap: 24px; }
+@media (max-width: 1020px) { .command { grid-template-columns: 1fr; } }
+.mission-form label { display: block; font-size: 12.5px; font-weight: 700; color: var(--muted); margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.mission-form input, .mission-form textarea {
+  width: 100%; font-family: var(--body-font); font-size: 14.5px;
+  background: rgba(10, 11, 24, 0.45); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 11px 14px;
+  outline: none; transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+.mission-form input:focus, .mission-form textarea:focus {
+  border-color: var(--purple); background: rgba(10, 11, 24, 0.65);
+  box-shadow: 0 0 0 4px var(--purple-glow);
+}
+.mission-form input { font-family: var(--code); font-size: 13.5px; }
+.mission-form textarea { height: 68px; resize: vertical; }
+.seg {
+  display: flex; gap: 6px; flex-wrap: wrap; background: rgba(10, 11, 24, 0.35);
+  padding: 4px; border-radius: 14px; border: 1px solid var(--line);
+}
+.seg span {
+  cursor: pointer; padding: 7px 13px; border-radius: 10px; user-select: none;
+  font-weight: 600; font-size: 13.5px; color: var(--muted); transition: all 0.2s ease;
+}
+.seg span:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+.seg span.on {
+  background: linear-gradient(135deg, #ffffff, #e2e4ff); color: #161830;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); font-weight: 700;
+}
+.mission-form .go { margin-top: 18px; width: 100%; font-size: 15px; padding: 13px; }
+
+/* ── precisa de você ── */
+.needs-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.needs-count {
+  font-family: var(--title-font); font-weight: 700; font-size: 12.5px;
+  background: linear-gradient(135deg, #c77dff, #7b2cbf); color: #fff;
+  padding: 4px 14px; border-radius: 999px; box-shadow: 0 4px 12px rgba(123, 44, 191, 0.35);
+}
+.needs-count.zero { background: rgba(255, 255, 255, 0.08); color: var(--muted); box-shadow: none; }
+.needs { display: grid; gap: 12px; }
+.needs .empty {
+  color: var(--muted); text-align: center; padding: 32px 20px; font-size: 14.5px;
+  border: 2px dashed rgba(255, 255, 255, 0.09); border-radius: 16px;
+}
+.ask {
+  border: 1px solid rgba(157, 78, 221, 0.45);
+  background: linear-gradient(135deg, rgba(157, 78, 221, 0.15), rgba(22, 24, 48, 0.75) 65%);
+  border-radius: 16px; padding: 16px; display: flex; gap: 14px; align-items: flex-start;
+  animation: glow 2s infinite, enter 0.35s ease-out;
+}
+.ask.red {
+  border-color: rgba(255, 83, 112, 0.55);
+  background: linear-gradient(135deg, rgba(255, 83, 112, 0.16), rgba(22, 24, 48, 0.75) 65%);
+}
+.ask.plan {
+  border-color: rgba(76, 201, 240, 0.5);
+  background: linear-gradient(135deg, rgba(76, 201, 240, 0.14), rgba(22, 24, 48, 0.75) 65%);
+}
+@keyframes glow { 50% { box-shadow: 0 0 0 5px rgba(157, 78, 221, 0.1), 0 10px 32px rgba(157, 78, 221, 0.22); } }
+@keyframes enter { from { transform: translateY(-8px) scale(0.99); opacity: 0; } to { transform: none; opacity: 1; } }
+.ask .ic {
+  font-size: 26px; width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08); display: grid; place-items: center; flex: none;
+}
+.ask .body { flex: 1; min-width: 0; }
+.ask .kind { font-family: var(--title-font); font-weight: 700; font-size: 11.5px; letter-spacing: 0.8px; margin-bottom: 4px; text-transform: uppercase; }
+.ask.red .kind { color: var(--red); } .ask.plan .kind { color: var(--blue); } .ask.q .kind { color: var(--purple); }
+.ask .who { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+.ask .acts { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.ask .acts button { font-size: 13px; padding: 7px 14px; }
+
+/* ── missões do painel & chat direto ── */
+.mtabs {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  background: rgba(10, 11, 24, 0.35); padding: 4px; border-radius: 14px; width: fit-content; border: 1px solid var(--line);
+}
+.mtabs button { font-size: 13px; padding: 7px 15px; background: none; color: var(--muted); box-shadow: none; border-radius: 10px; }
+.mtabs button:hover { color: var(--fg); }
+.mtabs button.on { background: var(--fg); color: #14162e; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
+.mtabs button b { margin-left: 5px; opacity: 0.8; font-family: var(--code); }
+.mempty { color: var(--muted); font-size: 14px; padding: 16px 8px; }
+
+.mission-card {
+  border: 1px solid var(--line); border-radius: 18px; padding: 18px;
+  background: linear-gradient(180deg, rgba(26, 28, 56, 0.65), rgba(18, 20, 40, 0.75));
+  box-shadow: var(--shadow-sm); transition: border-color 0.25s, box-shadow 0.25s;
+}
+.mission-card + .mission-card { margin-top: 16px; }
+.mission-card.waiting { border-color: rgba(157, 78, 221, 0.7); box-shadow: 0 0 0 4px var(--purple-glow), var(--shadow); }
+.mission-card.failed { border-color: rgba(255, 83, 112, 0.6); }
+
+.mhead { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
+.mhead .mtarget { font-family: var(--code); font-size: 14px; font-weight: 700; display: inline-flex; align-items: center; gap: 6px; }
+.jira-link { color: var(--blue); text-decoration: none; font-size: 11px; padding: 2px 6px; background: rgba(76, 201, 240, 0.12); border-radius: 6px; transition: background 0.15s; }
+.jira-link:hover { background: rgba(76, 201, 240, 0.25); text-decoration: underline; }
+.mkind, .mrun { color: var(--muted); font-size: 12px; font-weight: 600; }
+.mtime {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--code); font-size: 11.5px; font-weight: 700;
+  color: var(--yellow); background: rgba(255, 209, 102, 0.12);
+  border: 1px solid rgba(255, 209, 102, 0.3); border-radius: 6px;
+  padding: 2px 7px; margin-left: 6px; white-space: nowrap;
+}
+.mrun { font-family: var(--code); }
+.state { font-family: var(--title-font); font-weight: 700; font-size: 11.5px; padding: 5px 11px; border-radius: 999px; background: rgba(255, 255, 255, 0.08); white-space: nowrap; letter-spacing: 0.3px; }
+.state.running { background: rgba(76, 201, 240, 0.15); color: var(--blue); border: 1px solid rgba(76, 201, 240, 0.3); }
+.state.waiting { background: rgba(157, 78, 221, 0.2); color: #d0a4ff; border: 1px solid rgba(157, 78, 221, 0.4); animation: pulse 1.4s infinite; }
+.state.done, .state.aprovado, .state.pass { background: rgba(56, 239, 125, 0.18); color: var(--lime); border: 1px solid rgba(56, 239, 125, 0.4); box-shadow: 0 0 12px rgba(56, 239, 125, 0.2); font-weight: 800; }
+.state.failed, .state.reprovado, .state.bug { background: rgba(255, 83, 112, 0.22); color: var(--red); border: 1px solid rgba(255, 83, 112, 0.5); box-shadow: 0 0 12px rgba(255, 83, 112, 0.25); font-weight: 800; }
+.state.inconclusivo, .state.review { background: rgba(255, 209, 102, 0.2); color: var(--yellow); border: 1px solid rgba(255, 209, 102, 0.45); }
+.rep-btn {
+  background: linear-gradient(135deg, #4cc9f0, #4361ee) !important;
+  color: #fff !important; font-weight: 700 !important; border: 0 !important;
+  box-shadow: 0 4px 14px rgba(67, 97, 238, 0.4) !important;
+  border-radius: 10px; cursor: pointer; padding: 7px 14px; font-size: 12.5px;
+  transition: all 0.2s ease;
+}
+.rep-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(67, 97, 238, 0.55) !important; }
+.mstop { margin-left: auto; display: flex; gap: 6px; }
+
+/* ── seção de conversa direta (chat) ── */
+.mcard-views { display: flex; gap: 6px; margin: 12px 0 8px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+.mview-btn { background: none; box-shadow: none; color: var(--muted); font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px; border: 1px solid transparent; }
+.mview-btn:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
+.mview-btn.on { color: var(--fg); background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.12); font-weight: 700; }
+
+.chat-container {
+  display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto;
+  padding: 10px 4px; scrollbar-width: thin;
+}
+.chat-bubble {
+  max-width: 86%; border-radius: 16px; padding: 12px 16px; font-size: 13.8px; line-height: 1.5;
+  animation: enter 0.25s ease-out; position: relative; word-break: break-word;
+}
+.chat-bubble.user {
+  align-self: flex-end; background: linear-gradient(135deg, #5345b5, #3f328f);
+  color: #fff; border-bottom-right-radius: 4px; box-shadow: 0 4px 14px rgba(63, 50, 143, 0.35);
+}
+.chat-bubble.agent {
+  align-self: flex-start; background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line); border-left: 3px solid var(--purple);
+  color: var(--fg); border-bottom-left-radius: 4px;
+}
+.chat-bubble.agent.error { border-left-color: var(--red); background: rgba(255, 83, 112, 0.08); }
+.chat-bubble.agent.thinking {
+  background: rgba(157, 78, 221, 0.08); border-left-color: var(--yellow);
+  color: var(--muted); font-style: italic; display: flex; align-items: center; gap: 10px;
+}
+.dots { display: inline-flex; gap: 4px; }
+.dots span { width: 6px; height: 6px; border-radius: 50%; background: var(--yellow); animation: dotPulse 1.2s infinite ease-in-out; }
+.dots span:nth-child(2) { animation-delay: 0.2s; }
+.dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes dotPulse { 0%, 100% { transform: scale(0.6); opacity: 0.4; } 50% { transform: scale(1.1); opacity: 1; } }
+
+.chat-meta { font-size: 11px; font-weight: 700; margin-bottom: 4px; display: flex; gap: 8px; align-items: baseline; opacity: 0.85; }
+.chat-meta .ts { font-family: var(--code); font-weight: 500; font-size: 10.5px; opacity: 0.7; }
+.chat-text { white-space: pre-wrap; }
+
+/* Destaque de aprovação de plano no chat */
+.plan-hero {
+  background: linear-gradient(135deg, rgba(76, 201, 240, 0.18), rgba(157, 78, 221, 0.18));
+  border: 1px solid rgba(76, 201, 240, 0.4); border-radius: 14px; padding: 14px 16px; margin: 8px 0;
+}
+.plan-hero h4 { margin: 0 0 6px; font-family: var(--title-font); font-size: 14px; color: var(--blue); }
+.plan-hero p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.plan-hero .acts { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.chat-input-row { display: flex; gap: 8px; margin-top: 12px; align-items: flex-end; }
+.chat-input-row textarea {
+  flex: 1; min-height: 52px; max-height: 140px; font-family: var(--body-font); font-size: 14px;
+  background: rgba(10, 11, 24, 0.55); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 14px; resize: vertical; outline: none;
+  transition: border-color 0.2s;
+}
+.chat-input-row textarea:focus { border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-glow); }
+.chat-input-row button { padding: 11px 18px; height: 52px; white-space: nowrap; flex: none; font-size: 13.5px; }
+.working-btn { opacity: 0.88; border-color: rgba(255, 209, 102, 0.4) !important; color: var(--yellow) !important; }
+
+.merr {
+  display: none; margin-top: 8px; padding: 8px 12px; border-radius: 10px;
+  background: rgba(255, 83, 112, 0.12); border: 1px solid rgba(255, 83, 112, 0.35);
+  color: var(--red); font-size: 13px; font-weight: 500; animation: enter 0.2s ease-out;
+}
+.merr.on { display: block; }
+
+/* ── feed de logs ── */
+.mfeed {
+  display: block !important; max-height: 200px; overflow: auto; margin-top: 10px; padding: 8px 12px;
+  background: rgba(8, 9, 20, 0.55); border-radius: 12px; font-family: var(--code); font-size: 12px; line-height: 1.6;
+  border: 1px solid var(--line);
+}
+.mfeed .t { color: var(--muted); margin-right: 8px; }
+
+/* ── caçadores (runs ativos) ── */
+.hunters-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin: 18px 0 10px; flex-wrap: wrap; gap: 10px; padding: 0 4px;
+}
+.hunters { display: grid; grid-template-columns: repeat(auto-fit, minmax(580px, 1fr)); gap: 24px; }
+@media (max-width: 640px) { .hunters { grid-template-columns: 1fr; } }
+.hunter {
+  background: linear-gradient(165deg, rgba(30, 33, 66, 0.88), rgba(18, 20, 42, 0.92));
+  border: 1px solid var(--line); border-radius: 22px; padding: 20px; position: relative; overflow: hidden;
+  box-shadow: var(--shadow); transition: border-color 0.2s;
+}
+.hunter::before {
+  content: ""; position: absolute; inset: 0 0 auto; height: 4px;
+  background: linear-gradient(90deg, var(--purple), var(--blue), var(--lime)); opacity: 0.85;
+}
+.hunter.alert { animation: flash 0.9s 3; }
+@keyframes flash { 50% { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255, 83, 112, 0.25), 0 0 35px rgba(255, 83, 112, 0.35); } }
+
+.top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.avatar {
+  width: 72px; height: 72px;
+  background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; display: grid; place-items: center;
+  position: relative; flex: none; box-shadow: var(--shadow-sm);
+}
+.avatar svg { width: 56px; height: 56px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
+@keyframes float { 50% { transform: translateY(-4px) rotate(-2deg); } }
+.bubble {
+  position: absolute; top: -10px; right: -10px; font-size: 16px; background: #fff;
+  border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center;
+  animation: bob 1.6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+@keyframes bob { 50% { transform: translateY(-3px); } }
+.who2 { flex: 1; min-width: 0; }
+.who2 .name { font-family: var(--title-font); font-weight: 700; font-size: 17px; }
+.who2 .lvl { color: var(--muted); font-size: 12.5px; margin: 2px 0 5px; font-weight: 600; }
+.xp { height: 7px; background: rgba(0,0,0,0.35); border-radius: 999px; overflow: hidden; }
+.xp i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--lime)); border-radius: 999px; transition: width 0.8s cubic-bezier(0.3, 1.3, 0.5, 1); }
+.mission { margin-top: 6px; font-size: 13.5px; }
+.mission b { color: var(--blue); font-family: var(--code); font-size: 13px; }
+
+.phases { display: flex; align-items: center; margin: 16px 0 8px; flex-wrap: wrap; gap: 5px; }
+.ph {
+  font-family: var(--title-font); font-weight: 700; font-size: 11px; padding: 5px 11px;
+  border-radius: 999px; color: var(--muted); background: rgba(255, 255, 255, 0.05);
+  letter-spacing: 0.3px; transition: all 0.3s ease;
+}
+.ph.done { color: #082410; background: var(--lime); font-weight: 700; }
+.ph.now { color: #3a2a00; background: var(--yellow); animation: pulse 1.2s infinite; font-weight: 700; }
+.ph.wait { color: #fff; background: var(--purple); animation: pulse 0.9s infinite; font-weight: 700; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.12); filter: brightness(1.15); } }
+.arrow { color: var(--faint); font-size: 10px; }
+
+.grid2 { display: grid; grid-template-columns: 1.15fr 1fr; gap: 14px; margin-top: 12px; }
+@media (max-width: 900px) { .grid2 { grid-template-columns: 1fr; } }
+.inner { background: rgba(10, 11, 24, 0.35); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.inner h3 { font-family: var(--title-font); font-weight: 700; font-size: 12px; color: var(--muted); margin: 0 0 10px; letter-spacing: 0.8px; text-transform: uppercase; }
+
+/* ── mapa de cenários com tooltip flutuante ── */
+.map { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; position: relative; }
+.room {
+  height: 56px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); border: 2px solid transparent;
+  position: relative; display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 6px 8px; line-height: 1; transition: all 0.25s ease; cursor: pointer;
+}
+.room:hover { transform: translateY(-2px); z-index: 10; border-color: rgba(255,255,255,0.25); }
+.room .code { font-family: var(--code); font-weight: 600; font-size: 11px; color: var(--muted); }
+.room .ico { position: absolute; top: 6px; right: 6px; font-size: 14px; }
+.room.pass { background: rgba(56, 239, 125, 0.12); border-color: rgba(56, 239, 125, 0.4); }
+.room.bug { background: rgba(255, 83, 112, 0.16); border-color: rgba(255, 83, 112, 0.55); }
+.room.naobug { background: rgba(255, 159, 28, 0.12); border-color: rgba(255, 159, 28, 0.4); }
+.room.blocked { background: repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.03) 0 6px, transparent 6px 12px); border-color: var(--line); opacity: 0.65; }
+.room.now { border-color: var(--yellow); background: rgba(255, 209, 102, 0.14); transform: scale(1.04); box-shadow: 0 0 20px rgba(255, 209, 102, 0.3); }
+
+/* Custom Tooltip nos quartos */
+.room[data-tooltip]:hover::after {
+  content: attr(data-tooltip); position: absolute; bottom: calc(100% + 6px); left: 50%;
+  transform: translateX(-50%); background: rgba(14, 16, 33, 0.96); backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.16); color: #fff; padding: 6px 10px; border-radius: 8px;
+  font-size: 11.5px; font-family: var(--body-font); white-space: nowrap; pointer-events: none; z-index: 60;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-weight: 600;
+}
+
+.token { position: absolute; width: 30px; height: 30px; transition: left 0.7s cubic-bezier(0.5, 0, 0.3, 1.4), top 0.7s cubic-bezier(0.5, 0, 0.3, 1.4); z-index: 3; pointer-events: none; }
+.token svg { width: 30px; height: 30px; animation: walk 0.5s ease-in-out infinite; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.45)); }
+@keyframes walk { 50% { transform: translateY(-3px); } }
+
+/* ── tela de print ── */
+.screen {
+  height: 214px; background: #0c0d1c; border-radius: 12px; position: relative; overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4); border: 1px solid var(--line); cursor: zoom-in;
+}
+.screen .bar { height: 22px; background: #1a1b33; display: flex; gap: 5px; align-items: center; padding: 0 10px; }
+.screen .bar i { width: 8px; height: 8px; border-radius: 50%; background: #ff5f57; } .screen .bar i + i { background: #febc2e; } .screen .bar i + i + i { background: #28c840; }
+.screen img {
+  position: absolute; left: 0; right: 0; top: 22px; bottom: 0; width: 100%; height: calc(100% - 22px);
+  object-fit: cover; object-position: top left; background: #fff; transition: transform 0.2s;
+}
+.screen:hover img { transform: scale(1.02); }
+.screen .empty-shot { position: absolute; inset: 22px 0 0; display: grid; place-items: center; color: var(--muted); font-size: 12px; font-weight: 600; }
+.screen .shot-label { position: absolute; right: 10px; top: 4px; color: var(--muted); font-size: 10px; font-weight: 700; font-family: var(--code); }
+.now-line { margin-top: 10px; font-size: 13.5px; font-weight: 600; color: var(--yellow); min-height: 20px; }
+.feed { display: none; }
+
+/* ── Custom Dark Scrollbars ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(157, 78, 221, 0.5); }
+
+/* ── Seção Inferior: Pote de Bugs & Linha do Tempo ── */
+.bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+@media (max-width: 1050px) { .bottom { grid-template-columns: 1fr; } }
+
+.bottom-box {
+  display: flex; flex-direction: column; height: 580px; padding: 22px;
+  background: var(--bg-card); border: 1px solid var(--line); border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); backdrop-filter: blur(14px);
+}
+
+.box-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
+.box-title-group { display: flex; align-items: center; gap: 10px; }
+.box-title-group h2 { margin: 0; font-size: 16px; font-weight: 700; color: var(--fg); letter-spacing: 0.3px; }
+
+.chip-count {
+  font-family: var(--title-font); font-weight: 700; font-size: 11.5px;
+  padding: 3px 10px; border-radius: 999px; background: rgba(255, 255, 255, 0.08);
+  color: var(--muted); border: 1px solid var(--line);
+}
+.chip-count.red {
+  background: rgba(255, 83, 112, 0.16); color: var(--red); border-color: rgba(255, 83, 112, 0.35);
+}
+
+.sub-tabs { display: flex; gap: 6px; background: rgba(0, 0, 0, 0.3); padding: 3px; border-radius: 12px; border: 1px solid var(--line); }
+.sub-tab {
+  font-family: var(--title-font); font-size: 12px; font-weight: 600; padding: 6px 12px;
+  border-radius: 9px; background: transparent; color: var(--muted); border: 0; box-shadow: none; cursor: pointer;
+  transition: all 0.2s ease;
+}
+.sub-tab:hover { color: var(--fg); background: rgba(255, 255, 255, 0.05); }
+.sub-tab.on { background: rgba(255, 255, 255, 0.12); color: var(--fg); font-weight: 700; }
+
+/* Mini Jar Showcase */
+.jar-showcase {
+  display: flex; align-items: center; gap: 16px; padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(255, 83, 112, 0.08), rgba(157, 78, 221, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.07); border-radius: 16px; margin-bottom: 14px;
+}
+.jar-vial {
+  width: 76px; height: 86px; border: 2.5px solid rgba(220, 230, 255, 0.45);
+  border-top: 8px solid rgba(220, 230, 255, 0.65); border-radius: 12px 12px 24px 24px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(76, 201, 240, 0.08) 50%, rgba(255, 83, 112, 0.05));
+  position: relative; flex: none; overflow: hidden; box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), inset 0 0 12px rgba(255, 255, 255, 0.1);
+}
+.jar-vial span {
+  position: absolute; font-size: 15px; transition: all 0.6s cubic-bezier(0.3, 1.4, 0.5, 1);
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
+}
+.jar-stats { display: flex; align-items: center; gap: 16px; flex: 1; flex-wrap: wrap; }
+.jar-stat-item { display: flex; flex-direction: column; }
+.jar-stat-item .jval { font-family: var(--title-font); font-weight: 700; font-size: 20px; color: var(--fg); line-height: 1.1; }
+.jar-stat-item .jlbl { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px; }
+.jar-progress-wrap { flex: 1; min-width: 120px; }
+.jar-progress-bar { height: 7px; background: rgba(0, 0, 0, 0.4); border-radius: 999px; overflow: hidden; margin-bottom: 4px; border: 1px solid rgba(255, 255, 255, 0.05); }
+.jar-progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--yellow), #ff9a52); transition: width 0.6s ease; }
+.jar-progress-text { font-size: 11px; color: var(--yellow); font-weight: 600; }
+
+/* Views no card esquerdo */
+.bottom-view { display: none; flex: 1; min-height: 0; }
+.bottom-view.on { display: flex; flex-direction: column; }
+
+/* Bug list */
+.buglist { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+.bug-card {
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line);
+  border-left: 3px solid var(--red); border-radius: 12px; padding: 10px 14px;
+  transition: all 0.2s ease;
+}
+.bug-card:hover {
+  background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 83, 112, 0.4);
+  transform: translateX(2px); box-shadow: 0 4px 14px rgba(255, 83, 112, 0.12);
+}
+.bc-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
+.bc-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.bug-tag {
+  font-family: var(--code); font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+  background: rgba(255, 83, 112, 0.15); color: var(--red); border: 1px solid rgba(255, 83, 112, 0.3);
+}
+.bug-tag.jira {
+  background: rgba(92, 200, 255, 0.15); color: var(--blue); border-color: rgba(92, 200, 255, 0.35); text-decoration: none;
+}
+.bug-tag.jira:hover { text-decoration: underline; background: rgba(92, 200, 255, 0.25); }
+.bug-card-pill {
+  font-family: var(--code); font-size: 10.5px; font-weight: 600; color: var(--muted);
+  background: rgba(255, 255, 255, 0.05); padding: 2px 7px; border-radius: 6px; text-decoration: none;
+}
+.bug-card-pill:hover { color: var(--fg); text-decoration: underline; }
+.bc-time { font-family: var(--code); font-size: 10.5px; color: var(--muted); }
+.bc-title { font-size: 13px; color: var(--fg); line-height: 1.45; word-break: break-word; }
+
+/* Badges / Conquistas Grid */
+.badges-grid {
+  flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 10px; padding-right: 4px;
+}
+.badge-card {
+  background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px; display: flex; flex-direction: column; gap: 6px; transition: all 0.2s ease;
+}
+.badge-card.unlocked {
+  background: linear-gradient(135deg, rgba(255, 209, 102, 0.09), rgba(157, 78, 221, 0.07));
+  border-color: rgba(255, 209, 102, 0.4); box-shadow: 0 4px 14px rgba(255, 209, 102, 0.1);
+}
+.badge-card.locked { opacity: 0.45; filter: grayscale(0.85); }
+.badge-card:hover { transform: translateY(-2px); opacity: 1; filter: none; }
+.badge-card .b-icon { font-size: 26px; }
+.badge-card .b-name { font-family: var(--title-font); font-weight: 700; font-size: 13px; color: var(--fg); }
+.badge-card .b-desc { font-size: 11.5px; color: var(--muted); line-height: 1.35; flex: 1; }
+.badge-card .b-status { font-size: 10.5px; font-weight: 700; color: var(--yellow); }
+.badge-card.locked .b-status { color: var(--muted); }
+
+/* Linha do Tempo Container */
+.live-pill {
+  font-family: var(--title-font); font-size: 11px; font-weight: 700; color: var(--lime);
+  background: rgba(56, 239, 125, 0.12); border: 1px solid rgba(56, 239, 125, 0.3);
+  padding: 3px 9px; border-radius: 999px; display: flex; align-items: center; gap: 5px;
+}
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--lime);
+  box-shadow: 0 0 8px var(--lime); animation: dotPulse 1.2s infinite ease-in-out;
+}
+
+.timeline-container {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
+  padding-right: 6px; position: relative;
+}
+.tl-item {
+  display: flex; gap: 12px; align-items: flex-start; position: relative;
+  padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.04); transition: all 0.2s ease;
+}
+.tl-item:hover {
+  background: rgba(255, 255, 255, 0.05); border-color: rgba(255, 255, 255, 0.1);
+}
+.tl-item.bad { border-left: 3px solid var(--red); background: rgba(255, 83, 112, 0.06); }
+.tl-item.ok { border-left: 3px solid var(--lime); background: rgba(56, 239, 125, 0.05); }
+.tl-item.info { border-left: 3px solid var(--blue); }
+
+.tl-node {
+  width: 28px; height: 28px; border-radius: 8px; flex: none;
+  display: grid; place-items: center; font-size: 14px;
+  background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
+}
+.tl-item.bad .tl-node { background: rgba(255, 83, 112, 0.18); border-color: rgba(255, 83, 112, 0.4); }
+.tl-item.ok .tl-node { background: rgba(56, 239, 125, 0.18); border-color: rgba(56, 239, 125, 0.4); }
+
+.tl-content { flex: 1; min-width: 0; }
+.tl-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; flex-wrap: wrap; }
+.tl-agent { font-size: 11px; font-weight: 700; color: var(--muted); }
+.tl-card-chip {
+  font-family: var(--code); font-size: 10.5px; font-weight: 700; color: var(--blue);
+  background: rgba(92, 200, 255, 0.12); padding: 1px 6px; border-radius: 5px;
+  border: 1px solid rgba(92, 200, 255, 0.25); text-decoration: none;
+}
+.tl-card-chip:hover { text-decoration: underline; background: rgba(92, 200, 255, 0.22); }
+.tl-time { font-family: var(--code); font-size: 11px; color: var(--muted); margin-left: auto; }
+.tl-msg { font-size: 12.8px; color: var(--fg); line-height: 1.45; word-break: break-word; font-family: var(--body-font); }
+.tl-hl.ok { color: var(--lime); font-weight: 700; }
+.tl-hl.bad { color: var(--red); font-weight: 700; }
+.tl-hl.info { color: var(--blue); font-weight: 600; }
+
+.empty-state {
+  text-align: center; color: var(--muted); font-size: 13.5px; padding: 40px 16px;
+  border: 2px dashed rgba(255, 255, 255, 0.08); border-radius: 16px; margin: auto 0;
+}
+
+/* ── Lightbox para screenshots ── */
+.lightbox {
+  position: fixed; inset: 0; background: rgba(6, 7, 16, 0.88); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  z-index: 100; display: none; place-items: center; padding: 24px; animation: enter 0.2s ease-out;
+}
+.lightbox.on { display: grid; }
+.lightbox-box { position: relative; max-width: 92vw; max-height: 90vh; display: flex; flex-direction: column; align-items: center; }
+.lightbox-box img { max-width: 100%; max-height: 82vh; border-radius: 14px; box-shadow: 0 24px 70px rgba(0,0,0,0.7); border: 1px solid rgba(255,255,255,0.12); object-fit: contain; background: #fff; }
+.lightbox-cap { color: var(--fg); font-weight: 600; font-size: 14px; margin-top: 12px; font-family: var(--code); text-align: center; }
+.lightbox .close-btn { position: absolute; top: -14px; right: -14px; border-radius: 50%; width: 36px; height: 36px; display: grid; place-items: center; padding: 0; z-index: 2; font-size: 14px; }
+
+/* ── relatório da missão ── */
+.overlay { position: fixed; inset: 0; background: rgba(6, 7, 16, 0.8); backdrop-filter: blur(8px); z-index: 60; display: none; overflow: auto; padding: 32px 16px; }
+.overlay.on { display: block; }
+.report {
+  max-width: 1000px; margin: 0 auto; background: linear-gradient(165deg, #1e2144, #14162e);
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 26px; padding: 28px; position: relative;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.65);
+}
+.report .close { position: absolute; top: 20px; right: 20px; }
+.rhead { display: flex; gap: 20px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--line); padding-bottom: 20px; }
+.stamp { font-family: var(--title-font); font-weight: 700; font-size: 22px; padding: 12px 20px; border: 4px solid; border-radius: 16px; transform: rotate(-5deg); letter-spacing: 2px; }
+.stamp.APROVADO { color: var(--lime); border-color: var(--lime); background: rgba(56, 239, 125, 0.1); }
+.stamp.REPROVADO { color: var(--red); border-color: var(--red); background: rgba(255, 83, 112, 0.1); }
+.stamp.INCONCLUSIVO { color: var(--yellow); border-color: var(--yellow); background: rgba(255, 209, 102, 0.1); }
+.rgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin: 20px 0; }
+.stat { background: rgba(255, 255, 255, 0.04); border-radius: 16px; padding: 14px; text-align: center; font-size: 12.5px; color: var(--muted); font-weight: 600; }
+.stat b { display: block; font-family: var(--title-font); font-weight: 700; font-size: 28px; margin-bottom: 2px; color: var(--fg); }
+.stat.g b { color: var(--lime); } .stat.r b { color: var(--red); } .stat.y b { color: var(--yellow); } .stat.o b { color: var(--orange); } .stat.b b { color: var(--blue); }
+.report video { width: 100%; max-height: 440px; border-radius: 14px; background: #000; margin-bottom: 10px; }
+.shots a { display: block; width: 180px; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(0,0,0,0.4); background: #fff; cursor: zoom-in; }
+.shots img { width: 100%; height: 110px; object-fit: cover; object-position: top left; display: block; }
+.shots span { display: block; font: 600 11px var(--code); color: #222; padding: 4px 6px; }
+
+/* ── medidor de combustível / uso ── */
+.fuel { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+@media (max-width: 1100px) { .fuel { grid-template-columns: 1fr; } }
+.fuel .agent { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.fuel .agent svg { width: 34px; height: 34px; flex: none; }
+.gauge .tank { height: 12px; background: rgba(0, 0, 0, 0.35); border-radius: 999px; overflow: hidden; margin: 8px 0; }
+.gauge .tank i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--lime), var(--blue)); transition: width 0.8s; }
+.gauge.low .tank i { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
+.gauge.empty .tank i { background: var(--red); }
+
+/* ── modo foco (terminal) ── */
+body.focus {
+  --fg: #c9d1d9; --muted: #6e7681; --lime: #3fb950; --red: #f85149; --yellow: #d29922; --blue: #58a6ff; --purple: #bc8cff;
+  background: #0d1117; font-family: var(--code); font-size: 13px;
+}
+body.focus .scan, body.focus .avatar, body.focus .xp, body.focus .screen, body.focus .jarimg, body.focus .lightbox { display: none !important; }
+body.focus * { font-family: var(--code) !important; box-shadow: none !important; animation: none !important; border-radius: 0 !important; backdrop-filter: none !important; }
+body.focus header { background: #161b22; border-bottom: 1px solid #30363d; padding: 8px 16px; }
+body.focus h1 { font-size: 13px; font-weight: 600; color: var(--lime); -webkit-text-fill-color: var(--lime); background: none; }
+body.focus .box, body.focus .hunter, body.focus .inner { background: #0d1117; border: 1px solid #30363d; }
+body.focus button { background: none; color: var(--fg); border: 1px solid #30363d; padding: 4px 10px; }
+body.focus .feed { display: block; max-height: 200px; overflow: auto; background: #010409; }
+
+.offline { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 8px 18px; border-radius: 999px; font-weight: 700; z-index: 70; box-shadow: 0 4px 20px rgba(255, 83, 112, 0.4); }
+.offline.on { display: block; }
+</style>
+</head>
+<body>
+<div class="scan"></div>
+<header>
+  <h1>🎯 Central de Caça<small>NOVO QA · ao vivo, lendo o banco (sem token) · <span id="updated">conectando…</span></small></h1>
+  <div class="score">
+    <span class="chip">🎯 missões hoje <b id="s-missions">–</b></span>
+    <span class="chip">🐞 bugs hoje <b id="s-bugs">–</b></span>
+    <span class="chip">🧪 cenários hoje <b id="s-scen">–</b></span>
+    <span class="chip">🔥 sequência <b id="s-streak">–</b></span>
+  </div>
+  <div class="controls">
+    <button class="ghost notify-btn" id="btn-notify" onclick="toggleDesktopNotifications()">🔔 NOTIFICAÇÕES</button>
+    <button class="ghost" id="focus">MODO FOCO</button>
+  </div>
+</header>
+
+<main>
+  <section class="fuel" id="fuel"></section>
+  <section class="command">
+    <div class="box mission-form">
+      <h2>🎯 NOVA MISSÃO</h2>
+      <label>Card ou endereço do sistema</label>
+      <input id="m-card" placeholder="PROJ-123, link do Jira ou https://sistema" spellcheck="false">
+      <label>Tipo</label>
+      <div class="seg" id="m-type"><span class="on" data-v="qa">Teste</span><span data-v="retest">Reteste</span><span data-v="explore">Exploratório</span><span data-v="resume">Retomar</span></div>
+      <label>Agente</label>
+      <div class="seg" id="m-agent"><span class="on" data-v="claude">🧑‍💻 Claude</span><span data-v="antigravity">🛸 Antigravity</span><span data-v="codex">🤖 Codex</span></div>
+      <label>Observação / Objetivo</label>
+      <textarea id="m-obs" placeholder="objetivo e observações (ex.: usar usuário admin; foco no cadastro)"></textarea>
+      <button class="go" id="launch">▶ LANÇAR MISSÃO</button>
+      <div class="cmd-err" id="cmd-err"></div>
+      <div class="cmd-ok-launch" id="cmd-launched"></div>
+      <div class="cmd" id="cmd"><small id="cmd-where"></small><code id="cmd-text"></code><button class="ghost" id="cmd-copy">copiar</button> <small id="cmd-ok"></small></div>
+    </div>
+    <div class="box">
+      <div class="needs-head"><h2>✋ PRECISA DE VOCÊ</h2><span class="needs-count zero" id="needs-count">0 pendências</span></div>
+      <div class="needs" id="needs"></div>
+    </div>
+  </section>
+
+  <section class="box" id="missions-box" style="display:none">
+    <h2>🚀 MISSÕES & DIÁLOGO DIRETO</h2>
+    <div class="mtabs" id="mtabs"></div>
+    <div id="missions"></div>
+  </section>
+
+    <div class="hunters-bar" id="hunters-bar">
+    <div style="display:flex;align-items:center;gap:10px">
+      <h2 style="margin:0;font-size:16px;font-family:var(--title-font);font-weight:700;color:var(--fg);letter-spacing:0.3px">🎯 CAÇADORES EM CAMPO</h2>
+      <span class="chip-count" id="active-hunters-count">0 ativos</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="sub-tabs">
+        <button class="sub-tab on" id="hfilter-active" onclick="setHunterFilter('active')">🟢 Apenas Ativos</button>
+        <button class="sub-tab" id="hfilter-all" onclick="setHunterFilter('all')">🌐 Todos</button>
+      </div>
+      <button class="ghost" id="btn-hide-inactive" onclick="hideAllInactive()" title="Ocultar definitivamente todos os runs finalizados do painel" style="font-size:12px;padding:6px 12px">🧹 OCULTAR INATIVOS</button>
+    </div>
+  </div>
+  <section class="hunters" id="hunters"></section>
+
+  <section class="bottom">
+    <div class="box bottom-box">
+      <div class="box-head">
+        <div class="box-title-group">
+          <h2>🫙 POTE DE BUGS</h2>
+          <span class="chip-count red" id="bug-count-pill">0</span>
+        </div>
+        <div class="sub-tabs">
+          <button class="sub-tab on" id="tab-btn-bugs" onclick="setBottomView('bugs')">🐞 Bugs Capturados</button>
+          <button class="sub-tab" id="tab-btn-badges" onclick="setBottomView('badges')">🏆 Conquistas (<span id="unlocked-badge-count">0</span>/8)</button>
+        </div>
+      </div>
+
+      <!-- Mini Jar Showcase -->
+      <div class="jar-showcase">
+        <div class="jar-vial" id="jarimg" title="Pote de Bugs Capturados"></div>
+        <div class="jar-stats">
+          <div class="jar-stat-item">
+            <span class="jval" id="jar-stat-total">0</span>
+            <span class="jlbl">Bugs no Pote</span>
+          </div>
+          <div class="jar-stat-item">
+            <span class="jval" id="jar-stat-badges">0/8</span>
+            <span class="jlbl">Troféus</span>
+          </div>
+          <div class="jar-progress-wrap">
+            <div class="jar-progress-bar"><div class="jar-progress-fill" id="jar-badge-progress" style="width:0%"></div></div>
+            <span class="jar-progress-text" id="jar-progress-hint">0% Conquistas</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- View: Bugs -->
+      <div class="bottom-view on" id="view-bugs">
+        <div class="buglist" id="buglist"></div>
+      </div>
+
+      <!-- View: Badges -->
+      <div class="bottom-view" id="view-badges">
+        <div class="badges-grid" id="badges"></div>
+      </div>
+    </div>
+
+    <div class="box bottom-box">
+      <div class="box-head">
+        <div class="box-title-group">
+          <h2>📜 LINHA DO TEMPO</h2>
+          <span class="live-pill"><span class="pulse-dot"></span>AO VIVO</span>
+        </div>
+        <div class="sub-tabs">
+          <button class="sub-tab on" data-tl-filter="all" onclick="setTimelineFilter('all')">Todos</button>
+          <button class="sub-tab" data-tl-filter="bugs" onclick="setTimelineFilter('bugs')">🐞 Falhas</button>
+          <button class="sub-tab" data-tl-filter="ok" onclick="setTimelineFilter('ok')">✅ Sucessos</button>
+        </div>
+      </div>
+      <div class="timeline-container" id="log"></div>
+    </div>
+  </section>
+  <p class="note" style="color:var(--muted);font-size:13px;text-align:center">Painel integrado com conversa direta com os agentes. Notificações nativas do sistema avisam quando você estiver em outra janela.</p>
+</main>
+
+<div class="overlay" id="overlay"><div class="report" id="report"></div></div>
+<div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
+  <div class="lightbox-box">
+    <button class="ghost close-btn" onclick="closeLightbox(null)">✖</button>
+    <img id="lightbox-img" alt="Screenshot em tamanho real">
+    <div class="lightbox-cap" id="lightbox-cap"></div>
+  </div>
+</div>
+<div class="offline" id="offline">sem conexão com o painel — o npm run live ainda está rodando?</div>
+
+<script>
+const SVG = {
+  claude: '<defs><radialGradient id="g-claude" cx="35%" cy="30%" r="75%"><stop offset="0" stop-color="#ffd2b3"/><stop offset="1" stop-color="#e8743b"/></radialGradient></defs>' +
+    '<path d="M32 15 v-6" stroke="#e8743b" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="8" r="4" fill="#ffc94d"/>' +
+    '<circle cx="31" cy="36" r="21" fill="url(#g-claude)"/><ellipse cx="22" cy="28" rx="6" ry="4" fill="#fff" opacity=".35"/>' +
+    '<circle cx="24" cy="35" r="5" fill="#fff"/><circle cx="38" cy="35" r="5" fill="#fff"/><circle cx="25" cy="36" r="2.6" fill="#1b1530"/><circle cx="39" cy="36" r="2.6" fill="#1b1530"/>' +
+    '<circle cx="18" cy="43" r="3" fill="#ff8fa3" opacity=".7"/><circle cx="44" cy="43" r="3" fill="#ff8fa3" opacity=".7"/>' +
+    '<path d="M26 45 q5 5 10 0" stroke="#1b1530" stroke-width="2.5" fill="none" stroke-linecap="round"/>' +
+    '<circle cx="52" cy="47" r="6.5" fill="rgba(92,200,255,.25)" stroke="#5cc8ff" stroke-width="3"/><path d="M56.5 52 l4 5" stroke="#5cc8ff" stroke-width="3.5" stroke-linecap="round"/>',
+  antigravity: '<defs><linearGradient id="g-anti" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#c3adff"/><stop offset="1" stop-color="#7b5cf0"/></linearGradient></defs>' +
+    '<path d="M22 46 L12 62 H52 L42 46 Z" fill="#7ee08a" opacity=".22"/>' +
+    '<ellipse cx="32" cy="29" rx="14" ry="14" fill="#cfefff" opacity=".95"/><ellipse cx="27" cy="23" rx="4" ry="3" fill="#fff"/>' +
+    '<circle cx="27" cy="31" r="3.4" fill="#1b1530"/><circle cx="37" cy="31" r="3.4" fill="#1b1530"/><circle cx="28" cy="30" r="1.1" fill="#fff"/><circle cx="38" cy="30" r="1.1" fill="#fff"/>' +
+    '<ellipse cx="32" cy="41" rx="27" ry="9" fill="url(#g-anti)"/><ellipse cx="32" cy="38.5" rx="20" ry="3" fill="#fff" opacity=".25"/>' +
+    '<circle cx="15" cy="42" r="2.6" fill="#7ee08a"/><circle cx="32" cy="45" r="2.6" fill="#ffc94d"/><circle cx="49" cy="42" r="2.6" fill="#7ee08a"/>',
+  codex: '<defs><linearGradient id="g-codex" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe08a"/><stop offset="1" stop-color="#ff9a52"/></linearGradient></defs>' +
+    '<path d="M32 17 v-7" stroke="#ff9a52" stroke-width="3" stroke-linecap="round"/><circle cx="32" cy="9" r="3.6" fill="#ff5d73"/>' +
+    '<rect x="6" y="29" width="6" height="13" rx="3" fill="#e88a3b"/><rect x="52" y="29" width="6" height="13" rx="3" fill="#e88a3b"/>' +
+    '<rect x="11" y="17" width="42" height="38" rx="14" fill="url(#g-codex)"/>' +
+    '<rect x="17" y="25" width="30" height="19" rx="8" fill="#1b1530"/><circle cx="26" cy="34.5" r="3.6" fill="#7ee08a"/><circle cx="38" cy="34.5" r="3.6" fill="#7ee08a"/>' +
+    '<path d="M27 49 h10" stroke="#b5642a" stroke-width="2.5" stroke-linecap="round"/>',
+};
+SVG.other = SVG.codex;
+const EMOJI = { claude: '🧑‍💻', antigravity: '🛸', codex: '🤖', other: '🤖' };
+const PHASES = ['ENTENDER', 'PLANO', '✋ ORDEM', 'CAÇAR', '🧹 FAXINA', '📜 RELATÓRIO'];
+const ROOM = { PASSED: ['pass', '✅'], FAILED: ['bug', '🐞'], BLOCKED: ['blocked', '🔒'], NEEDS_REVIEW: ['review', '🟠'], NOT_EXECUTED: ['skip', '⏭️'], IN_PROGRESS: ['now', '⭐'], PENDING: ['', ''] };
+const VERDICT = { PASSED: 'Passou', FAILED: 'Falhou', BLOCKED: 'Bloqueado', NEEDS_REVIEW: 'Precisa de revisão', NOT_EXECUTED: 'Não executado', PENDING: 'Não chegou', IN_PROGRESS: 'Em andamento' };
+const MODE = { manual: 'Teste', explore: 'Exploratório', retest: 'Reteste', automate: 'Automação' };
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const hhmm = (ts) => ts ? new Date(ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : '';
+const formatDuration = (a, b) => {
+  if (!a) return '';
+  const ms = Math.max(0, new Date(b || Date.now()).getTime() - new Date(a).getTime());
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const remSec = sec % 60;
+  if (min < 60) return `${min}m ${remSec}s`;
+  const hr = Math.floor(min / 60);
+  const remMin = min % 60;
+  return `${hr}h ${remMin}m`;
+};
+const dur = formatDuration;
+function formatChatText(raw) {
+  if (!raw) return '';
+  let s = esc(raw);
+  s = s.replace(/^###\s+(.*$)/gim, '<div style="font-weight:700;font-size:14px;color:var(--yellow);margin:10px 0 4px">$1</div>');
+  s = s.replace(/^##\s+(.*$)/gim, '<div style="font-weight:700;font-size:15px;color:var(--blue);margin:12px 0 6px">$1</div>');
+  s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-family:var(--code);font-size:12px;color:var(--lime)">$1</code>');
+  s = s.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline">$1</a>');
+  s = s.replace(/^-\s+(.*$)/gim, '<div style="padding-left:14px;position:relative;margin:2px 0"><span style="position:absolute;left:2px;color:var(--muted)">•</span>$1</div>');
+  s = s.replace(/^---$/gim, '<hr style="border:0;border-top:1px solid rgba(255,255,255,0.08);margin:12px 0">');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+
+let S = null;
+let prev = { status: {}, runStatus: {}, bugs: new Set(), badges: new Set(), first: true };
+
+// ── Notificações Desktop no Sistema Operacional ─────────────────────
+function updateNotifyButton() {
+  const btn = document.getElementById('btn-notify');
+  if (!btn) return;
+  if (!('Notification' in window)) { btn.style.display = 'none'; return; }
+  if (Notification.permission === 'granted') {
+    btn.textContent = '🔔 NOTIFICAÇÕES ATIVAS';
+    btn.classList.add('on');
+  } else if (Notification.permission === 'denied') {
+    btn.textContent = '🔕 NOTIFICAÇÕES BLOQUEADAS';
+    btn.classList.remove('on');
+  } else {
+    btn.textContent = '🔔 ATIVAR NOTIFICAÇÕES';
+    btn.classList.remove('on');
+  }
+}
+async function toggleDesktopNotifications() {
+  if (!('Notification' in window)) { alert('Seu navegador não suporta notificações de desktop.'); return; }
+  const perm = await Notification.requestPermission();
+  updateNotifyButton();
+  if (perm === 'granted') {
+    notifyDesktop('🎯 Central de Caça', 'Notificações na tela ativadas! Você será avisado mesmo em outra janela.');
+  }
+}
+function notifyDesktop(title, body, tag = 'novo-qa') {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(title, {
+      body,
+      icon: 'https://emojicdn.elk.sh/🎯?style=apple',
+      tag,
+      renotify: true,
+    });
+    n.onclick = () => {
+      window.focus();
+      n.close();
+    };
+  } catch {}
+}
+
+// ── Lightbox para Screenshots ─────────────────────────────────────────
+function openLightbox(src, caption) {
+  const lb = document.getElementById('lightbox');
+  const img = document.getElementById('lightbox-img');
+  const cap = document.getElementById('lightbox-cap');
+  img.src = src;
+  cap.textContent = caption || '';
+  lb.classList.add('on');
+}
+function closeLightbox(e) {
+  if (!e || e.target.id === 'lightbox' || e.target.classList.contains('close-btn')) {
+    document.getElementById('lightbox').classList.remove('on');
+  }
+}
+
+// ── Missões lançadas pelo painel ─────────────────────────────────────
+const TOKEN = '__NOVO_QA_TOKEN__';
+const CAN_ACT = TOKEN !== '' && !TOKEN.startsWith('__');
+async function api(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-novo-qa-token': TOKEN }, body: JSON.stringify(body || {}) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
+  return data;
+}
+const MSTATUS = { RUNNING: ['🏃', 'TRABALHANDO'], WAITING: ['✋', 'ESPERANDO VOCÊ'], DONE: ['✅', 'CONCLUÍDA'], FAILED: ['💥', 'FALHOU'], STOPPED: ['⏹', 'PARADA'] };
+const drafts = {};
+const missionViews = {}; // 'chat' ou 'feed'
+let missionSig = '';
+const MTABS = [['ativas', 'Ativas', ['RUNNING', 'WAITING']], ['pausadas', 'Pausadas', ['STOPPED', 'FAILED']], ['concluidas', 'Concluídas', ['DONE']]];
+let mtab = 'ativas';
+function setTab(t) { mtab = t; missionSig = ''; renderMissions(); }
+function setMissionView(id, view) { missionViews[id] = view; missionSig = ''; renderMissions(); }
+
+function handleChatKey(e, id) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    replyMission(id, false);
+  }
+}
+
+function renderMissions() {
+  const box = document.getElementById('missions-box');
+  const all = S.missions || [];
+  box.style.display = all.length ? '' : 'none';
+  const sig = JSON.stringify([mtab, all.map((m) => [m.id, m.status, m.updated_at, m.activity.length, m.runStatus, (m.messages || []).length, missionViews[m.id]])]);
+  if (sig === missionSig) return;
+
+  const activeEl = document.activeElement;
+  const activeM = activeEl && activeEl.dataset ? activeEl.dataset.m : null;
+  const selStart = activeEl ? activeEl.selectionStart : null;
+  const selEnd = activeEl ? activeEl.selectionEnd : null;
+
+  for (const el of box.querySelectorAll('textarea[data-m]')) drafts[el.dataset.m] = el.value;
+  missionSig = sig;
+  document.getElementById('mtabs').innerHTML = MTABS.map(([key, label, sts]) =>
+    `<button class="${mtab === key ? 'on' : ''}" onclick="setTab('${key}')">${label}<b>${all.filter((m) => sts.includes(m.status)).length}</b></button>`).join('');
+  const list = all.filter((m) => MTABS.find(([key]) => key === mtab)[2].includes(m.status));
+  document.getElementById('missions').innerHTML = list.length ? list.map((m) => {
+    const [emoji, label] = MSTATUS[m.status] || ['', m.status];
+    const open = m.status === 'RUNNING' || m.status === 'WAITING';
+    const paused = m.status === 'STOPPED' || m.status === 'FAILED';
+    const planWaiting = m.runStatus === 'AWAITING_APPROVAL' && m.status === 'WAITING';
+    const run = m.runId && S.runs.find((r) => r.id === m.runId);
+    const view = missionViews[m.id] || 'chat';
+    let msgs = [...(m.messages || [])];
+    if (!msgs.length) {
+      if (m.objective) {
+        msgs.push({ id: 'init', role: 'user', text: m.objective, ts: m.created_at });
+      }
+      (m.activity || []).forEach((act, idx) => {
+        if (act.text && act.text.startsWith('você: ')) {
+          msgs.push({ id: 'u-' + idx, role: 'user', text: act.text.replace(/^você:\s*/, ''), ts: act.ts });
+        }
+      });
+      if (m.last_message) {
+        msgs.push({ id: 'a-last', role: 'agent', text: m.last_message, ts: m.updated_at });
+      } else if (m.error) {
+        msgs.push({ id: 'a-err', role: 'agent', text: m.error, ts: m.updated_at });
+      }
+    }
+
+    const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(m.target);
+    const jiraLink = isCard ? `<a href="https://guruja.atlassian.net/browse/${esc(m.target)}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
+
+    return `<div class="mission-card ${m.status.toLowerCase()}">
+      <div class="mhead">
+        <span class="mtarget">${EMOJI[m.agent] || '🤖'} ${esc(m.target)} ${jiraLink}</span>
+        <span class="mkind">${esc(m.agent === 'antigravity' ? 'Antigravity' : 'Claude')}</span>
+        <span class="mkind">${esc(MODE[m.kind] || (m.kind === 'qa' ? 'Teste' : m.kind === 'resume' ? 'Retomar' : m.kind))}</span>
+        <span class="state ${m.status.toLowerCase()}">${emoji} ${label}</span>
+        <span class="mtime" title="Tempo total da missão">⏱️ ${formatDuration(m.created_at, m.status === 'DONE' || m.status === 'STOPPED' ? m.updated_at : null)}</span>
+        ${m.runId ? `<span class="mrun">run ${esc(m.runId)}</span>` : ''}
+        <span class="mstop">
+          ${open ? `<button class="ghost" onclick="stopMission('${esc(m.id)}')">⏹ PARAR</button>` : ''}
+          ${run && m.status === 'DONE' ? `<button onclick="openReport('${esc(m.runId)}')">📜 RELATÓRIO</button>` : ''}
+          ${!open ? `<button class="ghost" onclick="archiveMission('${esc(m.id)}')">🗑 EXCLUIR</button>` : ''}
+        </span>
+      </div>
+
+      <div class="mcard-views">
+        <button class="mview-btn ${view === 'chat' ? 'on' : ''}" onclick="setMissionView('${esc(m.id)}', 'chat')">💬 Conversa com o Agente (${msgs.length})</button>
+        <button class="mview-btn ${view === 'feed' ? 'on' : ''}" onclick="setMissionView('${esc(m.id)}', 'feed')">⚡ Logs Técnicos (${m.activity.length})</button>
+      </div>
+
+      ${view === 'chat' ? `
+        <div class="chat-container" id="chat-${esc(m.id)}">
+          ${msgs.map((msg) => `
+            <div class="chat-bubble ${msg.role === 'user' ? 'user' : 'agent'}">
+              <div class="chat-meta">
+                <span>${msg.role === 'user' ? 'Você' : `${EMOJI[m.agent]} ${m.agent === 'antigravity' ? 'Antigravity' : 'Claude'}`}</span>
+                <span class="ts">${hhmm(msg.ts)}</span>
+              </div>
+              <div class="chat-text">${msg.role === 'agent' ? formatChatText(msg.text) : esc(msg.text)}</div>
+            </div>
+          `).join('')}
+
+          ${m.status === 'RUNNING' ? `
+            <div class="chat-bubble agent thinking">
+              <div class="dots"><span></span><span></span><span></span></div>
+              <span>${EMOJI[m.agent]} ${m.agent === 'antigravity' ? 'Antigravity' : 'Claude'} está investigando e executando no navegador...</span>
+            </div>
+          ` : ''}
+
+          ${planWaiting ? `
+            <div class="plan-hero">
+              <h4>🗺️ Plano de Testes Pronto para Aprovação!</h4>
+              <p>O agente elaborou os cenários de teste e está aguardando seu sinal verde para começar as ações no navegador.</p>
+              <div class="acts">
+                <button onclick="replyMission('${esc(m.id)}', true)">✨ APROVAR PLANO E INICIAR CAÇADA</button>
+              </div>
+            </div>
+          ` : ''}
+        </div>
+
+        <div class="chat-input-row">
+          <textarea data-m="${esc(m.id)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'" onkeydown="handleChatKey(event, '${esc(m.id)}')" placeholder="${paused ? 'Instrução para retomar (ex.: foco no botão Salvar)...' : (m.status === 'RUNNING' ? 'Agente trabalhando... você pode redigir a próxima instrução aqui' : 'Converse diretamente com o agente (Enter para enviar, Shift+Enter para linha)...')}">${esc(drafts[m.id] || '')}</textarea>
+          ${paused ? `<button onclick="resumeMission('${esc(m.id)}')">▶ RETOMAR</button>`
+            : (m.status === 'RUNNING'
+                ? `<button class="ghost working-btn" onclick="replyMission('${esc(m.id)}', false)" title="Aguarde o agente terminar a ação em andamento para responder">⏳ TRABALHANDO...</button>`
+                : `<button class="${planWaiting ? 'ghost' : ''}" onclick="replyMission('${esc(m.id)}', false)">${planWaiting ? '✏️ PEDIR AJUSTE' : '💬 ENVIAR'}</button>`)}
+        </div>
+        <div class="merr" id="merr-${esc(m.id)}"></div>
+      ` : `
+        <div class="feed mfeed">${m.activity.slice(-20).map((x) => `<div><span class="t">${hhmm(x.ts)}</span><span>${esc(x.text)}</span></div>`).join('') || `<div><span class="t"></span><span>${open ? 'iniciando o agente…' : 'sem atividade registrada nesta sessão do painel'}</span></div>`}</div>
+      `}
+    </div>`;
+  }).join('') : `<div class="mempty">${{ ativas: 'Nenhuma missão ativa agora.', pausadas: 'Nenhuma missão pausada.', concluidas: 'Nenhuma missão concluída nos últimos 7 dias.' }[mtab]}</div>`;
+
+  for (const m of list) {
+    const c = document.getElementById(`chat-${m.id}`);
+    if (c) c.scrollTop = c.scrollHeight;
+  }
+  if (activeM) {
+    const nextEl = box.querySelector(`textarea[data-m="${activeM}"]`);
+    if (nextEl) {
+      nextEl.focus();
+      try { nextEl.setSelectionRange(selStart, selEnd); } catch {}
+    }
+  }
+}
+
+async function resumeMission(id) {
+  const area = document.querySelector(`textarea[data-m="${id}"]`);
+  const text = area ? area.value.trim() : '';
+  const err = document.getElementById(`merr-${id}`);
+  if (err) { err.textContent = ''; err.classList.remove('on'); }
+
+  if (area) {
+    area.value = '';
+    area.style.height = 'auto';
+  }
+  drafts[id] = '';
+
+  try {
+    await (text ? api(`/api/missions/${id}/reply`, { text }) : api(`/api/missions/${id}/resume`));
+    setTab('ativas');
+    missionSig = '';
+    tickNow();
+  } catch (e) {
+    if (err) { err.textContent = e.message; err.classList.add('on'); }
+    if (area && text) { area.value = text; drafts[id] = text; }
+  }
+}
+async function archiveMission(id) {
+  if (!confirm('Excluir esta missão do painel? O run, o relatório e as evidências continuam guardados.')) return;
+  try { await api(`/api/missions/${id}/archive`); missionSig = ''; tickNow(); } catch (e) { alert(e.message); }
+}
+async function hideRun(id) {
+  if (!confirm(`Ocultar o run ${id} do painel? Ele não é abortado nem apagado; dá para retomar pelo /qa-resume.`)) return;
+  try { await api(`/api/runs/${id}/hide`); tickNow(); } catch (e) { alert(e.message); }
+}
+async function resumeRun(card) {
+  const agent = pick('m-agent');
+  if (agent === 'codex') { alert('Retomar pela tela ainda não funciona com o Codex: escolha Claude ou Antigravity em "Nova missão".'); return; }
+  if (!confirm(`Retomar ${card} com o ${agent === 'antigravity' ? 'Antigravity' : 'Claude'}?`)) return;
+  try { await api('/api/missions', { agent, target: card, kind: 'resume' }); setTab('ativas'); tickNow(); } catch (e) { alert(e.message); }
+}
+async function replyMission(id, approvePlan) {
+  const area = document.querySelector(`textarea[data-m="${id}"]`);
+  const text = area ? area.value.trim() : '';
+  const err = document.getElementById(`merr-${id}`);
+  if (err) { err.textContent = ''; err.classList.remove('on'); }
+
+  if (!approvePlan && !text) {
+    if (err) { err.textContent = 'Escreva sua mensagem ou instrução antes de enviar.'; err.classList.add('on'); }
+    return;
+  }
+
+  // 1. Limpa imediatamente o textarea e o rascunho
+  if (area) {
+    area.value = '';
+    area.style.height = 'auto';
+  }
+  drafts[id] = '';
+
+  // 2. Insere a bolha do usuário imediatamente na tela para feedback instantâneo
+  const chatBox = document.getElementById(`chat-${id}`);
+  if (chatBox && text) {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble user';
+    const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    bubble.innerHTML = `<div class="chat-meta"><span>Você</span><span class="ts">${nowStr}</span></div><div class="chat-text">${esc(text)}</div>`;
+    const thinking = chatBox.querySelector('.chat-bubble.agent.thinking');
+    if (thinking) chatBox.insertBefore(bubble, thinking);
+    else chatBox.appendChild(bubble);
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  // 3. Dispara chamada à API
+  try {
+    await api(`/api/missions/${id}/reply`, { text, approvePlan });
+    missionSig = '';
+    tickNow();
+  } catch (e) {
+    if (err) {
+      err.textContent = e.message;
+      err.classList.add('on');
+    }
+    // Devolve o texto caso a requisição seja rejeitada (ex: agente ainda em execução)
+    if (area && text) {
+      area.value = text;
+      drafts[id] = text;
+    }
+  }
+}
+async function stopMission(id) {
+  if (!confirm('Parar esta missão? O agente é interrompido e o navegador dele fecha.')) return;
+  try { await api(`/api/missions/${id}/stop`); missionSig = ''; tickNow(); } catch (e) { alert(e.message); }
+}
+async function answerPrompt(id, decision) {
+  try { await api(`/api/prompts/${id}`, { decision }); tickNow(); } catch (e) { alert(e.message); tickNow(); }
+}
+
+// ── Aviso sonoro & Notificação Desktop de Tela ──────────────────────
+let knownNeeds = null;
+function chime(keys, details = '') {
+  const fresh = knownNeeds !== null && keys.some((k) => !knownNeeds.has(k));
+  knownNeeds = new Set(keys);
+  if (!fresh) return;
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880].forEach((f, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = f; g.gain.value = 0.08;
+      o.connect(g); g.connect(ctx.destination);
+      o.start(ctx.currentTime + i * 0.18); o.stop(ctx.currentTime + i * 0.18 + 0.15);
+    });
+  } catch {}
+  if (document.hidden || !document.hasFocus()) {
+    notifyDesktop('🎯 Central de Caça: Atenção!', details || 'O agente precisa da sua resposta ou aprovação de plano.');
+  }
+}
+
+// ── Nova missão ───────────────────────────────────────────────────────
+for (const seg of document.querySelectorAll('.seg')) seg.onclick = (e) => {
+  if (e.target.tagName !== 'SPAN') return;
+  seg.querySelectorAll('span').forEach((s) => s.classList.toggle('on', s === e.target));
+};
+const pick = (id) => document.querySelector(`#${id} .on`).dataset.v;
+function parseTarget(raw) {
+  const text = raw.trim();
+  const key = /(?:browse\/|selectedIssue=|^)([A-Za-z][A-Za-z0-9]+-\d+)(?:$|[?#&/])/.exec(text);
+  if (key) return { kind: 'card', key: key[1].toUpperCase() };
+  try { const u = new URL(text); if (u.protocol === 'http:' || u.protocol === 'https:') return { kind: 'url', url: u.href }; } catch {}
+  return null;
+}
+const SKILL = { qa: 'qa', explore: 'qa', retest: 'retest', resume: 'qa-resume' };
+function missionText(t, type) {
+  if (t.kind === 'url') return `exploração sem card do sistema ${t.url} (/qa ${t.url} --explore)`;
+  return { qa: `teste do card ${t.key} (/qa ${t.key})`, explore: `teste exploratório do card ${t.key} (/qa ${t.key} --explore)`,
+    retest: `reteste do card ${t.key} (/retest ${t.key})`, resume: `retomar o run do card ${t.key} (/qa-resume ${t.key})` }[type];
+}
+function buildCommand(t, type, agent, obs) {
+  if (agent === 'claude') {
+    const cmd = t.kind === 'url' ? `/qa ${t.url} --explore` : { qa: `/qa ${t.key}`, explore: `/qa ${t.key} --explore`, retest: `/retest ${t.key}`, resume: `/qa-resume ${t.key}` }[type];
+    return obs ? `${cmd} ${obs}` : cmd;
+  }
+  const skill = SKILL[t.kind === 'url' ? 'explore' : type];
+  const path = agent === 'codex' ? `.agents/skills/${skill}/SKILL.md` : `.claude/skills/${skill}/SKILL.md`;
+  return [
+    'Atue como QA usando o NOVO QA neste workspace, seguindo a ferramenta à risca:',
+    '1. Leia AGENTS.md e CLAUDE.md antes de qualquer ação.',
+    `2. Siga o roteiro ${path} etapa por etapa, na ordem, lendo as referências de cada etapa.`,
+    '3. Opere o sistema só pelas ferramentas do MCP novo-qa e leia o Jira só pelo Atlassian MCP.',
+    '4. Mostre o plano e espere minha aprovação antes de plan_approve. Ação de risco (RED) só com minha autorização.',
+    '5. Feche com limpeza, run_complete e report_build.',
+    '',
+    `Missão: ${missionText(t, type)}.`,
+    ...(obs ? [`Objetivo/observação: ${obs}`] : []),
+  ].join('\n');
+}
+document.getElementById('launch').onclick = async () => {
+  const err = document.getElementById('cmd-err');
+  document.getElementById('cmd-launched').textContent = '';
+  const t = parseTarget(document.getElementById('m-card').value);
+  const type = pick('m-type'), agent = pick('m-agent'), obs = document.getElementById('m-obs').value.trim().replace(/\s+/g, ' ');
+  err.textContent = '';
+  if (!t) { err.textContent = 'Informe a chave do card (ex.: PROJ-123), o link do card no Jira ou a URL do sistema.'; document.getElementById('m-card').focus(); return; }
+  if (t.kind === 'url' && (type === 'retest' || type === 'resume')) { err.textContent = 'Reteste e retomada são de um card ou run existente: informe a chave do card.'; return; }
+  if ((agent === 'claude' || agent === 'antigravity') && CAN_ACT) {
+    const btn = document.getElementById('launch');
+    btn.disabled = true;
+    try {
+      const m = await api('/api/missions', { agent, target: t.kind === 'card' ? t.key : t.url, kind: t.kind === 'url' ? 'explore' : type, objective: obs });
+      document.getElementById('cmd').classList.remove('on');
+      document.getElementById('cmd-launched').textContent = `🚀 Missão ${m.id} lançada — acompanhe no painel de conversa abaixo.`;
+      document.getElementById('m-obs').value = '';
+      tickNow();
+    } catch (e) { err.textContent = e.message; }
+    finally { btn.disabled = false; }
+    return;
+  }
+  document.getElementById('cmd-text').textContent = buildCommand(t, type, agent, obs);
+  document.getElementById('cmd-where').textContent = `${agent === 'codex' ? 'Lançar pela tela ainda não funciona para o Codex' : 'Painel aberto só para leitura'}. Cole no ${{ claude: 'Claude Code', antigravity: 'chat do Antigravity', codex: 'Codex' }[agent]}:`;
+  document.getElementById('cmd-ok').textContent = '';
+  document.getElementById('cmd').classList.add('on');
+};
+document.getElementById('cmd-copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(document.getElementById('cmd-text').textContent); document.getElementById('cmd-ok').textContent = '✔ copiado!'; }
+  catch { document.getElementById('cmd-ok').textContent = 'selecione e copie manualmente'; }
+};
+
+// ── Modo foco & Overlay ───────────────────────────────────────────────
+const setFocus = (on) => {
+  document.body.classList.toggle('focus', on);
+  document.getElementById('focus').textContent = on ? 'MODO DESIGN' : 'MODO FOCO';
+  store.set('novoqa.focus', on ? '1' : '0');
+};
+document.getElementById('focus').onclick = () => setFocus(!document.body.classList.contains('focus'));
+setFocus(store.get('novoqa.focus') === '1');
+document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') closeReport(); };
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') { closeReport(); closeLightbox(null); }
+});
+
+// ── Renderização do Estado ───────────────────────────────────────────
+function agentInfo(kind) { return S.agents.find((a) => a.agent === kind) || { level: 1, title: 'Novato Curioso', xp: 0, base: 0, next: 50 }; }
+
+function renderHeader() {
+  document.getElementById('s-missions').textContent = S.stats.missionsToday;
+  document.getElementById('s-bugs').textContent = S.stats.bugsToday;
+  document.getElementById('s-scen').textContent = S.stats.scenariosToday;
+  document.getElementById('s-streak').textContent = `${S.stats.streakDays} dia${S.stats.streakDays === 1 ? '' : 's'}`;
+  document.getElementById('updated').textContent = `atualizado ${hhmm(S.generatedAt)}`;
+}
+
+const tokens = (n) => n >= 1e6 ? `${(n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : String(n);
+function renderUsage() {
+  const box = document.getElementById('fuel');
+  const agents = S.usage?.agents || [];
+  box.style.display = agents.length ? '' : 'none';
+  const NAME = { claude: 'CLAUDE', codex: 'CODEX', antigravity: 'ANTIGRAVITY' };
+  const win = (title, w, weekly) => {
+    const free = w.usedPct === null ? null : Math.max(0, 100 - w.usedPct);
+    const reset = w.resetsAt ? new Date(w.resetsAt).toLocaleString('pt-BR', weekly ? { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }) : null;
+    const meta = [reset ? `renova <b>${esc(reset)}</b>` : w.renewedAt ? `renovou ${esc(new Date(w.renewedAt).toLocaleString('pt-BR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}` : (free === null ? 'sem leitura da %' : ''), `<b>${tokens(w.spent)}</b> tokens`].filter(Boolean).join(' · ');
+    const cls = free === null ? '' : free < 10 ? 'empty' : free < 30 ? 'low' : '';
+    return `<div class="win ${cls}"><div class="top2" style="display:flex;justify-content:space-between"><h3>${title}</h3><span style="font-weight:700;font-family:var(--title-font)">${free === null ? '–' : `${Math.round(free)}% livre`}</span></div>
+      <div class="tank"><i style="width:${free ?? 0}%"></i></div><div class="meta" style="font-size:12px;color:var(--muted)">${meta}</div></div>`;
+  };
+  box.innerHTML = agents.map((a) => `<div class="box gauge">
+    <div class="agent"><svg viewBox="0 0 64 64">${SVG[a.agent]}</svg><h2>${EMOJI[a.agent]} ${NAME[a.agent]}</h2></div>
+    ${a.available ? win('⛽ 5 HORAS', a.fiveHour, false) + win('📅 SEMANA', a.sevenDay, true)
+      : `<div class="na" style="color:var(--muted);font-size:13px;padding:8px 0">Sem leitura: ${esc(a.note || '')}.</div>`}
+  </div>`).join('');
+}
+
+function renderNeeds() {
+  const missionRuns = new Set((S.missions || []).map((m) => m.runId).filter(Boolean));
+  const prompts = S.prompts || [];
+  const waiting = (S.missions || []).filter((m) => m.status === 'WAITING');
+  const external = S.pending.filter((p) => !missionRuns.has(p.runId));
+  const n = prompts.length + waiting.length + external.length;
+  const count = document.getElementById('needs-count');
+  count.textContent = `${n} pendência${n === 1 ? '' : 's'}`; count.classList.toggle('zero', n === 0);
+
+  const detailText = waiting.length ? `Missão ${waiting[0].target} aguarda sua resposta.` : prompts.length ? `Permissão de ferramenta pendente.` : '';
+  chime([...prompts.map((p) => `p${p.id}`), ...waiting.map((m) => `m${m.id}${m.updated_at}`), ...external.map((p) => `e${p.runId}${p.ts}`)], detailText);
+
+  const box = document.getElementById('needs');
+  const sig = JSON.stringify([prompts.map((p) => p.id), waiting.map((m) => m.id + m.updated_at), external.map((p) => p.runId + p.ts + p.kind)]);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const red = (p) => /act_approved$/.test(p.tool || '');
+  box.innerHTML = n ? [
+    ...prompts.map((p) => `
+    <div class="ask ${red(p) ? 'red' : 'q'}">
+      <div class="ic">${red(p) ? '⚠️' : /plan_approve$/.test(p.tool || '') ? '🗺️' : '🔐'}</div>
+      <div class="body">
+        <div class="kind">${red(p) ? 'Ação de risco — autorizar?' : 'Permissão pedida pelo agente'}</div>
+        <div><b>${esc(p.summary)}</b></div>
+        <div class="who">${EMOJI[((S.missions || []).find((m) => m.id === p.mission_id) || {}).agent] || '🤖'} missão ${esc(p.mission_id)} · ${hhmm(p.created_at)}</div>
+        <div class="acts"><button class="${red(p) ? 'danger' : ''}" onclick="answerPrompt(${p.id}, 'allow')">✔ PERMITIR</button><button class="ghost" onclick="answerPrompt(${p.id}, 'deny')">✖ NEGAR</button></div>
+      </div>
+    </div>`),
+    ...waiting.map((m) => `
+    <div class="ask plan">
+      <div class="ic">${m.runStatus === 'AWAITING_APPROVAL' ? '🗺️' : '💬'}</div>
+      <div class="body">
+        <div class="kind">${m.runStatus === 'AWAITING_APPROVAL' ? 'Plano para aprovar' : 'O agente perguntou'}</div>
+        <div><b>${esc(m.target)}</b> — responda no painel de conversa logo abaixo</div>
+        <div class="who">${EMOJI[m.agent] || '🤖'} missão ${esc(m.id)} · ${hhmm(m.updated_at)}</div>
+      </div>
+    </div>`),
+    ...external.map((p) => `
+    <div class="ask ${p.kind === 'red' ? 'red' : 'plan'}">
+      <div class="ic">${p.kind === 'red' ? '⚠️' : '🗺️'}</div>
+      <div class="body">
+        <div class="kind">${p.kind === 'red' ? 'Ação de risco' : 'Plano para aprovar'}</div>
+        <div><b>${esc(p.title)}</b></div>
+        <div class="who">${EMOJI[p.agent]} ${esc(p.card)} · ${hhmm(p.ts)} · ${esc(p.detail)}</div>
+      </div>
+    </div>`),
+  ].join('') : '<div class="empty">Nada pendente. Os agentes estão trabalhando de forma autônoma. 😎</div>';
+}
+
+const IDLE_MIN = 15;
+const isIdle = (r) => r.idleMinutes !== null && r.idleMinutes >= IDLE_MIN && !(S.missions || []).some((m) => m.runId === r.id && m.status === 'RUNNING');
+const idleText = (m) => m >= 1440 ? `${Math.floor(m / 1440)} DIA${m >= 2880 ? 'S' : ''}` : m >= 60 ? `${Math.floor(m / 60)} H` : `${m} MIN`;
+function stateOf(r) {
+  if (r.status === 'COMPLETED') {
+    if (r.recommendation === 'APROVADO') return ['✅', 'APROVADO', 'aprovado'];
+    if (r.recommendation === 'REPROVADO') return ['❌', 'REPROVADO', 'reprovado'];
+    if (r.recommendation === 'INCONCLUSIVO') return ['⚠️', 'INCONCLUSIVO', 'inconclusivo'];
+    return ['🏁', 'CONCLUÍDO', 'done'];
+  }
+  if (r.status === 'ABORTED') return ['🛑', 'ABORTADA', 'failed'];
+  if (S.pending.some((p) => p.runId === r.id)) return ['✋', 'AGUARDANDO VOCÊ', 'waiting'];
+  if (isIdle(r)) return ['💤', `PARADO HÁ ${idleText(r.idleMinutes)}`, 'idle'];
+  if (r.phase === 0) return ['💭', 'ENTENDENDO O CARD', 'running'];
+  if (r.phase === 1) return ['🗺️', 'PLANEJANDO', 'running'];
+  if (r.phase === 4) return ['🧹', 'FAXINA', 'running'];
+  const last = r.feed[r.feed.length - 1];
+  if (last && last.cls === 'bad') return ['⚠️', 'INVESTIGANDO', 'failed'];
+  if (last && /^(CT|EXP)-\S+ [✓✔]/.test(last.text)) return ['🔎', 'VERIFICANDO', 'running'];
+  if (last && /preencheu/.test(last.text)) return ['⌨️', 'DIGITANDO', 'running'];
+  return ['🏃', 'CAÇANDO', 'running'];
+}
+
+function hunterHtml(r, label) {
+  const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(r.card);
+  const jiraLink = isCard ? `<a href="https://guruja.atlassian.net/browse/${esc(r.card)}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
+  return `
+  <article class="hunter" id="h-${esc(r.id)}">
+    <div class="top">
+      <div class="avatar fun"><svg viewBox="0 0 64 64">${SVG[r.agent]}</svg><div class="bubble" data-k="bubble"></div></div>
+      <div class="who2">
+        <div class="name">${EMOJI[r.agent]} ${esc(label)}</div>
+        <div class="lvl" data-k="lvl"></div>
+        <div class="xp fun"><i data-k="xp"></i></div>
+        <div class="mission">Missão <b>${esc(r.card)}</b> ${jiraLink} · ${esc(MODE[r.mode] || r.mode)} · ${esc(r.env)} <span class="mtime" data-k="dur"></span></div>
+      </div>
+      <span class="state" data-k="state"></span>
+      <button class="rep-btn" data-k="rep" style="display:none">📜 VER RELATÓRIO COMPLETO</button>
+      <button class="ghost" data-k="resume" style="display:none">▶ RETOMAR</button>
+      <button class="ghost" data-k="hide" style="display:none">✖ OCULTAR</button>
+    </div>
+    <div class="phases" data-k="phases"></div>
+    <div class="grid2">
+      <div class="inner fun"><h3>MAPA DA MISSÃO</h3><div class="map" data-k="map"></div></div>
+      <div class="inner"><h3>ÚLTIMO PRINT</h3>
+        <div class="screen" data-k="screen"><div class="bar"><i></i><i></i><i></i></div><span class="shot-label" data-k="shotlabel"></span><div class="empty-shot">sem print ainda</div></div>
+        <div class="now-line" data-k="now"></div><div class="feed" data-k="feed"></div></div>
+    </div>
+  </article>`;
+}
+
+let hunterFilter = 'active';
+function setHunterFilter(f) {
+  hunterFilter = f;
+  document.getElementById('hfilter-active')?.classList.toggle('on', f === 'active');
+  document.getElementById('hfilter-all')?.classList.toggle('on', f === 'all');
+  renderHunters();
+}
+
+async function hideAllInactive() {
+  if (!confirm('Ocultar definitivamente todos os runs finalizados do painel? Eles continuam salvos no banco para relatórios e retestes.')) return;
+  try {
+    await api('/api/runs/hide-inactive');
+    tickNow();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function renderHunters() {
+  const box = document.getElementById('hunters');
+  const allRuns = S.runs || [];
+  const activeRuns = allRuns.filter((r) => ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status));
+  const activeCountEl = document.getElementById('active-hunters-count');
+  if (activeCountEl) activeCountEl.textContent = `${activeRuns.length} ativos`;
+
+  const runsToDisplay = hunterFilter === 'active' ? activeRuns : allRuns;
+  const keep = new Set(runsToDisplay.map((r) => `h-${r.id}`));
+  for (const el of [...box.children]) if (!keep.has(el.id)) el.remove();
+
+  if (!runsToDisplay.length) {
+    box.innerHTML = hunterFilter === 'active'
+      ? `<div class="empty-state" style="grid-column: 1 / -1; margin: 4px 0">🎯 Nenhum agente ativo caçando no momento. <button class="ghost" style="margin-left:8px;font-size:12px;padding:4px 10px" onclick="setHunterFilter('all')">Ver histórico (${allRuns.length})</button></div>`
+      : `<div class="empty-state" style="grid-column: 1 / -1; margin: 4px 0">Nenhum run registrado nas últimas 12 horas.</div>`;
+    return;
+  }
+
+  const seen = {};
+  runsToDisplay.forEach((r, i) => {
+    seen[r.agent] = (seen[r.agent] || 0) + 1;
+    const label = `${r.agentLabel.toUpperCase()}${seen[r.agent] > 1 ? ` #${seen[r.agent]}` : ''}`;
+    let el = document.getElementById(`h-${r.id}`);
+    if (!el) { box.insertAdjacentHTML('beforeend', hunterHtml(r, label)); el = box.lastElementChild; }
+    if (box.children[i] !== el) box.insertBefore(el, box.children[i]);
+    const q = (k) => el.querySelector(`[data-k="${k}"]`);
+    const a = agentInfo(r.agent);
+    const [emoji, text, stateClass] = stateOf(r);
+    q('bubble').textContent = emoji;
+    q('state').textContent = `${emoji} ${text}`;
+    q('state').className = `state ${stateClass || ''}`;
+    q('lvl').textContent = `Nv ${a.level} · ${a.title} · ${a.xp} XP`;
+    q('dur').textContent = `⏱️ ${formatDuration(r.startedAt, r.endedAt)}`;
+    q('dur').title = `Início: ${hhmm(r.startedAt)}${r.endedAt ? ` · Fim: ${hhmm(r.endedAt)}` : ' (em andamento)'}`;
+    q('xp').style.width = `${Math.min(100, Math.round(((a.xp - a.base) / Math.max(1, a.next - a.base)) * 100))}%`;
+    el.classList.toggle('ended', !['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status));
+    const waiting = S.pending.some((p) => p.runId === r.id);
+    q('phases').innerHTML = PHASES.map((p, n) => { const isDone = n < r.phase || r.phase === 5 || r.status === 'COMPLETED'; const label = isDone ? p.replace(/^[^\w\s]+\s*/, '✓ ') : p; const cls = isDone ? 'done' : n === r.phase ? (waiting || r.waiting ? 'wait' : 'now') : ''; return `<span class="ph ${cls}">${label}</span>${n < PHASES.length - 1 ? '<span class="arrow">▸</span>' : ''}`; }).join('');
+
+    const map = q('map');
+    map.classList.toggle('dense', r.scenarios.length > 16);
+    map.innerHTML = r.scenarios.map((s) => {
+      const [cls, ico] = ROOM[s.status] || ['', ''];
+      const tt = `[${s.code}] ${s.title} • ${s.priority} • ${VERDICT[s.status] || s.status}`;
+      return `<div class="room ${cls}" data-tooltip="${esc(tt)}"><span class="ico">${ico}</span><span class="code">${esc(s.code)}</span></div>`;
+    }).join('') + (r.current ? `<div class="token"><svg viewBox="0 0 64 64">${SVG[r.agent]}</svg></div>` : '');
+
+    if (r.current) {
+      const idx = r.scenarios.findIndex((s) => s.code === r.current);
+      const room = map.children[idx], tok = map.querySelector('.token');
+      if (room && tok) { tok.style.left = `${room.offsetLeft + room.offsetWidth / 2 - tok.offsetWidth / 2}px`; tok.style.top = `${room.offsetTop - tok.offsetHeight / 2}px`; }
+    }
+
+    const screen = q('screen');
+    if (r.lastShot && screen.dataset.shot !== String(r.lastShot)) {
+      screen.dataset.shot = r.lastShot;
+      screen.querySelector('.empty-shot')?.remove();
+      screen.querySelector('img')?.remove();
+      const shotUrl = `/evidence/${r.lastShot}`;
+      screen.insertAdjacentHTML('beforeend', `<img alt="último print" src="${shotUrl}">`);
+      screen.onclick = () => openLightbox(shotUrl, `${r.card} · Último print do agente`);
+    }
+    q('shotlabel').textContent = r.lastShot ? 'clique para expandir ↗' : '';
+    if (r.status === 'COMPLETED') {
+      const passed = r.scenarios.filter((s) => s.status === 'PASSED').length;
+      const failed = r.scenarios.filter((s) => s.status === 'FAILED').length;
+      const bugCount = (r.bugs || []).length;
+      const rec = r.recommendation || 'CONCLUÍDO';
+      const recClass = rec === 'APROVADO' ? 'ok' : rec === 'REPROVADO' ? 'bad' : 'warn';
+      const dText = formatDuration(r.startedAt, r.endedAt);
+      q('now').innerHTML = `<span class="${recClass}" style="font-weight:700">● ${rec}</span> · <b>${passed}</b> passaram · <b>${failed}</b> falharam${bugCount ? ` · <span class="bad"><b>${bugCount} bugs encontrados</b></span>` : ''} · ⏱️ <b>${dText}</b> (${hhmm(r.startedAt)} → ${hhmm(r.endedAt)})`;
+    } else {
+      const dText = formatDuration(r.startedAt, r.endedAt);
+      q('now').textContent = isIdle(r) ? `Ninguém está operando este run. Retome ou encerre.` : `⏱️ Em execução há ${dText} · ${r.nowLine}`;
+    }
+    el.classList.toggle('idle', isIdle(r));
+
+    const feed = q('feed');
+    const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 30;
+    feed.innerHTML = r.feed.map((f) => `<div><span class="t">${hhmm(f.ts)}</span><span class="${f.cls}">${esc(f.text)}</span></div>`).join('');
+    if (atBottom) feed.scrollTop = feed.scrollHeight;
+
+    const rep = q('rep');
+    rep.style.display = ['COMPLETED', 'ABORTED'].includes(r.status) ? 'inline-block' : 'none';
+    rep.onclick = () => openReport(r.id);
+    const active = ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status);
+    const ownMission = (S.missions || []).some((m) => m.runId === r.id && (m.status === 'RUNNING' || m.status === 'WAITING'));
+    q('resume').style.display = (CAN_ACT && active && isIdle(r) && !ownMission) ? 'inline-block' : 'none';
+    q('resume').onclick = () => resumeRun(r.card);
+    q('hide').style.display = (CAN_ACT && !ownMission && (!active || isIdle(r))) ? 'inline-block' : 'none';
+    q('hide').onclick = () => hideRun(r.id);
+
+    if (!prev.first && prev.runStatus[r.id] && prev.runStatus[r.id] !== 'COMPLETED' && r.status === 'COMPLETED') {
+      notifyDesktop(`✅ Missão ${r.card} Concluída!`, `O agente finalizou todos os testes com recomendação: ${r.recommendation || 'APROVADO'}.`);
+    }
+    for (const s of r.scenarios) prev.status[`${r.id}:${s.code}`] = s.status;
+    prev.runStatus[r.id] = r.status;
+  });
+  if (!S.runs.length) box.innerHTML = '<div class="box note">Nenhuma missão nas últimas 12 horas.</div>';
+}
+
+let bottomView = 'bugs';
+function setBottomView(view) {
+  bottomView = view;
+  const btnBugs = document.getElementById('tab-btn-bugs');
+  const btnBadges = document.getElementById('tab-btn-badges');
+  const viewBugs = document.getElementById('view-bugs');
+  const viewBadges = document.getElementById('view-badges');
+  if (btnBugs) btnBugs.classList.toggle('on', view === 'bugs');
+  if (btnBadges) btnBadges.classList.toggle('on', view === 'badges');
+  if (viewBugs) viewBugs.classList.toggle('on', view === 'bugs');
+  if (viewBadges) viewBadges.classList.toggle('on', view === 'badges');
+}
+
+let timelineFilter = 'all';
+function setTimelineFilter(f) {
+  timelineFilter = f;
+  document.querySelectorAll('[data-tl-filter]').forEach((b) => b.classList.toggle('on', b.dataset.tlFilter === f));
+  renderLog();
+}
+
+function formatTimelineText(raw) {
+  let s = esc(raw || '');
+  s = s.replace(/\b(PASSED|APROVADO)\b/g, '<span class="tl-hl ok">$1</span>');
+  s = s.replace(/\b(FAILED|REPROVADO|falhou|falha)\b/gi, '<span class="tl-hl bad">$1</span>');
+  s = s.replace(/\b(limpeza|cleanup|dado registrado)\b/gi, '<span class="tl-hl info">$1</span>');
+  return s;
+}
+
+function renderBugs() {
+  const count = (S.bugs || []).length;
+  const pill = document.getElementById('bug-count-pill');
+  if (pill) pill.textContent = `${count} capturados`;
+  const statTotal = document.getElementById('jar-stat-total');
+  if (statTotal) statTotal.textContent = String(count);
+
+  const unlocked = (S.badges || []).filter((b) => b.unlocked).length;
+  const totalBadges = (S.badges || []).length || 8;
+  const statBadges = document.getElementById('jar-stat-badges');
+  if (statBadges) statBadges.textContent = `${unlocked}/${totalBadges}`;
+  const unlCount = document.getElementById('unlocked-badge-count');
+  if (unlCount) unlCount.textContent = String(unlocked);
+  const pct = Math.round((unlocked / totalBadges) * 100);
+  const progFill = document.getElementById('jar-badge-progress');
+  if (progFill) progFill.style.width = `${pct}%`;
+  const progHint = document.getElementById('jar-progress-hint');
+  if (progHint) progHint.textContent = `${pct}% Conquistas`;
+
+  // Animação de bugs dentro do pote
+  const top = (i) => 58 - Math.floor(i / 4) * 16;
+  const jar = document.getElementById('jarimg');
+  if (jar) {
+    jar.innerHTML = S.bugs.slice(0, 12).map((_, i) => `<span style="left:${6 + (i % 4) * 16}px;top:${top(i)}px">🐞</span>`).join('');
+  }
+
+  // Lista de bugs capturados com cards modernos
+  const list = document.getElementById('buglist');
+  if (list) {
+    list.innerHTML = S.bugs.length ? S.bugs.map((b) => {
+      const isJira = Boolean(b.jira && /^[A-Z][A-Z0-9]+-\d+$/.test(b.jira));
+      const isCard = Boolean(b.card && /^[A-Z][A-Z0-9]+-\d+$/.test(b.card));
+      const tagHtml = isJira
+        ? `<a href="https://guruja.atlassian.net/browse/${esc(b.jira)}" target="_blank" rel="noopener" class="bug-tag jira" title="Abrir bug no Jira">🐞 ${esc(b.jira)} ↗</a>`
+        : `<span class="bug-tag code">🐞 ${esc(b.code)}</span>`;
+      const cardHtml = isCard
+        ? `<a href="https://guruja.atlassian.net/browse/${esc(b.card)}" target="_blank" rel="noopener" class="bug-card-pill" title="Card de origem no Jira">${esc(b.card)} ↗</a>`
+        : (b.card ? `<span class="bug-card-pill">${esc(b.card)}</span>` : '');
+      return `<div class="bug-card ${prev.first || prev.bugs.has(b.runId + b.code) ? '' : 'new'}">
+        <div class="bc-head">
+          <div class="bc-tags">${tagHtml} ${cardHtml}</div>
+          <span class="bc-time">${hhmm(b.ts)}</span>
+        </div>
+        <div class="bc-title">${esc(b.title)}</div>
+      </div>`;
+    }).join('') : '<div class="empty-state">🎉 Nenhum bug reportado nos últimos 7 dias. Sistema operando limpo!</div>';
+  }
+  prev.bugs = new Set(S.bugs.map((b) => b.runId + b.code));
+
+  // Conquistas com cards visuais de troféus
+  const badgesBox = document.getElementById('badges');
+  if (badgesBox) {
+    badgesBox.innerHTML = S.badges.map((b) => `
+      <div class="badge-card ${b.unlocked ? 'unlocked' : 'locked'}" title="${esc(b.hint)}">
+        <div class="b-icon">${b.icon}</div>
+        <div class="b-info">
+          <div class="b-name">${esc(b.name)}</div>
+          <div class="b-desc">${esc(b.hint)}</div>
+        </div>
+        <div class="b-status">${b.unlocked ? '✨ Desbloqueado' : '🔒 Bloqueado'}</div>
+      </div>
+    `).join('');
+  }
+  prev.badges = new Set(S.badges.filter((b) => b.unlocked).map((b) => b.id));
+}
+
+function renderLog() {
+  const logBox = document.getElementById('log');
+  if (!logBox) return;
+  let items = S.timeline || [];
+  if (timelineFilter === 'bugs') {
+    items = items.filter((f) => f.cls === 'bad' || /FAILED|REPROVADO|falh/i.test(f.text));
+  } else if (timelineFilter === 'ok') {
+    items = items.filter((f) => f.cls === 'ok' || /PASSED|APROVADO/i.test(f.text));
+  }
+
+  if (!items.length) {
+    logBox.innerHTML = '<div class="empty-state">Nenhum evento registrado para este filtro.</div>';
+    return;
+  }
+
+  logBox.innerHTML = items.map((f) => {
+    const run = S.runs.find((r) => r.id === f.runId);
+    const card = run ? run.card : '';
+    const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(card);
+    const cardHtml = isCard
+      ? `<a href="https://guruja.atlassian.net/browse/${esc(card)}" target="_blank" rel="noopener" class="tl-card-chip" title="Abrir no Jira">${esc(card)} ↗</a>`
+      : (card ? `<span class="tl-card-chip">${esc(card)}</span>` : '');
+
+    let nodeCls = 'info';
+    let nodeIcon = '⚡';
+    if (f.cls === 'bad' || /FAILED|REPROVADO|falh/i.test(f.text)) {
+      nodeCls = 'bad'; nodeIcon = '🐞';
+    } else if (f.cls === 'ok' || /PASSED|APROVADO/i.test(f.text)) {
+      nodeCls = 'ok'; nodeIcon = '✅';
+    } else if (/navegador|abriu/i.test(f.text)) {
+      nodeCls = 'info'; nodeIcon = '🌐';
+    } else if (/limpeza|cleanup/i.test(f.text)) {
+      nodeCls = 'info'; nodeIcon = '🧹';
+    }
+
+    return `<div class="tl-item ${nodeCls}">
+      <div class="tl-node">${nodeIcon}</div>
+      <div class="tl-content">
+        <div class="tl-meta">
+          <span class="tl-agent">${EMOJI[f.agent] || '🤖'} ${esc(f.agent === 'antigravity' ? 'Antigravity' : (f.agent === 'claude' ? 'Claude' : f.agent))}</span>
+          ${cardHtml}
+          <span class="tl-time">${hhmm(f.ts)}</span>
+        </div>
+        <div class="tl-msg">${formatTimelineText(f.text)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Relatório HTML Modal ─────────────────────────────────────────────
+let openId = null;
+function closeReport() { openId = null; document.getElementById('overlay').classList.remove('on'); }
+function openReport(id) { openId = id; renderReport(true); document.getElementById('overlay').classList.add('on'); }
+function renderReport(force) {
+  const r = S && S.runs.find((x) => x.id === openId);
+  if (!r) return closeReport();
+  if (!force) return;
+  const count = (st) => r.scenarios.filter((s) => s.status === st).length;
+  const stamp = r.recommendation || (r.status === 'ABORTED' ? 'ABORTADA' : 'EM ANDAMENTO');
+  document.getElementById('report').innerHTML = `
+    <button class="ghost close" onclick="closeReport()">✖ FECHAR</button>
+    <div class="rhead">
+      <div class="stamp ${esc(stamp)}">${esc(stamp)}</div>
+      <div class="ttl"><b>${EMOJI[r.agent]} ${esc(r.card)} · ${esc(MODE[r.mode] || r.mode)}</b><br><span style="color:var(--muted);font-size:13px">${esc(r.agentLabel)} · ${esc(r.env)} · ${hhmm(r.startedAt)} → ${hhmm(r.endedAt)} (${dur(r.startedAt, r.endedAt)})</span></div>
+    </div>
+    <div class="rgrid">
+      <div class="stat b"><b>${r.scenarios.length}</b>cenários</div>
+      <div class="stat g"><b>${count('PASSED')}</b>passaram</div>
+      <div class="stat r"><b>${count('FAILED')}</b>falharam</div>
+      <div class="stat y"><b>${count('BLOCKED')}</b>bloqueados</div>
+      <div class="stat o"><b>${count('NEEDS_REVIEW')}</b>a revisar</div>
+    </div>
+    <div class="rsec"><h4>🗺️ MAPA DE RESULTADOS</h4><div class="map" style="display:flex;flex-wrap:wrap;gap:8px">${r.scenarios.map((s) => { const [cls, ico] = ROOM[s.status] || ['', '']; return `<div class="room ${cls}" style="width:90px" title="${esc(s.title)}"><span class="ico">${ico}</span><span class="code">${esc(s.code)}</span></div>`; }).join('')}</div></div>
+    ${r.bugs.length ? `<div class="rsec"><h4>🐞 BUGS CAPTURADOS</h4>${r.bugs.map((b) => `<div class="bugitem" style="margin-bottom:6px"><b>${esc(b.jira || b.code)}</b>${esc(b.title)}</div>`).join('')}</div>` : ''}
+    ${r.video || r.shots.length ? `<div class="rsec"><h4>🎬 EVIDÊNCIAS</h4>
+      ${r.video ? `<video id="rep-video" controls muted preload="metadata" src="/evidence/${r.video.id}"></video>` : ''}
+      ${r.shots.length ? `<div class="shots" style="display:flex;gap:10px;flex-wrap:wrap">${r.shots.map((s) => `<a onclick="openLightbox('/evidence/${s.id}', '${esc(s.code || '')} · falha')"><img alt="${esc(s.name)}" src="/evidence/${s.id}" loading="lazy"><span>${esc(s.code || '')} · falha</span></a>`).join('')}</div>` : ''}
+    </div>` : ''}
+    <div class="ractions" style="margin-top:24px;display:flex;gap:10px">
+      ${r.report ? `<a href="/report/${encodeURIComponent(r.id)}" target="_blank" rel="noopener"><button>📄 ABRIR RELATÓRIO COMPLETO HTML</button></a>` : ''}
+      <button class="ghost" onclick="copySummary('${esc(r.id)}', this)">📋 COPIAR RESUMO</button>
+    </div>`;
+}
+async function copySummary(id, btn) {
+  const r = S.runs.find((x) => x.id === id); if (!r) return;
+  const statusEmoji = r.recommendation === 'APROVADO' ? '✅' : r.recommendation === 'REPROVADO' ? '❌' : '⚠️';
+  const text = [
+    `*NOVO QA* • ${r.card} (${MODE[r.mode] || r.mode} em ${r.env})`,
+    `Status: ${statusEmoji} *${r.recommendation || r.status}*`,
+    `Cenários: ${r.scenarios.length} total | ${r.scenarios.filter(s => s.status === 'PASSED').length} passaram | ${r.scenarios.filter(s => s.status === 'FAILED').length} falharam`,
+    '',
+    ...r.scenarios.map((s) => `${s.status === 'PASSED' ? '✅' : s.status === 'FAILED' ? '🐞' : '🔒'} ${s.code}: ${s.title}`),
+    ...(r.bugs.length ? ['', '*Bugs Encontrados:*', ...r.bugs.map((b) => `• ${b.jira || b.code}: ${b.title}`)] : [])
+  ].join('\n');
+  try { await navigator.clipboard.writeText(text); btn.textContent = '✔ COPIADO!'; } catch { btn.textContent = 'erro ao copiar'; }
+}
+
+// ── Atualização Contínua ─────────────────────────────────────────────
+async function tick() {
+  const banner = document.getElementById('offline');
+  let state = null;
+  try {
+    const res = await fetch('/api/state', { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    state = await res.json();
+  } catch {
+    banner.textContent = 'sem conexão com o painel — o npm run live ainda está rodando?';
+    banner.classList.add('on');
+  }
+  if (state) {
+    S = state;
+    // Erro ao desenhar não é falta de conexão: mostra qual parte quebrou (e segue tentando).
+    const parts = { renderHeader, renderUsage, renderMissions, renderNeeds, renderHunters, renderBugs, renderLog, renderReport: () => renderReport(false) };
+    const broken = [];
+    for (const [name, fn] of Object.entries(parts)) {
+      try { fn(); } catch (e) { broken.push(`${name}: ${e.message}`); console.error(name, e); }
+    }
+    banner.textContent = broken.length ? `erro ao desenhar o painel (${broken.join(' · ')}) — recarregue com F5; se continuar, me mande este texto` : '';
+    banner.classList.toggle('on', broken.length > 0);
+    prev.first = false;
+  }
+  clearTimeout(timer);
+  timer = setTimeout(tick, 2000);
+}
+let timer = null;
+function tickNow() { clearTimeout(timer); tick(); }
+updateNotifyButton();
+tick();
+</script>
+</body>
+</html>

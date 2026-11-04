@@ -23,6 +23,12 @@ export class StateError extends Error {
   }
 }
 
+/**
+ * Missão sem card (exploração de um sistema pela URL): chave EXPLORA-AAAAMMDDHHmm, aceita em
+ * qualquer projeto. O "card" é o objetivo da missão, gravado como digest pelo /qa.
+ */
+export const FREE_MISSION_PREFIX = 'EXPLORA';
+
 export type RunMode = 'manual' | 'explore' | 'automate' | 'retest';
 export type RunStatus = 'PLANNING' | 'AWAITING_APPROVAL' | 'EXECUTING' | 'COMPLETED' | 'ABORTED';
 export type Priority = 'P0' | 'P1' | 'P2' | 'P3';
@@ -52,6 +58,8 @@ export interface AgentInfo {
   client?: string;
   version?: string;
   model?: string;
+  /** Missão do painel ao vivo que lançou este agente (NOVO_QA_MISSION). */
+  mission?: string;
 }
 
 export interface ScenarioDetails extends ScenarioRow {
@@ -135,7 +143,7 @@ export class StateStore {
     if (!env) throw new StateError(`ambiente "${input.env}" não existe em config/environments.yaml`);
     const project = this.config.projects[env.project]!;
     const prefix = input.issueKey.split('-')[0]!;
-    if (project.jiraKeys.length > 0 && !project.jiraKeys.includes(prefix)) {
+    if (prefix !== FREE_MISSION_PREFIX && project.jiraKeys.length > 0 && !project.jiraKeys.includes(prefix)) {
       throw new StateError(`${input.issueKey} não pertence ao projeto ${env.project} (chaves: ${project.jiraKeys.join(', ')})`);
     }
 

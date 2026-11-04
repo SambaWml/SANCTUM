@@ -211,3 +211,26 @@ describe('ferramentas de contexto via MCP', () => {
     expect(parse(text).issue.acceptanceCriteria[1]).toBe('A busca deve ignorar acentuação e maiúsculas/minúsculas');
   });
 });
+
+describe('missão sem card (EXPLORA)', () => {
+  const mission = digest({
+    key: 'EXPLORA-202611031230', title: 'Explorar o cadastro do sistema', type: 'Missão exploratória', status: 'Sem card',
+    components: [], labels: [], acceptanceCriteria: [], businessRules: [], openQuestions: [], links: [], attachments: [], figma: [],
+    confluence: [], comments: [], environmentHints: ['https://dev.exemplo.com'],
+  });
+
+  it('usa o projeto informado, mesmo com chaves Jira cadastradas no projeto', () => {
+    cache.put('jira', mission.key, '1', mission);
+    expect(() => buildContextPackage({ rootDir: root, config, db, cache }, mission.key)).toThrow(/missão sem card: informe project/);
+    const pkg = buildContextPackage({ rootDir: root, config, db, cache }, mission.key, { project: 'fixture' });
+    expect(pkg.project.id).toBe('fixture');
+    expect(pkg.issue.title).toBe('Explorar o cadastro do sistema');
+    expect(() => buildContextPackage({ rootDir: root, config, db, cache }, mission.key, { project: 'nao-existe' })).toThrow(/não existe/);
+  });
+
+  it('run da missão é aceito em projeto com jiraKeys', () => {
+    const store = new StateStore(db, config, { now: () => new Date('2026-11-03T12:30:00Z') });
+    expect(store.startRun({ issueKey: 'EXPLORA-202611031230', env: 'fixture-local', mode: 'explore' }).project).toBe('fixture');
+    expect(() => store.startRun({ issueKey: 'OUTRO-1', env: 'fixture-local', mode: 'explore' })).toThrow(/não pertence/);
+  });
+});

@@ -189,7 +189,7 @@ ${m.retest ? `<h2>Reteste de ${esc(m.retest.parent)}</h2><p>Corrigidos ${m.retes
 
 ${m.videos.length ? `<h2>Vídeo da execução</h2>${m.videos.map((v, i) => `
 <div class="video">
-  <video id="v${i}" controls preload="metadata" src="${rel(v.path)}"></video>
+  <video id="v${i}" controls muted preload="metadata" src="${rel(v.path)}"></video>
   ${v.chapters.length ? `<div class="chapters">${v.chapters.map((ch) => seek(v.path, ch.atSec, `${ch.code} ${clock(ch.atSec)}`)).join('')}</div>` : ''}
   <div class="muted">${esc(v.path)}</div>
 </div>`).join('')}` : ''}
@@ -212,7 +212,8 @@ function seek(id, t) {
   if (!v) return;
   v.currentTime = t;
   v.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  v.play();
+  var p = v.play();
+  if (p && p.catch) p.catch(function () {});
 }
 // Filtros combinados: grupo (botões) + códigos/intervalos (campo) + esconder "não é bug".
 var group = 'all';

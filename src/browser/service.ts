@@ -1,4 +1,5 @@
 import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { isLivePanel } from '../live/panel-url.ts';
 import { dirname, join } from 'node:path';
 import { chromium, type Browser, type BrowserContext, type Locator, type Page } from 'playwright';
 import { resolveValue } from '../config/load.ts';
@@ -225,6 +226,9 @@ export class BrowserService {
     // (A limpeza usa context.request, que não passa por aqui.)
     await context.route('**/*', async (route) => {
       const req = route.request();
+      // A Central de Caça aprova os pedidos do agente: o navegador do teste nunca chega nela
+      // (senão o agente poderia clicar em "Permitir" nos próprios pedidos).
+      if (isLivePanel(new URL(req.url()), this.deps.rootDir)) return route.abort('blockedbyclient');
       // Simulação (CA de estados de erro/carregamento): responde no navegador, sem chegar ao servidor.
       const sim = session.simulations.find((s) => req.url().includes(s.urlContains) && (!s.method || s.method === req.method()) && s.remaining !== 0);
       if (sim) {
@@ -408,6 +412,9 @@ export class BrowserService {
     const url = new URL(raw, this.s.baseUrl);
     if (url.protocol !== 'http:' && url.protocol !== 'https:') {
       throw new BrowserError(`URL recusada (${url.protocol}): só http(s) ou caminho relativo ao ambiente`);
+    }
+    if (isLivePanel(url, this.deps.rootDir)) {
+      throw new BrowserError('URL recusada: é a Central de Caça do próprio NOVO QA, onde o usuário aprova os pedidos do agente — não pode ser testada pelo agente');
     }
     return url;
   }

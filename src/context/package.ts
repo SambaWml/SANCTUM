@@ -6,6 +6,7 @@ import type { Config } from '../config/schema.ts';
 import { loadModules, matchModules, projectDir, projectSummary } from '../knowledge/modules.ts';
 import { type DigestCache, type JiraDigest } from '../sources/digest.ts';
 import type { Db } from '../state/db.ts';
+import { FREE_MISSION_PREFIX } from '../state/store.ts';
 
 export class ContextError extends Error {
   constructor(message: string) {
@@ -27,7 +28,7 @@ export interface ContextDeps {
  * (não conteúdo) para o que pode ser buscado depois — progressive disclosure.
  * Exige o digest Jira do card já em cache.
  */
-export function buildContextPackage(deps: ContextDeps, issueKey: string) {
+export function buildContextPackage(deps: ContextDeps, issueKey: string, options: { project?: string } = {}) {
   const { rootDir, config, db, cache } = deps;
   const env = deps.env ?? process.env;
 
@@ -37,9 +38,14 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string) {
   }
   const issue = lookup.digest as JiraDigest;
   const prefix = issueKey.split('-')[0]!;
-  const projectEntry = Object.entries(config.projects).find(([, p]) => p.jiraKeys.includes(prefix));
+  // Missão sem card não tem chave de projeto: o projeto vem do pedido (o do ambiente da URL).
+  const free = prefix === FREE_MISSION_PREFIX;
+  if (free && !options.project) throw new ContextError(`${issueKey} é missão sem card: informe project (o do ambiente da URL)`);
+  const projectEntry = Object.entries(config.projects).find(([id, p]) => (free ? id === options.project : p.jiraKeys.includes(prefix)));
   if (!projectEntry) {
-    throw new ContextError(`nenhum projeto em config/projects.yaml tem a chave ${prefix} — cadastre o projeto antes`);
+    throw new ContextError(free
+      ? `projeto ${options.project} não existe em config/projects.yaml — cadastre o projeto antes`
+      : `nenhum projeto em config/projects.yaml tem a chave ${prefix} — cadastre o projeto antes`);
   }
   const [projectId, project] = projectEntry;
 

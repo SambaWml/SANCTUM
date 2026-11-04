@@ -233,6 +233,58 @@ const MIGRATIONS: string[] = [
   ALTER TABLE runs ADD COLUMN agent TEXT;
   ALTER TABLE approvals ADD COLUMN agent TEXT;
   `,
+  // 6: missões lançadas pelo painel ao vivo (agente em segundo plano) e os pedidos que esperam o
+  //    usuário no painel (permissão de ferramenta, aprovação de plano já dada pelo botão).
+  `
+  CREATE TABLE missions (
+    id            TEXT PRIMARY KEY,
+    agent         TEXT NOT NULL,
+    target        TEXT NOT NULL,
+    kind          TEXT NOT NULL,
+    objective     TEXT,
+    status        TEXT NOT NULL CHECK (status IN ('RUNNING','WAITING','DONE','FAILED','STOPPED')),
+    session_id    TEXT,
+    pid           INTEGER,
+    last_message  TEXT,
+    error         TEXT,
+    created_at    TEXT NOT NULL,
+    updated_at    TEXT NOT NULL
+  );
+  CREATE TABLE prompts (
+    id           INTEGER PRIMARY KEY,
+    mission_id   TEXT NOT NULL REFERENCES missions(id),
+    kind         TEXT NOT NULL CHECK (kind IN ('permission','plan')),
+    tool         TEXT,
+    summary      TEXT NOT NULL,
+    input_json   TEXT,
+    status       TEXT NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING','ANSWERED','USED','EXPIRED')),
+    decision     TEXT CHECK (decision IN ('allow','deny')),
+    message      TEXT,
+    created_at   TEXT NOT NULL,
+    answered_at  TEXT
+  );
+  CREATE INDEX prompts_pending ON prompts(status, mission_id);
+  `,
+  // 7: saída do turno em arquivo (o agente não morre se o painel for reiniciado).
+  `ALTER TABLE missions ADD COLUMN log_path TEXT;`,
+  // 8: run aberto pela missão (Antigravity não herda NOVO_QA_MISSION: o MCP dele é do processo do app).
+  `ALTER TABLE missions ADD COLUMN run_id TEXT;`,
+  // 9: o que o usuário tirou do painel (missão excluída, run ocultado). Só some da tela: histórico e evidências ficam.
+  `
+  ALTER TABLE missions ADD COLUMN archived_at TEXT;
+  CREATE TABLE hidden_runs (run_id TEXT PRIMARY KEY, hidden_at TEXT NOT NULL);
+  `,
+  // 10: histórico de mensagens da conversa direta com o agente na Central de Caça.
+  `
+  CREATE TABLE mission_messages (
+    id          INTEGER PRIMARY KEY,
+    mission_id  TEXT NOT NULL REFERENCES missions(id),
+    role        TEXT NOT NULL CHECK (role IN ('user','agent','system')),
+    text        TEXT NOT NULL,
+    ts          TEXT NOT NULL
+  );
+  CREATE INDEX mission_messages_mid ON mission_messages(mission_id, id);
+  `,
 ];
 
 export function openDb(path: string): Db {

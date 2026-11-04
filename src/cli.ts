@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -13,6 +14,10 @@ import { ingestTranscripts, transcriptDirs } from './metrics/transcripts.ts';
 import { Redactor } from './security/redact.ts';
 import { SecretStore } from './security/secrets.ts';
 import { openDb } from './state/db.ts';
+import { MissionManager } from './live/missions.ts';
+import { recordLivePort } from './live/panel-url.ts';
+import { createLiveServer } from './live/server.ts';
+import { UsageMeter } from './live/usage.ts';
 import { StateStore } from './state/store.ts';
 import { applyPrune, planPrune } from './storage/prune.ts';
 import { promoteStaging, stagingSummary } from './knowledge/staging.ts';
@@ -121,14 +126,55 @@ function knowledge(arg?: string): number {
   return 0;
 }
 
-const commands: Record<string, (arg?: string) => number | Promise<number>> = { doctor, metrics, storage, knowledge };
+/**
+ * novo-qa live [porta]: Central de Caça em http://127.0.0.1:<porta>. Lê o banco e lança/acompanha
+ * missões do Claude em segundo plano; as ações da página exigem a chave gerada a cada início.
+ */
+async function live(arg?: string): Promise<number> {
+  loadDotEnv({ path: join(ROOT, '.env'), quiet: true });
+  const port = Number(arg ?? process.env.NOVO_QA_LIVE_PORT ?? 4777);
+  const config = loadConfig(ROOT);
+  const secrets = SecretStore.fromConfig(config);
+  const redactor = new Redactor({ secrets: secrets.valuesForRedaction(), extraSensitiveKeys: config.policy.redaction.extraSensitiveKeys });
+  const dbPath = process.env.NOVO_QA_DB ?? join(ROOT, 'data', 'novo-qa.db');
+  // O painel escreve só missões e respostas do usuário (tabelas missions/prompts); o resto é leitura.
+  const db = openDb(dbPath);
+  const missions = new MissionManager({ db, rootDir: ROOT, claudeBin: process.env.NOVO_QA_CLAUDE_BIN || undefined, agyBin: process.env.NOVO_QA_AGY_BIN || undefined, limitsFile: join(ROOT, 'data', 'usage-limits.json') });
+  missions.recover();
+  missions.start();
+  console.log('Lendo o consumo dos transcripts dos últimos 7 dias…');
+  const usage = new UsageMeter({
+    claudeProjectsDir: join(homedir(), '.claude', 'projects'),
+    claudeLimitsFile: join(ROOT, 'data', 'usage-limits.json'),
+    codexSessionsDir: join(homedir(), '.codex', 'sessions'),
+  });
+  usage.state();
+  const server = createLiveServer({ db, rootDir: ROOT, redactor, usage, missions, token: randomBytes(24).toString('hex') });
+  try {
+    await new Promise<void>((resolve, reject) => { server.once('error', reject); server.listen(port, '127.0.0.1', resolve); });
+  } catch (err) {
+    db.close();
+    if ((err as NodeJS.ErrnoException).code !== 'EADDRINUSE') throw err;
+    console.log(`Porta ${port} ocupada: o painel já está aberto em http://127.0.0.1:${port} ou use outra porta (npm run live -- 4778)`);
+    return 1;
+  }
+  recordLivePort(ROOT, port);
+  console.log(`Central de Caça em http://127.0.0.1:${port}  (Ctrl+C para sair)`);
+  await new Promise<void>((resolve) => process.once('SIGINT', resolve));
+  server.close();
+  db.close();
+  return 0;
+}
+
+const commands: Record<string, (arg?: string) => number | Promise<number>> = { doctor, metrics, storage, knowledge, live };
 
 const [command = 'help', arg] = process.argv.slice(2);
 const run = commands[command];
 if (!run) {
   console.log(`Uso: novo-qa <comando>\n\nComandos:\n  doctor\n  metrics <runId|card> | --schema
   storage [--apply]
-  knowledge <projeto> | <projeto>/<módulo> "<resumo>"`);
+  knowledge <projeto> | <projeto>/<módulo> "<resumo>"
+  live [porta]`);
   process.exit(command === 'help' ? 0 : 1);
 }
 process.exit(await run(arg));

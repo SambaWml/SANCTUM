@@ -237,7 +237,11 @@ export function buildReport(
   });
   if (reclassified.length) md.push('## Reclassificações', '', ...reclassified.map((l) => `- ${l}`), '');
 
-  const videos = all(`SELECT path, meta FROM evidence WHERE run_id = ? AND kind = 'video' AND scenario_id IS NULL ORDER BY id`, runId);
+  const rawVideos = all(`SELECT path, meta FROM evidence WHERE run_id = ? AND kind = 'video' AND scenario_id IS NULL ORDER BY id`, runId);
+  const videos = rawVideos.filter((v) => {
+    const chapters = (JSON.parse(String(v.meta ?? '{}')) as { chapters?: { code: string; atSec: number }[] }).chapters ?? [];
+    return chapters.length > 0;
+  });
   if (videos.length) {
     md.push('## Vídeos', '');
     for (const v of videos) {

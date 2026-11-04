@@ -13,6 +13,7 @@
     "metrics": "tsx src/cli.ts metrics",
     "storage": "tsx src/cli.ts storage",
     "knowledge": "tsx src/cli.ts knowledge",
+    "live": "tsx src/cli.ts live",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
