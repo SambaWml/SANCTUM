@@ -50,3 +50,10 @@ proposals:
     source:
       type: run
       reference: GURUJA-9039-20261104T200150
+  - statement: Na tela de Desempenho Acumulado (/aluno/desempenho-acumulado), ao selecionar o filtro 'Aprofundamentos', a tabela de desempenho exibe exclusivamente as disciplinas que possuem registros de aprofundamento, consolidando tempos e contagem por disciplina.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: GURUJA-9039-20261105T142124

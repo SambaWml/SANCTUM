@@ -13,7 +13,10 @@ export type FeedClass = '' | 'ok' | 'bad' | 'warn' | 'ask' | 'info' | 'muted';
 
 export interface FeedLine { ts: string; text: string; cls: FeedClass; runId: string; agent: AgentKind }
 export interface LiveScenario { code: string; title: string; priority: string; status: string; classification: string | null }
-export interface LiveBug { code: string; title: string; jira?: string; runId: string; card: string; ts: string }
+export interface LiveBug {
+  code: string; title: string; jira?: string; runId: string; card: string; ts: string;
+  screenshot?: string | null; priority?: string | null; rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+}
 export interface Pending { runId: string; card: string; agent: AgentKind; kind: 'plan' | 'red'; title: string; detail: string; ts: string; scenarios?: LiveScenario[] }
 
 export interface LiveRun {
@@ -38,7 +41,7 @@ export interface Badge { id: string; icon: string; name: string; hint: string; u
 
 export interface LiveState {
   generatedAt: string;
-  stats: { missionsToday: number; bugsToday: number; scenariosToday: number; streakDays: number };
+  stats: { missionsToday: number; bugsToday: number; scenariosToday: number; streakDays: number; shieldPct?: number };
   runs: LiveRun[]; pending: Pending[]; bugs: LiveBug[]; timeline: FeedLine[];
   agents: AgentScore[]; badges: Badge[];
 }
@@ -101,6 +104,10 @@ export function buildLiveState(db: Db, opts: BuildOptions): LiveState {
   if (!days.has(today)) d = new Date(d.getTime() - 86400_000);
   for (; days.has(d.toISOString().slice(0, 10)); d = new Date(d.getTime() - 86400_000)) streak++;
 
+  const passedTotal = Number(get(`SELECT COUNT(*) n FROM scenarios WHERE status = 'PASSED'`)?.n ?? 0);
+  const allTotal = Number(get(`SELECT COUNT(*) n FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED')`)?.n ?? 0);
+  const shieldPct = allTotal > 0 ? Math.round((passedTotal / allTotal) * 1000) / 10 : 100;
+
   return {
     generatedAt: now.toISOString(),
     stats: {
@@ -108,8 +115,9 @@ export function buildLiveState(db: Db, opts: BuildOptions): LiveState {
       bugsToday: bugsAll.filter((b) => b.ts >= today).length,
       scenariosToday: Number(get(`SELECT COUNT(*) n FROM scenarios WHERE ended_at >= ? AND status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW')`, today)?.n ?? 0),
       streakDays: streak,
+      shieldPct,
     },
-    runs, pending, bugs: bugsAll.slice(0, 12), timeline,
+    runs, pending, bugs: bugsAll.slice(0, 36), timeline,
     agents: agentScores(all), badges: badges(all, get),
   };
 }
@@ -263,7 +271,29 @@ function explainedBugs(all: (sql: string, ...a: (string | number)[]) => Row[], w
       out.set(key, { code: x.code, title: str(x.title), jira: x.jira ?? out.get(key)?.jira, runId, card: str(e.issue_key), ts: str(e.ts) });
     }
   }
-  return [...out.values()].sort((a, b) => b.ts.localeCompare(a.ts));
+  const result = [...out.values()];
+  for (const b of result) {
+    const sc = all(`SELECT priority, risk, title FROM scenarios WHERE run_id = ? AND code = ? LIMIT 1`, b.runId, b.code)[0] as { priority?: string; risk?: string; title?: string } | undefined;
+    const prio = sc?.priority ? str(sc.priority) : 'P1';
+    const risk = sc?.risk ? str(sc.risk) : 'MEDIUM';
+    const title = sc?.title ? str(sc.title) : b.title;
+    let rarity: 'common' | 'rare' | 'epic' | 'legendary' = 'common';
+    if (prio === 'P0' && (risk === 'HIGH' || /permiss|admin|seguran|dados|vazamento/i.test(title))) {
+      rarity = 'legendary';
+    } else if (prio === 'P0' || risk === 'HIGH') {
+      rarity = 'epic';
+    } else if (prio === 'P1') {
+      rarity = 'rare';
+    } else {
+      rarity = 'common';
+    }
+    b.priority = prio;
+    b.rarity = rarity;
+
+    const ev = all(`SELECT path FROM evidence WHERE run_id = ? AND kind = 'screenshot' AND (scenario_id = (SELECT id FROM scenarios WHERE run_id = ? AND code = ?) OR path LIKE ?) ORDER BY id DESC LIMIT 1`, b.runId, b.runId, b.code, `%${b.code}%`)[0] as { path?: string } | undefined;
+    b.screenshot = ev?.path ? `/${str(ev.path).replace(/\\/g, '/')}` : null;
+  }
+  return result.sort((a, b) => b.ts.localeCompare(a.ts));
 }
 
 /** XP real: 10 por cenário concluído, 30 por missão concluída, 50 por bug explicado no relatório. */

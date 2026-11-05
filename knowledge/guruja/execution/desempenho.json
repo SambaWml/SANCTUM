@@ -111,11 +111,12 @@
     "playwright": "await page.getByRole('button', { name: 'Itens' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9039-20261105T142124",
       "GURUJA-9039-20261104T200150",
       "GURUJA-9039-20261104T175520",
       "GURUJA-8804-20261030T132348"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -312,10 +313,11 @@
     "playwright": "await page.getByRole('button', { name: 'Aprofundamentos', exact: true }).click();",
     "scenario": "CT-002",
     "validatedIn": [
+      "GURUJA-9039-20261105T142124",
       "GURUJA-9039-20261104T200150",
       "GURUJA-9039-20261104T175520"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -343,9 +345,10 @@
     "playwright": "await page.getByRole('button', { name: 'Todos', exact: true }).click();",
     "scenario": "CT-003",
     "validatedIn": [
+      "GURUJA-9039-20261105T142124",
       "GURUJA-9039-20261104T175520"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -618,8 +621,66 @@
     "playwright": "await page.getByRole('row', { name: '14 13 92,8% 48m - 25m 6h' }).getByRole('button', { name: /^\\d+m$/ }).hover();",
     "scenario": "CT-004",
     "validatedIn": [
+      "GURUJA-9039-20261105T142124",
       "GURUJA-9039-20261104T200150"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "navigate",
+    "target": {
+      "url": "/entrar"
+    },
+    "playwright": "await page.goto('/entrar');",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261105T142124"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261105T142124"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261105T142124"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261105T142124"
+    ],
+    "lastSeen": "2026-11-05"
   }
 ]

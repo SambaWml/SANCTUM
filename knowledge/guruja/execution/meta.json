@@ -1,0 +1,126 @@
+[
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Entrar"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Quero desconto!"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Quero desconto!' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "navigate",
+    "target": {
+      "url": "/aluno/visao-geral"
+    },
+    "playwright": "await page.goto('/aluno/visao-geral');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "navigate",
+    "target": {
+      "url": "/configuracoes"
+    },
+    "playwright": "await page.goto('/configuracoes');",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/configuracoes",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Assinatura"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Assinatura' }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "navigate",
+    "target": {
+      "url": "/login"
+    },
+    "playwright": "await page.goto('/login');",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "viewport",
+    "target": {
+      "viewport": "390x844"
+    },
+    "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "GURUJA-8343-20261105T161101"
+    ],
+    "lastSeen": "2026-11-05"
+  }
+]
