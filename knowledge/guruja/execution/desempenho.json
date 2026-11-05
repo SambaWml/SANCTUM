@@ -52,9 +52,11 @@
     "playwright": "await page.goto('/aluno/desempenho-acumulado');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9039-20261104T200150",
+      "GURUJA-9039-20261104T175520",
       "GURUJA-8804-20261030T132348"
     ],
-    "lastSeen": "2026-10-30"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -66,9 +68,10 @@
     "playwright": "await page.getByRole('combobox', { name: 'Disciplina' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9039-20261104T175520",
       "GURUJA-8804-20261030T132348"
     ],
-    "lastSeen": "2026-10-30"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -108,9 +111,11 @@
     "playwright": "await page.getByRole('button', { name: 'Itens' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9039-20261104T200150",
+      "GURUJA-9039-20261104T175520",
       "GURUJA-8804-20261030T132348"
     ],
-    "lastSeen": "2026-10-30"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -123,9 +128,10 @@
     "playwright": "await page.getByRole('button', { name: 'Atividades', exact: true }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9039-20261104T175520",
       "GURUJA-8804-20261030T132348"
     ],
-    "lastSeen": "2026-10-30"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/desempenho-acumulado",
@@ -148,7 +154,7 @@
       "role": "button",
       "name": "53m"
     },
-    "playwright": "await page.getByRole('button', { name: '53m' }).click();",
+    "playwright": "await page.getByRole('button', { name: /^\\d+m$/ }).click();",
     "scenario": "CT-001",
     "validatedIn": [
       "GURUJA-8804-20261030T132348"
@@ -246,7 +252,7 @@
       "role": "cell",
       "name": "1453"
     },
-    "playwright": "await page.getByRole('cell', { name: '1453' }).click();",
+    "playwright": "await page.getByRole('cell', { name: /^\\d+$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-8804-20261030T132348"
@@ -280,5 +286,340 @@
       "GURUJA-8804-20261030T132348"
     ],
     "lastSeen": "2026-10-30"
+  },
+  {
+    "route": "/aluno/visao-geral",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Desempenho"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Desempenho' }).click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Aprofundamentos",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Aprofundamentos', exact: true }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9039-20261104T200150",
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Reforços",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Reforços', exact: true }).click();",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Todos",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Todos', exact: true }).click();",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "hover",
+    "target": {
+      "role": "button",
+      "name": "37m",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: /^\\d+m$/ }).hover();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "hover",
+    "target": {
+      "role": "button",
+      "name": "25m",
+      "exact": true,
+      "within": {
+        "role": "row",
+        "name": "14 13 92,8% 48m - 25m 6h"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: '14 13 92,8% 48m - 25m 6h' }).getByRole('button', { name: /^\\d+m$/ }).hover();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Itens",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Itens', exact: true }).click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Comparativo"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Comparativo' }).click();",
+    "scenario": "CT-006",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Auditoria Privada",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: 'Auditoria Privada', exact: true }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "option",
+      "name": "Todas as disciplinas"
+    },
+    "playwright": "await page.getByRole('option', { name: 'Todas as disciplinas' }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Intervalo de metas"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Intervalo de metas' }).click();",
+    "scenario": "CT-008",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Tempo por meta"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Tempo por meta' }).click();",
+    "scenario": "CT-009",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "tab",
+      "name": "Tempo por dia"
+    },
+    "playwright": "await page.getByRole('tab', { name: 'Tempo por dia' }).click();",
+    "scenario": "CT-009",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "viewport",
+    "target": {
+      "viewport": "820x1180"
+    },
+    "playwright": "await page.setViewportSize({ width: 820, height: 1180 });",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Filtro"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Filtro' }).click();",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "fill",
+    "target": {
+      "placeholder": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByPlaceholder('Buscar por aluno, e-mail ou telefone').fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "press",
+    "target": {
+      "placeholder": "Buscar por aluno, e-mail ou telefone"
+    },
+    "playwright": "await page.getByPlaceholder('Buscar por aluno, e-mail ou telefone').press('Enter');",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "role": "cell",
+      "name": "William Belmiro"
+    },
+    "playwright": "await page.getByRole('cell', { name: 'William Belmiro' }).click();",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos",
+    "action": "click",
+    "target": {
+      "css": "tr:has-text(\"William Belmiro\")"
+    },
+    "playwright": "await page.locator('tr:has-text(\"William Belmiro\")').click();",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos/2536",
+    "action": "navigate",
+    "target": {
+      "url": "/guruja/alunos/2536"
+    },
+    "playwright": "await page.goto('/guruja/alunos/2536');",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T200150",
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/guruja/alunos/2536",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Desempenho"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Desempenho' }).click();",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "GURUJA-9039-20261104T175520"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Auditoria Privada"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Auditoria Privada' }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9039-20261104T200150"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/desempenho-acumulado",
+    "action": "hover",
+    "target": {
+      "role": "button",
+      "name": "25m",
+      "within": {
+        "role": "row",
+        "name": "14 13 92,8% 48m - 25m 6h"
+      }
+    },
+    "playwright": "await page.getByRole('row', { name: '14 13 92,8% 48m - 25m 6h' }).getByRole('button', { name: /^\\d+m$/ }).hover();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "GURUJA-9039-20261104T200150"
+    ],
+    "lastSeen": "2026-11-04"
   }
 ]

@@ -8,9 +8,11 @@
     "playwright": "await page.goto('/aluno/arquivo');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9038-20261105T125004",
+      "GURUJA-9038-20261105T120705",
       "GURUJA-9038-20261104T150044"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
   },
   {
     "route": "/aluno/arquivo",
@@ -470,9 +472,10 @@
     "playwright": "await page.goto('/guruja/alunos/2536');",
     "scenario": "CT-010",
     "validatedIn": [
+      "GURUJA-9038-20261105T125004",
       "GURUJA-9038-20261104T150044"
     ],
-    "lastSeen": "2026-11-04"
+    "lastSeen": "2026-11-05"
   },
   {
     "route": "/guruja/alunos/2536",
@@ -617,5 +620,139 @@
       "GURUJA-9038-20261104T150044"
     ],
     "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/entrar",
+    "action": "navigate",
+    "target": {
+      "url": "/entrar"
+    },
+    "playwright": "await page.goto('/entrar');",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "placeholder": "insira o usuário"
+    },
+    "playwright": "await page.getByPlaceholder('insira o usuário').fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "placeholder": "Insira a senha"
+    },
+    "playwright": "await page.getByPlaceholder('Insira a senha').fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/entrar",
+    "action": "click",
+    "target": {
+      "text": "Entrar"
+    },
+    "playwright": "await page.getByText('Entrar').click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Aprofundamentos')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Aprofundamentos\\')').click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9038-20261105T125004",
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "click",
+    "target": {
+      "css": "button[aria-label='3ª Meta']"
+    },
+    "playwright": "await page.locator('button[aria-label=\\'3ª Meta\\']').click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "click",
+    "target": {
+      "css": "tr:has-text('Auditoria Privada')"
+    },
+    "playwright": "await page.locator('tr:has-text(\\'Auditoria Privada\\')').click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "GURUJA-9038-20261105T125004",
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Atividades')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Atividades\\')').click();",
+    "scenario": "CT-015",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/aluno/arquivo",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Reforços')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Reforços\\')').click();",
+    "scenario": "CT-015",
+    "validatedIn": [
+      "GURUJA-9038-20261105T120705"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/guruja/alunos/2536",
+    "action": "click",
+    "target": {
+      "text": "Meta 4"
+    },
+    "playwright": "await page.getByText('Meta 4').click();",
+    "scenario": "CT-010",
+    "validatedIn": [
+      "GURUJA-9038-20261105T125004"
+    ],
+    "lastSeen": "2026-11-05"
   }
 ]

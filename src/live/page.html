@@ -40,7 +40,7 @@ body {
 }
 header {
   display: flex; flex-wrap: wrap; gap: 16px; align-items: center; justify-content: space-between;
-  padding: 14px 28px; background: var(--bg-glass); position: sticky; top: 0; z-index: 30;
+  padding: 14px 48px; background: var(--bg-glass); position: sticky; top: 0; z-index: 30;
   backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--line);
 }
@@ -91,7 +91,17 @@ button.purple {
 button.purple:hover { box-shadow: 0 6px 18px rgba(123, 44, 191, 0.45); }
 button.notify-btn.on { border-color: var(--lime); color: var(--lime); background: rgba(56, 239, 125, 0.12); }
 
-main { padding: 24px 28px 48px; display: grid; gap: 24px; max-width: 1440px; margin: 0 auto; position: relative; z-index: 1; }
+main {
+  padding: 24px 32px 56px;
+  display: grid;
+  gap: 24px;
+  max-width: 1650px;
+  width: min(94vw, 1650px);
+  margin: 0 auto;
+  box-sizing: border-box;
+  position: relative;
+  z-index: 1;
+}
 @media (max-width: 640px) { header, main { padding-left: 16px; padding-right: 16px; } }
 h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: var(--fg); margin: 0 0 14px; letter-spacing: 0.3px; }
 
@@ -185,12 +195,19 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .mtabs button:hover { color: var(--fg); }
 .mtabs button.on { background: var(--fg); color: #14162e; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,0.25); }
 .mtabs button b { margin-left: 5px; opacity: 0.8; font-family: var(--code); }
-.mempty { color: var(--muted); font-size: 14px; padding: 16px 8px; }
+.mempty {
+  color: var(--muted); font-size: 14px; padding: 40px 16px; text-align: center;
+  border: 2px dashed rgba(255, 255, 255, 0.08); border-radius: 16px; margin: auto 0;
+}
 
 .mission-card {
   border: 1px solid var(--line); border-radius: 18px; padding: 18px;
   background: linear-gradient(180deg, rgba(26, 28, 56, 0.65), rgba(18, 20, 40, 0.75));
   box-shadow: var(--shadow-sm); transition: border-color 0.25s, box-shadow 0.25s;
+  flex: none;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
 }
 .mission-card + .mission-card { margin-top: 16px; }
 .mission-card.waiting { border-color: rgba(157, 78, 221, 0.7); box-shadow: 0 0 0 4px var(--purple-glow), var(--shadow); }
@@ -226,14 +243,109 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .mstop { margin-left: auto; display: flex; gap: 6px; }
 
 /* ── seção de conversa direta (chat) ── */
+/* ── Cockpit Split Layout: Consoles Gêmeos Simétricos ── */
+.cockpit-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  align-items: stretch;
+}
+@media (max-width: 1050px) {
+  .cockpit-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cockpit-panel {
+  display: flex;
+  flex-direction: column;
+  height: 600px;
+  min-height: 600px;
+  padding: 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  background: #0f1124;
+  contain: layout style;
+}
+
+.cockpit-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  contain: content;
+  will-change: scroll-position;
+}
+
+#missions {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.mission-card {
+  flex: none;
+  min-height: 280px;
+  display: flex;
+  flex-direction: column;
+}
+.mission-card:only-child {
+  flex: 1;
+  min-height: 0;
+}
+.mission-card.closed,
+.mission-card.closed:only-child {
+  flex: 0 0 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  padding: 14px 18px 12px !important;
+}
+.mission-card.closed .mcard-views {
+  margin-bottom: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.chat-closed-notice {
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font-size: 12.5px;
+  text-align: center;
+}
+
+.form-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.form-header h2 { margin: 0; }
+.collapse-btn { font-size: 11.5px; padding: 4px 10px; border-radius: 8px; cursor: pointer; }
+.mission-form.collapsed #form-body { display: none; }
+.mission-form.collapsed { padding-bottom: 14px; }
+.needs-box.zero-pending .needs .empty { padding: 18px 16px; font-size: 13px; }
+
+.nav-anchors { display: flex; gap: 6px; align-items: center; }
+@media (max-width: 900px) { .nav-anchors { display: none; } }
+.nav-chip {
+  color: var(--muted); text-decoration: none; font-size: 11.5px; font-weight: 600;
+  padding: 5px 12px; border-radius: 999px; background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line); transition: all 0.2s;
+}
+.nav-chip:hover { color: var(--fg); background: rgba(255, 255, 255, 0.1); border-color: rgba(255, 255, 255, 0.2); }
+
 .mcard-views { display: flex; gap: 6px; margin: 12px 0 8px; border-bottom: 1px solid var(--line); padding-bottom: 8px; }
 .mview-btn { background: none; box-shadow: none; color: var(--muted); font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 8px; border: 1px solid transparent; }
 .mview-btn:hover { color: var(--fg); background: rgba(255,255,255,0.05); }
 .mview-btn.on { color: var(--fg); background: rgba(255,255,255,0.09); border-color: rgba(255,255,255,0.12); font-weight: 700; }
 
 .chat-container {
-  display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 10px; flex: 1; min-height: 120px; overflow-y: auto;
   padding: 10px 4px; scrollbar-width: thin;
+  contain: content; will-change: scroll-position;
 }
 .chat-bubble {
   max-width: 86%; border-radius: 16px; padding: 12px 16px; font-size: 13.8px; line-height: 1.5;
@@ -272,6 +384,82 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .plan-hero p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
 .plan-hero .acts { display: flex; gap: 8px; flex-wrap: wrap; }
 
+/* ── Ações Rápidas Pós-Conclusão & Pílulas ── */
+.post-done-acts {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.03); border-radius: 12px; border: 1px solid var(--line);
+  align-items: center;
+}
+.post-done-acts .pda-label {
+  font-size: 11.5px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+.chip-act {
+  font-family: var(--title-font); font-size: 12px; font-weight: 700; padding: 7px 13px;
+  border-radius: 9px; background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line);
+  color: var(--fg); cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px;
+}
+.chip-act:hover {
+  background: rgba(157, 78, 221, 0.25); border-color: rgba(157, 78, 221, 0.5); transform: translateY(-1px);
+}
+.chip-act.primary {
+  background: rgba(255, 83, 112, 0.16); color: var(--red); border-color: rgba(255, 83, 112, 0.45);
+}
+.chip-act.primary:hover {
+  background: rgba(255, 83, 112, 0.28); border-color: var(--red);
+}
+.chip-act.blue {
+  background: rgba(76, 201, 240, 0.15); color: var(--blue); border-color: rgba(76, 201, 240, 0.4);
+}
+.chip-act.blue:hover {
+  background: rgba(76, 201, 240, 0.25); border-color: var(--blue);
+}
+
+/* ── Modal Amplo de Aprovação de Plano ── */
+.plan-modal-box {
+  max-width: 960px; width: 92vw; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden;
+  background: linear-gradient(165deg, #181b3d, #0f1126); border: 1px solid rgba(76, 201, 240, 0.4);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8), 0 0 35px rgba(76, 201, 240, 0.18);
+  border-radius: 24px; padding: 26px 28px;
+}
+.action-modal-box {
+  max-width: 700px; width: 92vw; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden;
+  background: linear-gradient(165deg, #1c1d3b, #0f1126); border: 1px solid rgba(199, 125, 255, 0.45);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 35px rgba(199, 125, 255, 0.2);
+  border-radius: 24px; padding: 26px 28px;
+}
+.action-modal-box.red {
+  border-color: rgba(255, 77, 109, 0.6);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 35px rgba(255, 77, 109, 0.25);
+}
+.dialogue-modal-box {
+  max-width: 760px; width: 92vw; max-height: 86vh; display: flex; flex-direction: column; overflow: hidden;
+  background: linear-gradient(165deg, #181b3d, #0f1126); border: 1px solid rgba(76, 201, 240, 0.45);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 35px rgba(76, 201, 240, 0.2);
+  border-radius: 24px; padding: 26px 28px;
+}
+.plan-modal-head {
+  display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 16px;
+  border-bottom: 1px solid var(--line); flex: none; gap: 14px;
+}
+.plan-modal-head h3 {
+  margin: 0 0 4px; font-family: var(--title-font); font-size: 19px; color: var(--fg);
+  display: flex; align-items: center; gap: 10px;
+}
+.plan-modal-head .pm-sub { font-size: 12.5px; color: var(--muted); font-weight: 500; }
+.plan-modal-scroll {
+  flex: 1; overflow-y: auto; padding: 20px 8px 20px 0; font-size: 14px; line-height: 1.65;
+}
+.plan-modal-scroll .plan-text-content {
+  background: rgba(8, 9, 22, 0.5); padding: 18px 22px; border-radius: 14px; border: 1px solid var(--line);
+  font-family: var(--body-font); color: var(--fg);
+}
+.plan-modal-foot {
+  display: flex; justify-content: space-between; align-items: center; padding-top: 18px;
+  border-top: 1px solid var(--line); flex: none; gap: 12px; flex-wrap: wrap;
+}
+.plan-modal-foot .actions-right { display: flex; gap: 10px; align-items: center; }
+
 .chat-input-row { display: flex; gap: 8px; margin-top: 12px; align-items: flex-end; }
 .chat-input-row textarea {
   flex: 1; min-height: 52px; max-height: 140px; font-family: var(--body-font); font-size: 14px;
@@ -292,7 +480,7 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 
 /* ── feed de logs ── */
 .mfeed {
-  display: block !important; max-height: 200px; overflow: auto; margin-top: 10px; padding: 8px 12px;
+  display: block !important; flex: 1; min-height: 120px; overflow: auto; margin-top: 10px; padding: 8px 12px;
   background: rgba(8, 9, 20, 0.55); border-radius: 12px; font-family: var(--code); font-size: 12px; line-height: 1.6;
   border: 1px solid var(--line);
 }
@@ -301,44 +489,50 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 /* ── caçadores (runs ativos) ── */
 .hunters-bar {
   display: flex; justify-content: space-between; align-items: center;
-  margin: 18px 0 10px; flex-wrap: wrap; gap: 10px; padding: 0 4px;
+  margin-bottom: 12px; flex-wrap: wrap; gap: 10px; padding: 0 2px;
 }
-.hunters { display: grid; grid-template-columns: repeat(auto-fit, minmax(580px, 1fr)); gap: 24px; }
-@media (max-width: 640px) { .hunters { grid-template-columns: 1fr; } }
+.hunters {
+  flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 16px;
+}
 .hunter {
-  background: linear-gradient(165deg, rgba(30, 33, 66, 0.88), rgba(18, 20, 42, 0.92));
-  border: 1px solid var(--line); border-radius: 22px; padding: 20px; position: relative; overflow: hidden;
-  box-shadow: var(--shadow); transition: border-color 0.2s;
+  background: rgba(10, 11, 24, 0.45);
+  border: 1px solid var(--line); border-radius: 18px; padding: 18px; position: relative; overflow: visible;
+  box-shadow: var(--shadow-sm); transition: border-color 0.2s;
 }
 .hunter::before {
   content: ""; position: absolute; inset: 0 0 auto; height: 4px;
   background: linear-gradient(90deg, var(--purple), var(--blue), var(--lime)); opacity: 0.85;
+  border-radius: 18px 18px 0 0;
 }
 .hunter.alert { animation: flash 0.9s 3; }
 @keyframes flash { 50% { border-color: var(--red); box-shadow: 0 0 0 4px rgba(255, 83, 112, 0.25), 0 0 35px rgba(255, 83, 112, 0.35); } }
 
-.top { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.top { display: flex; gap: 14px; align-items: flex-start; }
 .avatar {
-  width: 72px; height: 72px;
+  width: 68px; height: 68px;
   background: radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03));
-  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; display: grid; place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 18px; display: grid; place-items: center;
   position: relative; flex: none; box-shadow: var(--shadow-sm);
 }
-.avatar svg { width: 56px; height: 56px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
+.avatar svg { width: 50px; height: 50px; animation: float 3s ease-in-out infinite; filter: drop-shadow(0 6px 10px rgba(0,0,0,0.4)); }
 @keyframes float { 50% { transform: translateY(-4px) rotate(-2deg); } }
 .bubble {
-  position: absolute; top: -10px; right: -10px; font-size: 16px; background: #fff;
-  border-radius: 50%; width: 32px; height: 32px; display: grid; place-items: center;
+  position: absolute; top: -8px; right: -8px; font-size: 15px; background: #fff;
+  border-radius: 50%; width: 28px; height: 28px; display: grid; place-items: center;
   animation: bob 1.6s ease-in-out infinite; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
 }
 @keyframes bob { 50% { transform: translateY(-3px); } }
-.who2 { flex: 1; min-width: 0; }
-.who2 .name { font-family: var(--title-font); font-weight: 700; font-size: 17px; }
-.who2 .lvl { color: var(--muted); font-size: 12.5px; margin: 2px 0 5px; font-weight: 600; }
-.xp { height: 7px; background: rgba(0,0,0,0.35); border-radius: 999px; overflow: hidden; }
+.who2 { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.who2-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 2px; }
+.who2 .name { font-family: var(--title-font); font-weight: 700; font-size: 16.5px; }
+.who2 .lvl { color: var(--muted); font-size: 12px; margin: 1px 0 4px; font-weight: 600; }
+.xp { height: 6px; background: rgba(0,0,0,0.35); border-radius: 999px; overflow: hidden; margin-bottom: 6px; }
 .xp i { display: block; height: 100%; background: linear-gradient(90deg, var(--blue), var(--lime)); border-radius: 999px; transition: width 0.8s cubic-bezier(0.3, 1.3, 0.5, 1); }
-.mission { margin-top: 6px; font-size: 13.5px; }
+.mission-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.mission { font-size: 13px; display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .mission b { color: var(--blue); font-family: var(--code); font-size: 13px; }
+.hunter-acts { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; }
+.hunter-acts button { font-size: 11.5px; padding: 5px 10px; border-radius: 8px; }
 
 .phases { display: flex; align-items: center; margin: 16px 0 8px; flex-wrap: wrap; gap: 5px; }
 .ph {
@@ -375,11 +569,20 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 
 /* Custom Tooltip nos quartos */
 .room[data-tooltip]:hover::after {
-  content: attr(data-tooltip); position: absolute; bottom: calc(100% + 6px); left: 50%;
-  transform: translateX(-50%); background: rgba(14, 16, 33, 0.96); backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.16); color: #fff; padding: 6px 10px; border-radius: 8px;
-  font-size: 11.5px; font-family: var(--body-font); white-space: nowrap; pointer-events: none; z-index: 60;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-weight: 600;
+  content: attr(data-tooltip); position: absolute; bottom: calc(100% + 8px); left: 50%;
+  transform: translateX(-50%); background: rgba(14, 16, 33, 0.98); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.22); color: #fff; padding: 7px 11px; border-radius: 9px;
+  font-size: 11.5px; font-family: var(--body-font); line-height: 1.4; white-space: normal;
+  width: max-content; max-width: 260px; min-width: 120px; word-break: break-word; pointer-events: none; z-index: 100;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.65); font-weight: 600;
+}
+/* Coluna 1 do mapa (CT-001, 005, 009, 013): ancora na esquerda para não vazar para fora */
+.room:nth-child(4n+1)[data-tooltip]:hover::after {
+  left: 0; transform: none;
+}
+/* Coluna 4 do mapa (CT-004, 008, 012, 016): ancora na direita para não vazar para o print */
+.room:nth-child(4n)[data-tooltip]:hover::after {
+  left: auto; right: 0; transform: none;
 }
 
 .token { position: absolute; width: 30px; height: 30px; transition: left 0.7s cubic-bezier(0.5, 0, 0.3, 1.4), top 0.7s cubic-bezier(0.5, 0, 0.3, 1.4); z-index: 3; pointer-events: none; }
@@ -415,8 +618,9 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 
 .bottom-box {
   display: flex; flex-direction: column; height: 580px; padding: 22px;
-  background: var(--bg-card); border: 1px solid var(--line); border-radius: 22px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35); backdrop-filter: blur(14px);
+  background: #0f1124; border: 1px solid var(--line); border-radius: 22px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  contain: layout style;
 }
 
 .box-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
@@ -471,7 +675,10 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .bottom-view.on { display: flex; flex-direction: column; }
 
 /* Bug list */
-.buglist { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px; }
+.buglist {
+  flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 4px;
+  contain: content; will-change: scroll-position;
+}
 .bug-card {
   background: rgba(255, 255, 255, 0.03); border: 1px solid var(--line);
   border-left: 3px solid var(--red); border-radius: 12px; padding: 10px 14px;
@@ -491,6 +698,14 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
   background: rgba(92, 200, 255, 0.15); color: var(--blue); border-color: rgba(92, 200, 255, 0.35); text-decoration: none;
 }
 .bug-tag.jira:hover { text-decoration: underline; background: rgba(92, 200, 255, 0.25); }
+.bug-tag-btn {
+  font-family: var(--title-font); font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px;
+  background: rgba(255, 83, 112, 0.16); color: var(--red); border: 1px solid rgba(255, 83, 112, 0.4);
+  cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 4px;
+}
+.bug-tag-btn:hover {
+  background: rgba(255, 83, 112, 0.3); border-color: var(--red); transform: translateY(-1px);
+}
 .bug-card-pill {
   font-family: var(--code); font-size: 10.5px; font-weight: 600; color: var(--muted);
   background: rgba(255, 255, 255, 0.05); padding: 2px 7px; border-radius: 6px; text-decoration: none;
@@ -534,6 +749,7 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .timeline-container {
   flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
   padding-right: 6px; position: relative;
+  contain: content; will-change: scroll-position;
 }
 .tl-item {
   display: flex; gap: 12px; align-items: flex-start; position: relative;
@@ -619,18 +835,322 @@ h2 { font-family: var(--title-font); font-weight: 700; font-size: 16px; color: v
 .gauge.low .tank i { background: linear-gradient(90deg, var(--yellow), var(--orange)); }
 .gauge.empty .tank i { background: var(--red); }
 
-/* ── modo foco (terminal) ── */
+/* ── MODO FOCO: Terminal Hacker Interativo ── */
 body.focus {
-  --fg: #c9d1d9; --muted: #6e7681; --lime: #3fb950; --red: #f85149; --yellow: #d29922; --blue: #58a6ff; --purple: #bc8cff;
-  background: #0d1117; font-family: var(--code); font-size: 13px;
+  background: #090b10 !important;
+  color: #c9d1d9 !important;
+  font-family: var(--code) !important;
+  overflow: hidden !important;
 }
-body.focus .scan, body.focus .avatar, body.focus .xp, body.focus .screen, body.focus .jarimg, body.focus .lightbox { display: none !important; }
-body.focus * { font-family: var(--code) !important; box-shadow: none !important; animation: none !important; border-radius: 0 !important; backdrop-filter: none !important; }
-body.focus header { background: #161b22; border-bottom: 1px solid #30363d; padding: 8px 16px; }
-body.focus h1 { font-size: 13px; font-weight: 600; color: var(--lime); -webkit-text-fill-color: var(--lime); background: none; }
-body.focus .box, body.focus .hunter, body.focus .inner { background: #0d1117; border: 1px solid #30363d; }
-body.focus button { background: none; color: var(--fg); border: 1px solid #30363d; padding: 4px 10px; }
-body.focus .feed { display: block; max-height: 200px; overflow: auto; background: #010409; }
+
+body.focus header,
+body.focus main,
+body.focus .scan,
+body.focus .lightbox {
+  display: none !important;
+}
+
+#terminal-mode {
+  display: none;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1000;
+  background: #0a0c16;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body.focus #terminal-mode {
+  display: flex !important;
+}
+
+.term-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: #121422;
+  border-bottom: 1px solid #282d3f;
+  flex: none;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.term-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.term-traffic {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.t-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: inline-block;
+}
+.t-dot.red { background: #ff5555; }
+.t-dot.yellow { background: #f1fa8c; }
+.t-dot.green { background: #50fa7b; }
+
+.term-title-text {
+  font-family: var(--code);
+  font-size: 13px;
+  font-weight: 700;
+  color: #8be9fd;
+  letter-spacing: 0.5px;
+}
+
+.term-center {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.term-lbl {
+  font-family: var(--code);
+  font-size: 11px;
+  font-weight: 700;
+  color: #6272a4;
+  letter-spacing: 0.8px;
+}
+
+.term-tab-group {
+  display: flex;
+  gap: 4px;
+  background: #080910;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #282d3f;
+}
+
+.term-agent-tab {
+  background: none;
+  border: 0;
+  color: #6272a4;
+  font-family: var(--code);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.term-agent-tab:hover {
+  color: #f8f8f2;
+}
+
+.term-agent-tab.on {
+  background: #232738;
+  color: #50fa7b;
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(80, 250, 123, 0.2);
+}
+
+.term-select {
+  background: #080910;
+  border: 1px solid #282d3f;
+  color: #f8f8f2;
+  font-family: var(--code);
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  outline: none;
+}
+
+.term-exit-btn {
+  background: rgba(255, 85, 85, 0.15);
+  border: 1px solid rgba(255, 85, 85, 0.4);
+  color: #ff5555;
+  font-family: var(--code);
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.term-exit-btn:hover {
+  background: #ff5555;
+  color: #fff;
+}
+
+.term-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 24px;
+  font-family: var(--code);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #f8f8f2;
+  display: flex;
+  flex-direction: column;
+  background: #080912;
+  contain: content;
+  will-change: scroll-position;
+}
+
+.term-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.term-banner {
+  color: #bd93f9;
+  white-space: pre-wrap;
+  margin-bottom: 12px;
+  user-select: none;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.term-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.term-entry .term-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #6272a4;
+}
+
+.term-entry .term-meta .term-author {
+  font-weight: 700;
+}
+
+.term-entry.user .term-author {
+  color: #50fa7b;
+}
+
+.term-entry.agent .term-author {
+  color: #8be9fd;
+}
+
+.term-entry.system .term-author {
+  color: #f1fa8c;
+}
+
+.term-entry .term-text {
+  padding-left: 12px;
+  border-left: 2px solid #282a36;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #e6e6e6;
+}
+
+.term-entry.user .term-text {
+  border-left-color: #50fa7b;
+  color: #50fa7b;
+}
+
+.term-entry.agent .term-text {
+  border-left-color: #8be9fd;
+}
+
+.term-entry.system .term-text {
+  border-left-color: #f1fa8c;
+  color: #f1fa8c;
+}
+
+.term-footer {
+  background: #10121e;
+  border-top: 1px solid #282d3f;
+  padding: 10px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+
+.term-quick-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.term-qbtn {
+  background: #161828;
+  border: 1px solid #2f354f;
+  color: #bd93f9;
+  font-family: var(--code);
+  font-size: 11px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.term-qbtn:hover {
+  background: #282a36;
+  color: #50fa7b;
+  border-color: #50fa7b;
+}
+
+.term-input-line {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #05060b;
+  border: 1px solid #2f354f;
+  border-radius: 8px;
+  padding: 6px 12px;
+}
+
+.term-prompt-prefix {
+  font-family: var(--code);
+  font-size: 13px;
+  font-weight: 700;
+  color: #50fa7b;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.term-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f8f8f2;
+  font-family: var(--code);
+  font-size: 13.5px;
+  resize: none;
+  height: 28px;
+  line-height: 28px;
+  padding: 0;
+}
+
+.term-send-btn {
+  background: #50fa7b;
+  color: #0c0e17;
+  border: none;
+  font-family: var(--code);
+  font-weight: 700;
+  font-size: 11.5px;
+  padding: 6px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.term-send-btn:hover {
+  background: #69ff94;
+}
 
 .offline { display: none; position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: var(--red); color: #fff; padding: 8px 18px; border-radius: 999px; font-weight: 700; z-index: 70; box-shadow: 0 4px 20px rgba(255, 83, 112, 0.4); }
 .offline.on { display: block; }
@@ -646,6 +1166,11 @@ body.focus .feed { display: block; max-height: 200px; overflow: auto; background
     <span class="chip">🧪 cenários hoje <b id="s-scen">–</b></span>
     <span class="chip">🔥 sequência <b id="s-streak">–</b></span>
   </div>
+  <div class="nav-anchors">
+    <a href="#cockpit-area" class="nav-chip">🎮 Cabine</a>
+    <a href="#view-bugs" class="nav-chip">🐞 Bugs</a>
+    <a href="#log" class="nav-chip">📜 Timeline</a>
+  </div>
   <div class="controls">
     <button class="ghost notify-btn" id="btn-notify" onclick="toggleDesktopNotifications()">🔔 NOTIFICAÇÕES</button>
     <button class="ghost" id="focus">MODO FOCO</button>
@@ -653,49 +1178,63 @@ body.focus .feed { display: block; max-height: 200px; overflow: auto; background
 </header>
 
 <main>
-  <section class="fuel" id="fuel"></section>
-  <section class="command">
-    <div class="box mission-form">
-      <h2>🎯 NOVA MISSÃO</h2>
-      <label>Card ou endereço do sistema</label>
-      <input id="m-card" placeholder="PROJ-123, link do Jira ou https://sistema" spellcheck="false">
-      <label>Tipo</label>
-      <div class="seg" id="m-type"><span class="on" data-v="qa">Teste</span><span data-v="retest">Reteste</span><span data-v="explore">Exploratório</span><span data-v="resume">Retomar</span></div>
-      <label>Agente</label>
-      <div class="seg" id="m-agent"><span class="on" data-v="claude">🧑‍💻 Claude</span><span data-v="antigravity">🛸 Antigravity</span><span data-v="codex">🤖 Codex</span></div>
-      <label>Observação / Objetivo</label>
-      <textarea id="m-obs" placeholder="objetivo e observações (ex.: usar usuário admin; foco no cadastro)"></textarea>
-      <button class="go" id="launch">▶ LANÇAR MISSÃO</button>
-      <div class="cmd-err" id="cmd-err"></div>
-      <div class="cmd-ok-launch" id="cmd-launched"></div>
-      <div class="cmd" id="cmd"><small id="cmd-where"></small><code id="cmd-text"></code><button class="ghost" id="cmd-copy">copiar</button> <small id="cmd-ok"></small></div>
+  <section class="command" id="command-section">
+    <div class="box mission-form" id="mission-form-box">
+      <div class="form-header">
+        <h2>🎯 NOVA MISSÃO</h2>
+        <button class="ghost collapse-btn" id="btn-toggle-form" onclick="toggleMissionForm()" title="Minimizar / Expandir formulário">➖ Minimizar</button>
+      </div>
+      <div id="form-body">
+        <label>Card ou endereço do sistema</label>
+        <input id="m-card" placeholder="PROJ-123, link do Jira ou https://sistema" spellcheck="false">
+        <label>Tipo</label>
+        <div class="seg" id="m-type"><span class="on" data-v="qa">Teste</span><span data-v="retest">Reteste</span><span data-v="explore">Exploratório</span><span data-v="resume">Retomar</span></div>
+        <label>Agente</label>
+        <div class="seg" id="m-agent"><span class="on" data-v="claude">🧑‍💻 Claude</span><span data-v="antigravity">🛸 Antigravity</span><span data-v="codex">🤖 Codex</span></div>
+        <label>Observação / Objetivo</label>
+        <textarea id="m-obs" placeholder="objetivo e observações (ex.: usar usuário admin; foco no cadastro)"></textarea>
+        <button class="go" id="launch">▶ LANÇAR MISSÃO</button>
+        <div class="cmd-err" id="cmd-err"></div>
+        <div class="cmd-ok-launch" id="cmd-launched"></div>
+        <div class="cmd" id="cmd"><small id="cmd-where"></small><code id="cmd-text"></code><button class="ghost" id="cmd-copy">copiar</button> <small id="cmd-ok"></small></div>
+      </div>
     </div>
-    <div class="box">
+    <div class="box needs-box" id="needs-box">
       <div class="needs-head"><h2>✋ PRECISA DE VOCÊ</h2><span class="needs-count zero" id="needs-count">0 pendências</span></div>
       <div class="needs" id="needs"></div>
     </div>
   </section>
 
-  <section class="box" id="missions-box" style="display:none">
-    <h2>🚀 MISSÕES & DIÁLOGO DIRETO</h2>
-    <div class="mtabs" id="mtabs"></div>
-    <div id="missions"></div>
-  </section>
-
-    <div class="hunters-bar" id="hunters-bar">
-    <div style="display:flex;align-items:center;gap:10px">
-      <h2 style="margin:0;font-size:16px;font-family:var(--title-font);font-weight:700;color:var(--fg);letter-spacing:0.3px">🎯 CAÇADORES EM CAMPO</h2>
-      <span class="chip-count" id="active-hunters-count">0 ativos</span>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-      <div class="sub-tabs">
-        <button class="sub-tab on" id="hfilter-active" onclick="setHunterFilter('active')">🟢 Apenas Ativos</button>
-        <button class="sub-tab" id="hfilter-all" onclick="setHunterFilter('all')">🌐 Todos</button>
+  <section class="cockpit-grid" id="cockpit-area">
+    <!-- Coluna Esquerda: Missões & Diálogo Direto -->
+    <div class="box cockpit-panel" id="missions-box">
+      <div class="box-head">
+        <div class="box-title-group">
+          <h2>💬 MISSÕES & DIÁLOGO DIRETO</h2>
+        </div>
+        <div class="mtabs" id="mtabs"></div>
       </div>
-      <button class="ghost" id="btn-hide-inactive" onclick="hideAllInactive()" title="Ocultar definitivamente todos os runs finalizados do painel" style="font-size:12px;padding:6px 12px">🧹 OCULTAR INATIVOS</button>
+      <div id="missions" class="cockpit-body"></div>
     </div>
-  </div>
-  <section class="hunters" id="hunters"></section>
+
+    <!-- Coluna Direita: Caçadores em Campo -->
+    <div class="box cockpit-panel" id="hunters-box">
+      <div class="box-head">
+        <div class="box-title-group">
+          <h2>🎯 CAÇADORES EM CAMPO</h2>
+          <span class="chip-count" id="active-hunters-count">0 ativos</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div class="sub-tabs">
+            <button class="sub-tab on" id="hfilter-active" onclick="setHunterFilter('active')">🟢 Apenas Ativos</button>
+            <button class="sub-tab" id="hfilter-all" onclick="setHunterFilter('all')">🌐 Todos</button>
+          </div>
+          <button class="ghost" id="btn-hide-inactive" onclick="hideAllInactive()" title="Ocultar definitivamente todos os runs finalizados do painel" style="font-size:12px;padding:6px 12px">🧹 OCULTAR INATIVOS</button>
+        </div>
+      </div>
+      <div class="hunters cockpit-body" id="hunters"></div>
+    </div>
+  </section>
 
   <section class="bottom">
     <div class="box bottom-box">
@@ -758,7 +1297,60 @@ body.focus .feed { display: block; max-height: 200px; overflow: auto; background
   <p class="note" style="color:var(--muted);font-size:13px;text-align:center">Painel integrado com conversa direta com os agentes. Notificações nativas do sistema avisam quando você estiver em outra janela.</p>
 </main>
 
+<div id="terminal-mode">
+  <div class="term-titlebar">
+    <div class="term-left">
+      <div class="term-traffic">
+        <span class="t-dot red" onclick="setFocus(false)" title="Fechar Modo Foco"></span>
+        <span class="t-dot yellow" onclick="setFocus(false)" title="Minimizar"></span>
+        <span class="t-dot green" title="Maximizado"></span>
+      </div>
+      <span class="term-title-text">root@novo-qa: ~ (MODO FOCO TERMINAL)</span>
+    </div>
+    
+    <div class="term-center">
+      <span class="term-lbl">IA:</span>
+      <div class="term-tab-group">
+        <button class="term-agent-tab on" id="term-tab-antigravity" onclick="setTermAgent('antigravity')">🛸 Antigravity</button>
+        <button class="term-agent-tab" id="term-tab-claude" onclick="setTermAgent('claude')">🧑‍💻 Claude</button>
+        <button class="term-agent-tab" id="term-tab-codex" onclick="setTermAgent('codex')">🤖 Codex</button>
+      </div>
+
+      <span class="term-lbl">MISSÃO:</span>
+      <select id="term-mission-select" class="term-select" onchange="onTermMissionChange(this.value)"></select>
+    </div>
+
+    <div class="term-right">
+      <button class="term-exit-btn" onclick="setFocus(false)">🎨 VOLTAR PRO DESIGN</button>
+    </div>
+  </div>
+
+  <div class="term-body" id="term-body">
+    <div id="term-feed" class="term-feed"></div>
+  </div>
+
+  <div class="term-footer">
+    <div class="term-quick-bar">
+      <span class="term-lbl">COMANDOS:</span>
+      <button class="term-qbtn" onclick="termCommand('/plano')">✨ /plano (Aprovar)</button>
+      <button class="term-qbtn" onclick="termCommand('/bugs')">🐞 /bugs (Criar Sub-Bugs)</button>
+      <button class="term-qbtn" onclick="termCommand('/retest')">🔄 /retest (Retestar)</button>
+      <button class="term-qbtn" onclick="termCommand('/concluir')">🏁 /concluir</button>
+      <button class="term-qbtn" onclick="termCommand('/limpar')">🧹 /limpar</button>
+      <button class="term-qbtn" onclick="termCommand('/ajuda')">❓ /ajuda</button>
+    </div>
+    <div class="term-input-line">
+      <span class="term-prompt-prefix" id="term-prompt-prefix">antigravity@novo-qa:~$</span>
+      <textarea id="term-input" class="term-input" placeholder="converse diretamente com a IA ou digite um comando (Enter para enviar)..." onkeydown="handleTermKey(event)" rows="1"></textarea>
+      <button id="term-send" class="term-send-btn" onclick="submitTermInput()">ENVIAR ↵</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="overlay"><div class="report" id="report"></div></div>
+<div class="overlay" id="plan-overlay" onclick="closePlanModal(event)"><div class="report plan-modal-box" id="plan-modal"></div></div>
+<div class="overlay" id="prompt-overlay" onclick="closePromptModal(event)"><div class="report action-modal-box" id="prompt-modal"></div></div>
+<div class="overlay" id="dialogue-overlay" onclick="closeDialogueModal(event)"><div class="report dialogue-modal-box" id="dialogue-modal"></div></div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
   <div class="lightbox-box">
     <button class="ghost close-btn" onclick="closeLightbox(null)">✖</button>
@@ -819,7 +1411,11 @@ function formatChatText(raw) {
   s = s.replace(/^##\s+(.*$)/gim, '<div style="font-weight:700;font-size:15px;color:var(--blue);margin:12px 0 6px">$1</div>');
   s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-family:var(--code);font-size:12px;color:var(--lime)">$1</code>');
-  s = s.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline">$1</a>');
+  s = s.replace(/\[(.*?)\]\((.*?)\)/g, (m, label, url) => {
+    const clean = String(url || '').trim();
+    const safe = /^(https?:\/\/|\/|\.\/|#)/i.test(clean) ? clean : '#';
+    return `<a href="${safe}" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:underline">${label}</a>`;
+  });
   s = s.replace(/^-\s+(.*$)/gim, '<div style="padding-left:14px;position:relative;margin:2px 0"><span style="position:absolute;left:2px;color:var(--muted)">•</span>$1</div>');
   s = s.replace(/^---$/gim, '<hr style="border:0;border-top:1px solid rgba(255,255,255,0.08);margin:12px 0">');
   s = s.replace(/\n/g, '<br>');
@@ -898,10 +1494,40 @@ const MSTATUS = { RUNNING: ['🏃', 'TRABALHANDO'], WAITING: ['✋', 'ESPERANDO 
 const drafts = {};
 const missionViews = {}; // 'chat' ou 'feed'
 let missionSig = '';
+let openPlanMissionId = null;
+const autoOpenedPlans = new Set();
 const MTABS = [['ativas', 'Ativas', ['RUNNING', 'WAITING']], ['pausadas', 'Pausadas', ['STOPPED', 'FAILED']], ['concluidas', 'Concluídas', ['DONE']]];
 let mtab = 'ativas';
-function setTab(t) { mtab = t; missionSig = ''; renderMissions(); }
+function setTab(t) {
+  mtab = t;
+  if (t === 'concluidas') {
+    // Na aba Concluídas, todas as conversas devem ficar fechadas por padrão
+    for (const k in missionViews) {
+      if (missionViews[k] === 'chat') delete missionViews[k];
+    }
+  }
+  missionSig = '';
+  renderMissions();
+}
 function setMissionView(id, view) { missionViews[id] = view; missionSig = ''; renderMissions(); }
+function toggleMissionView(id, targetView) {
+  const m = S?.missions?.find((x) => x.id === id);
+  const def = m?.status === 'DONE' ? 'closed' : 'chat';
+  const current = missionViews[id] !== undefined ? missionViews[id] : def;
+  missionViews[id] = current === targetView ? 'closed' : targetView;
+  missionSig = '';
+  renderMissions();
+}
+
+let formCollapsed = false;
+function toggleMissionForm(force) {
+  const box = document.getElementById('mission-form-box');
+  const btn = document.getElementById('btn-toggle-form');
+  if (typeof force === 'boolean') formCollapsed = force;
+  else formCollapsed = !formCollapsed;
+  if (box) box.classList.toggle('collapsed', formCollapsed);
+  if (btn) btn.textContent = formCollapsed ? '➕ Expandir Formulário' : '➖ Minimizar';
+}
 
 function handleChatKey(e, id) {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -913,7 +1539,9 @@ function handleChatKey(e, id) {
 function renderMissions() {
   const box = document.getElementById('missions-box');
   const all = S.missions || [];
-  box.style.display = all.length ? '' : 'none';
+  if (all.some((m) => m.status === 'RUNNING' || m.status === 'WAITING') && prev.first) {
+    toggleMissionForm(true);
+  }
   const sig = JSON.stringify([mtab, all.map((m) => [m.id, m.status, m.updated_at, m.activity.length, m.runStatus, (m.messages || []).length, missionViews[m.id]])]);
   if (sig === missionSig) return;
 
@@ -932,8 +1560,13 @@ function renderMissions() {
     const open = m.status === 'RUNNING' || m.status === 'WAITING';
     const paused = m.status === 'STOPPED' || m.status === 'FAILED';
     const planWaiting = m.runStatus === 'AWAITING_APPROVAL' && m.status === 'WAITING';
+    if (planWaiting && !autoOpenedPlans.has(m.id)) {
+      autoOpenedPlans.add(m.id);
+      setTimeout(() => openPlanModal(m.id), 250);
+    }
     const run = m.runId && S.runs.find((r) => r.id === m.runId);
-    const view = missionViews[m.id] || 'chat';
+    const defaultView = m.status === 'DONE' ? 'closed' : 'chat';
+    const view = missionViews[m.id] !== undefined ? missionViews[m.id] : defaultView;
     let msgs = [...(m.messages || [])];
     if (!msgs.length) {
       if (m.objective) {
@@ -954,7 +1587,7 @@ function renderMissions() {
     const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(m.target);
     const jiraLink = isCard ? `<a href="https://guruja.atlassian.net/browse/${esc(m.target)}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
 
-    return `<div class="mission-card ${m.status.toLowerCase()}">
+    return `<div class="mission-card ${m.status.toLowerCase()} ${view === 'closed' ? 'closed' : ''}">
       <div class="mhead">
         <span class="mtarget">${EMOJI[m.agent] || '🤖'} ${esc(m.target)} ${jiraLink}</span>
         <span class="mkind">${esc(m.agent === 'antigravity' ? 'Antigravity' : 'Claude')}</span>
@@ -964,14 +1597,15 @@ function renderMissions() {
         ${m.runId ? `<span class="mrun">run ${esc(m.runId)}</span>` : ''}
         <span class="mstop">
           ${open ? `<button class="ghost" onclick="stopMission('${esc(m.id)}')">⏹ PARAR</button>` : ''}
+          ${m.status !== 'DONE' ? `<button class="ghost" onclick="completeMission('${esc(m.id)}')">🏁 CONCLUIR</button>` : ''}
           ${run && m.status === 'DONE' ? `<button onclick="openReport('${esc(m.runId)}')">📜 RELATÓRIO</button>` : ''}
           ${!open ? `<button class="ghost" onclick="archiveMission('${esc(m.id)}')">🗑 EXCLUIR</button>` : ''}
         </span>
       </div>
 
       <div class="mcard-views">
-        <button class="mview-btn ${view === 'chat' ? 'on' : ''}" onclick="setMissionView('${esc(m.id)}', 'chat')">💬 Conversa com o Agente (${msgs.length})</button>
-        <button class="mview-btn ${view === 'feed' ? 'on' : ''}" onclick="setMissionView('${esc(m.id)}', 'feed')">⚡ Logs Técnicos (${m.activity.length})</button>
+        <button class="mview-btn ${view === 'chat' ? 'on' : ''}" onclick="toggleMissionView('${esc(m.id)}', 'chat')">💬 Conversa com o Agente (${msgs.length}) ${view === 'chat' ? '▲' : '▼'}</button>
+        <button class="mview-btn ${view === 'feed' ? 'on' : ''}" onclick="toggleMissionView('${esc(m.id)}', 'feed')">⚡ Logs Técnicos (${m.activity.length}) ${view === 'feed' ? '▲' : '▼'}</button>
       </div>
 
       ${view === 'chat' ? `
@@ -998,23 +1632,34 @@ function renderMissions() {
               <h4>🗺️ Plano de Testes Pronto para Aprovação!</h4>
               <p>O agente elaborou os cenários de teste e está aguardando seu sinal verde para começar as ações no navegador.</p>
               <div class="acts">
-                <button onclick="replyMission('${esc(m.id)}', true)">✨ APROVAR PLANO E INICIAR CAÇADA</button>
+                <button onclick="openPlanModal('${esc(m.id)}')">🔍 VER PLANO EM TELA CHEIA</button>
+                <button class="ghost" onclick="replyMission('${esc(m.id)}', true)">✨ APROVAR DIRETO</button>
               </div>
             </div>
           ` : ''}
         </div>
 
+        ${m.status === 'DONE' ? `
+          <div class="post-done-acts">
+            <span class="pda-label">⚡ Ações Pós-Caçada:</span>
+            <button class="chip-act primary" onclick="quickAction('${esc(m.id)}', 'bugs')">🐞 Abrir Sub-Bugs no Jira</button>
+            ${m.run_id ? `<button class="chip-act blue" onclick="copySummary('${esc(m.run_id)}', this)">📋 Copiar Resumo</button>` : ''}
+            <button class="chip-act" onclick="quickAction('${esc(m.id)}', 'retest')">🔄 Retestar Falhas</button>
+            <button class="chip-act" onclick="focusChatInput('${esc(m.id)}')">💬 Fazer Pergunta</button>
+          </div>
+        ` : ''}
+
         <div class="chat-input-row">
-          <textarea data-m="${esc(m.id)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'" onkeydown="handleChatKey(event, '${esc(m.id)}')" placeholder="${paused ? 'Instrução para retomar (ex.: foco no botão Salvar)...' : (m.status === 'RUNNING' ? 'Agente trabalhando... você pode redigir a próxima instrução aqui' : 'Converse diretamente com o agente (Enter para enviar, Shift+Enter para linha)...')}">${esc(drafts[m.id] || '')}</textarea>
+          <textarea data-m="${esc(m.id)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'" onkeydown="handleChatKey(event, '${esc(m.id)}')" placeholder="${paused ? 'Instrução para retomar (ex.: foco no botão Salvar)...' : (m.status === 'RUNNING' ? 'Agente trabalhando... você pode redigir a próxima instrução aqui' : (m.status === 'DONE' ? 'Missão concluída. Peça para abrir sub-bugs no Jira ou continue a conversa...' : 'Converse diretamente com o agente (Enter para enviar, Shift+Enter para linha)...'))}">${esc(drafts[m.id] || '')}</textarea>
           ${paused ? `<button onclick="resumeMission('${esc(m.id)}')">▶ RETOMAR</button>`
             : (m.status === 'RUNNING'
                 ? `<button class="ghost working-btn" onclick="replyMission('${esc(m.id)}', false)" title="Aguarde o agente terminar a ação em andamento para responder">⏳ TRABALHANDO...</button>`
                 : `<button class="${planWaiting ? 'ghost' : ''}" onclick="replyMission('${esc(m.id)}', false)">${planWaiting ? '✏️ PEDIR AJUSTE' : '💬 ENVIAR'}</button>`)}
         </div>
         <div class="merr" id="merr-${esc(m.id)}"></div>
-      ` : `
+      ` : view === 'feed' ? `
         <div class="feed mfeed">${m.activity.slice(-20).map((x) => `<div><span class="t">${hhmm(x.ts)}</span><span>${esc(x.text)}</span></div>`).join('') || `<div><span class="t"></span><span>${open ? 'iniciando o agente…' : 'sem atividade registrada nesta sessão do painel'}</span></div>`}</div>
-      `}
+      ` : ''}
     </div>`;
   }).join('') : `<div class="mempty">${{ ativas: 'Nenhuma missão ativa agora.', pausadas: 'Nenhuma missão pausada.', concluidas: 'Nenhuma missão concluída nos últimos 7 dias.' }[mtab]}</div>`;
 
@@ -1067,9 +1712,9 @@ async function resumeRun(card) {
   if (!confirm(`Retomar ${card} com o ${agent === 'antigravity' ? 'Antigravity' : 'Claude'}?`)) return;
   try { await api('/api/missions', { agent, target: card, kind: 'resume' }); setTab('ativas'); tickNow(); } catch (e) { alert(e.message); }
 }
-async function replyMission(id, approvePlan) {
+async function replyMission(id, approvePlan, explicitText) {
   const area = document.querySelector(`textarea[data-m="${id}"]`);
-  const text = area ? area.value.trim() : '';
+  const text = (explicitText !== undefined ? explicitText : (area ? area.value : '')).trim();
   const err = document.getElementById(`merr-${id}`);
   if (err) { err.textContent = ''; err.classList.remove('on'); }
 
@@ -1098,6 +1743,10 @@ async function replyMission(id, approvePlan) {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 
+  if (document.body.classList.contains('focus') && text) {
+    appendTermUserLine(text);
+  }
+
   // 3. Dispara chamada à API
   try {
     await api(`/api/missions/${id}/reply`, { text, approvePlan });
@@ -1109,19 +1758,760 @@ async function replyMission(id, approvePlan) {
       err.classList.add('on');
     }
     // Devolve o texto caso a requisição seja rejeitada (ex: agente ainda em execução)
-    if (area && text) {
+    if (area && text && explicitText === undefined) {
       area.value = text;
       drafts[id] = text;
     }
+    if (document.body.classList.contains('focus')) {
+      appendTermSystemLine(`[ERRO] ${e.message}`);
+    }
+  }
+}
+
+// ── Terminal Mode (Modo Foco Dedicado) ────────────────────────────────
+let termAgent = 'antigravity';
+let selectedTermMissionId = null;
+let termCleared = false;
+let termSig = '';
+
+function setTermAgent(agent) {
+  termAgent = agent;
+  document.querySelectorAll('.term-agent-tab').forEach((b) => b.classList.remove('on'));
+  const btn = document.getElementById(`term-tab-${agent}`);
+  if (btn) btn.classList.add('on');
+  selectedTermMissionId = null;
+  termCleared = false;
+  termSig = '';
+  renderTerminal();
+  const input = document.getElementById('term-input');
+  if (input) input.focus();
+}
+
+function onTermMissionChange(id) {
+  selectedTermMissionId = id;
+  termCleared = false;
+  termSig = '';
+  renderTerminal();
+  const input = document.getElementById('term-input');
+  if (input) input.focus();
+}
+
+function appendTermUserLine(text) {
+  const feed = document.getElementById('term-feed');
+  if (!feed) return;
+  const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const entry = document.createElement('div');
+  entry.className = 'term-entry user';
+  entry.innerHTML = `<div class="term-meta"><span class="term-time">[${nowStr}]</span> <span class="term-author">você@terminal:~$</span></div><div class="term-text">${esc(text)}</div>`;
+  feed.appendChild(entry);
+  scrollTermToBottom(true);
+}
+
+function appendTermSystemLine(text) {
+  const feed = document.getElementById('term-feed');
+  if (!feed) return;
+  const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const entry = document.createElement('div');
+  entry.className = 'term-entry system';
+  entry.innerHTML = `<div class="term-meta"><span class="term-time">[${nowStr}]</span> <span class="term-author">sistema:~$</span></div><div class="term-text">${esc(text)}</div>`;
+  feed.appendChild(entry);
+  scrollTermToBottom(true);
+}
+
+function scrollTermToBottom(force = false) {
+  const body = document.getElementById('term-body');
+  if (!body) return;
+  const isNearBottom = (body.scrollHeight - body.scrollTop - body.clientHeight) < 90;
+  if (force || isNearBottom) {
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+function renderTerminal() {
+  if (!document.body.classList.contains('focus') || !S) return;
+
+  const allMissions = S.missions || [];
+  const agentMissions = allMissions.filter((m) => m.agent === termAgent);
+
+  const select = document.getElementById('term-mission-select');
+  if (select) {
+    const optionsHtml = agentMissions.length
+      ? agentMissions.map((m) => `<option value="${esc(m.id)}">${esc(m.target)} (${MSTATUS[m.status] ? MSTATUS[m.status][1] : m.status})</option>`).join('')
+      : `<option value="">Nenhuma missão ativa para ${termAgent}</option>`;
+    if (select.innerHTML !== optionsHtml) {
+      select.innerHTML = optionsHtml;
+    }
+    if (selectedTermMissionId && agentMissions.some((m) => m.id === selectedTermMissionId)) {
+      select.value = selectedTermMissionId;
+    } else if (agentMissions.length) {
+      const activeOne = agentMissions.find((m) => m.status === 'RUNNING' || m.status === 'WAITING') || agentMissions[0];
+      selectedTermMissionId = activeOne.id;
+      select.value = selectedTermMissionId;
+    } else {
+      selectedTermMissionId = null;
+    }
+  }
+
+  const currentMission = agentMissions.find((m) => m.id === selectedTermMissionId);
+  const targetName = currentMission ? currentMission.target : 'novo-qa';
+
+  const prefixEl = document.getElementById('term-prompt-prefix');
+  if (prefixEl) {
+    prefixEl.textContent = `${termAgent}@${targetName}:~$`;
+  }
+
+  const feed = document.getElementById('term-feed');
+  if (!feed) return;
+
+  const sig = JSON.stringify([
+    termAgent,
+    selectedTermMissionId,
+    termCleared,
+    currentMission ? [currentMission.status, currentMission.updated_at, (currentMission.messages || []).length, currentMission.activity.length, currentMission.runStatus] : null
+  ]);
+
+  if (sig === termSig) return;
+  termSig = sig;
+
+  let html = '';
+
+  html += `<div class="term-banner">========================================================================================
+  🛸 NOVO QA TERMINAL - MODO FOCO INTERATIVO
+  IA ATIVA : [ ${termAgent.toUpperCase()} ] | TARGET : [ ${targetName} ]
+  STATUS   : ${currentMission ? (MSTATUS[currentMission.status] ? MSTATUS[currentMission.status][1] : currentMission.status) : 'SEM MISSÃO ATIVA'}
+========================================================================================
+💡 Dica: Digite livremente para falar com a IA. Digite /ajuda para ver os comandos rápidos.</div>`;
+
+  if (termCleared) {
+    feed.innerHTML = html;
+    scrollTermToBottom(false);
+    return;
+  }
+
+  if (!currentMission) {
+    html += `<div class="term-entry system">
+      <div class="term-meta"><span class="term-author">sistema:~$</span></div>
+      <div class="term-text">Nenhuma missão ativa para <b>${termAgent}</b> no momento.
+Para iniciar uma missão diretamente pelo terminal, digite:
+  <b>qa CARD-123</b>  (exemplo: qa GURUJA-9040)
+Ou selecione outra IA (Claude / Codex) acima. Digite <b>/ajuda</b> para mais comandos.</div>
+    </div>`;
+    feed.innerHTML = html;
+    scrollTermToBottom(false);
+    return;
+  }
+
+  const planWaiting = currentMission.runStatus === 'AWAITING_APPROVAL' && currentMission.status === 'WAITING';
+  if (planWaiting) {
+    html += `<div class="term-entry system" style="border: 1px dashed #f1fa8c; padding: 12px; border-radius: 8px; margin-bottom: 8px;">
+      <div class="term-meta"><span class="term-author" style="color:#f1fa8c;">⚠️ SISTEMA DE APROVAÇÃO</span></div>
+      <div class="term-text" style="border: none; padding-left: 0; color:#fff;">
+🗺️ <b>Plano de Testes Pronto para Aprovação!</b>
+O agente ${termAgent} desenhou o plano e aguarda seu aval antes de executar no navegador.
+- Para aprovar imediatamente, clique em <b>[✨ /plano (Aprovar)]</b> ou digite <b>/plano</b>
+- Para pedir mudanças, digite o que quer ajustar diretamente no terminal.
+      </div>
+    </div>`;
+  }
+
+  let msgs = [...(currentMission.messages || [])];
+  if (!msgs.length) {
+    if (currentMission.objective) {
+      msgs.push({ id: 'init', role: 'user', text: currentMission.objective, ts: currentMission.created_at });
+    }
+    (currentMission.activity || []).forEach((act, idx) => {
+      if (act.text && act.text.startsWith('você: ')) {
+        msgs.push({ id: 'u-' + idx, role: 'user', text: act.text.replace(/^você:\s*/, ''), ts: act.ts });
+      }
+    });
+    if (currentMission.last_message) {
+      msgs.push({ id: 'a-last', role: 'agent', text: currentMission.last_message, ts: currentMission.updated_at });
+    } else if (currentMission.error) {
+      msgs.push({ id: 'a-err', role: 'agent', text: currentMission.error, ts: currentMission.updated_at });
+    }
+  }
+
+  for (const msg of msgs) {
+    const isUser = msg.role === 'user';
+    const author = isUser ? 'você@terminal:~$' : `${termAgent}:~$`;
+    const formatted = isUser ? esc(msg.text) : formatChatText(msg.text);
+    html += `<div class="term-entry ${isUser ? 'user' : 'agent'}">
+      <div class="term-meta">
+        <span class="term-time">[${hhmm(msg.ts)}]</span>
+        <span class="term-author">${author}</span>
+      </div>
+      <div class="term-text">${formatted}</div>
+    </div>`;
+  }
+
+  if (currentMission.status === 'RUNNING') {
+    html += `<div class="term-entry agent" style="opacity: 0.85;">
+      <div class="term-meta">
+        <span class="term-time">[${hhmm(new Date().toISOString())}]</span>
+        <span class="term-author">${termAgent}:~$</span>
+      </div>
+      <div class="term-text">⏳ Executando ações e investigando no navegador...</div>
+    </div>`;
+  }
+
+  feed.innerHTML = html;
+  scrollTermToBottom(false);
+}
+
+const termHistory = [];
+let termHistoryIndex = -1;
+let termCurrentDraft = '';
+
+async function submitTermInput() {
+  const input = document.getElementById('term-input');
+  if (!input) return;
+  const raw = input.value.trim();
+  if (!raw) return;
+
+  input.value = '';
+  termHistory.push(raw);
+  if (termHistory.length > 50) termHistory.shift();
+  termHistoryIndex = -1;
+  termCurrentDraft = '';
+
+  if (raw === '/ajuda' || raw === '/help' || raw === 'ajuda' || raw === 'help') {
+    appendTermUserLine(raw);
+    appendTermSystemLine(`Comandos disponíveis no Terminal:
+  /plano       - Aprova o plano de testes e inicia a execução no navegador
+  /bugs        - Dispara a abertura dos sub-bugs encontrados no Jira
+  /retest      - Inicia o ciclo de reteste de falhas da missão
+  /concluir    - Finaliza a missão manualmente e a move para concluídas
+  /limpar      - Limpa o console do terminal (atalho: Ctrl + L)
+  qa CARD-123  - Lança um novo teste para o card com a IA ativa (ex.: qa GURUJA-9040)
+  /ajuda       - Exibe este guia de comandos`);
+    return;
+  }
+
+  if (raw === '/limpar' || raw === 'clear' || raw === 'cls') {
+    termCleared = true;
+    termSig = '';
+    renderTerminal();
+    return;
+  }
+
+  if (raw === '/plano' || raw === 'aprovar plano' || raw === 'aprovar') {
+    if (!selectedTermMissionId) {
+      appendTermSystemLine('[ERRO] Nenhuma missão selecionada para aprovar plano.');
+      return;
+    }
+    appendTermUserLine(raw);
+    await replyMission(selectedTermMissionId, true, 'Plano aprovado. Pode seguir com a execução.');
+    return;
+  }
+
+  if (raw === '/bugs') {
+    if (!selectedTermMissionId) {
+      appendTermSystemLine('[ERRO] Nenhuma missão selecionada.');
+      return;
+    }
+    appendTermUserLine(raw);
+    quickAction(selectedTermMissionId, 'bugs');
+    return;
+  }
+
+  if (raw === '/retest') {
+    if (!selectedTermMissionId) {
+      appendTermSystemLine('[ERRO] Nenhuma missão selecionada.');
+      return;
+    }
+    appendTermUserLine(raw);
+    quickAction(selectedTermMissionId, 'retest');
+    return;
+  }
+
+  if (raw === '/concluir') {
+    if (!selectedTermMissionId) {
+      appendTermSystemLine('[ERRO] Nenhuma missão selecionada.');
+      return;
+    }
+    appendTermUserLine(raw);
+    await completeMission(selectedTermMissionId);
+    return;
+  }
+
+  const qaMatch = raw.match(/^(?:qa|teste)\s+([A-Z0-9]+-\d+)$/i);
+  if (qaMatch) {
+    const card = qaMatch[1].toUpperCase();
+    appendTermUserLine(raw);
+    appendTermSystemLine(`Iniciando missão de QA para ${card} com ${termAgent}...`);
+    try {
+      await api('/api/missions', { agent: termAgent, target: card, kind: 'qa' });
+      termSig = '';
+      tickNow();
+    } catch (e) {
+      appendTermSystemLine(`[ERRO ao iniciar missão] ${e.message}`);
+    }
+    return;
+  }
+
+  if (!selectedTermMissionId) {
+    appendTermSystemLine(`[ERRO] Nenhuma missão selecionada. Para testar um card, digite: qa CARD-123`);
+    return;
+  }
+
+  await replyMission(selectedTermMissionId, false, raw);
+}
+
+function termCommand(cmd) {
+  const input = document.getElementById('term-input');
+  if (input) {
+    input.value = cmd;
+    submitTermInput();
+  }
+}
+
+function handleTermKey(e) {
+  const input = document.getElementById('term-input');
+  if (!input) return;
+
+  // Ctrl+L ou Cmd+L: Limpa a tela
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+    e.preventDefault();
+    termCleared = true;
+    termSig = '';
+    renderTerminal();
+    return;
+  }
+
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    submitTermInput();
+    return;
+  }
+
+  if (e.key === 'ArrowUp') {
+    if (termHistory.length === 0) return;
+    if (termHistoryIndex === -1) {
+      termCurrentDraft = input.value;
+      termHistoryIndex = termHistory.length - 1;
+    } else if (termHistoryIndex > 0) {
+      termHistoryIndex--;
+    }
+    input.value = termHistory[termHistoryIndex];
+    e.preventDefault();
+    setTimeout(() => { try { input.setSelectionRange(input.value.length, input.value.length); } catch {} }, 0);
+    return;
+  }
+
+  if (e.key === 'ArrowDown') {
+    if (termHistoryIndex === -1) return;
+    if (termHistoryIndex < termHistory.length - 1) {
+      termHistoryIndex++;
+      input.value = termHistory[termHistoryIndex];
+    } else {
+      termHistoryIndex = -1;
+      input.value = termCurrentDraft;
+    }
+    e.preventDefault();
+    setTimeout(() => { try { input.setSelectionRange(input.value.length, input.value.length); } catch {} }, 0);
+    return;
   }
 }
 async function stopMission(id) {
   if (!confirm('Parar esta missão? O agente é interrompido e o navegador dele fecha.')) return;
   try { await api(`/api/missions/${id}/stop`); missionSig = ''; tickNow(); } catch (e) { alert(e.message); }
 }
+async function completeMission(id) {
+  if (!confirm('Deseja marcar esta missão como CONCLUÍDA? O processo atual será finalizado e ela irá para a aba Concluídas.')) return;
+  try {
+    await api(`/api/missions/${id}/done`);
+    setTab('concluidas');
+    missionSig = '';
+    tickNow();
+  } catch (e) {
+    if (e.message && e.message.includes('não encontrado')) {
+      alert('O servidor do painel precisa ser reiniciado para carregar a nova rota: dê Ctrl+C no terminal e execute "npm run live" novamente.');
+    } else {
+      alert(e.message);
+    }
+  }
+}
 async function answerPrompt(id, decision) {
   try { await api(`/api/prompts/${id}`, { decision }); tickNow(); } catch (e) { alert(e.message); tickNow(); }
 }
+
+async function createSingleBugInJira(card, code, title) {
+  let m = S.missions && S.missions.find((x) => x.target === card && (x.status === 'RUNNING' || x.status === 'WAITING' || x.status === 'DONE'));
+  if (!m && S.missions && S.missions.length) {
+    m = S.missions[0];
+  }
+  if (!m) {
+    alert(`Nenhuma missão encontrada para o card ${card}. Crie ou retome a missão primeiro.`);
+    return;
+  }
+  const promptText = `Por favor, crie o sub-bug no Jira especificamente para o problema ${code}: "${title}" e anexe a evidência dele.`;
+  const area = document.querySelector(`textarea[data-m="${m.id}"]`);
+  if (area) area.value = promptText;
+  drafts[m.id] = promptText;
+
+  if (confirm(`Solicitar ao agente da missão ${m.target} para abrir o bug "${code}: ${title}" no Jira?`)) {
+    try {
+      missionViews[m.id] = 'chat';
+      await api(`/api/missions/${m.id}/reply`, { text: promptText });
+      setTab('ativas');
+      missionSig = '';
+      tickNow();
+    } catch (e) {
+      alert(e.message);
+    }
+  }
+}
+
+function focusChatInput(id) {
+  const el = document.querySelector(`textarea[data-m="${id}"]`);
+  if (el) {
+    el.focus();
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function quickAction(id, action) {
+  const area = document.querySelector(`textarea[data-m="${id}"]`);
+  if (!area) return;
+  if (action === 'bugs') {
+    area.value = 'Por favor, crie os sub-bugs no Jira para todos os problemas identificados nesta auditoria e anexe as evidências.';
+    replyMission(id, false);
+  } else if (action === 'retest') {
+    area.value = 'Por favor, execute o reteste dos cenários que falharam.';
+    replyMission(id, false);
+  }
+}
+
+let planModalSig = '';
+
+function closePlanModal(e) {
+  if (e && e.target && e.target.id !== 'plan-overlay' && !e.target.classList.contains('close-btn')) return;
+  openPlanMissionId = null;
+  planModalSig = '';
+  const overlay = document.getElementById('plan-overlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function openPlanModal(missionId) {
+  openPlanMissionId = missionId;
+  planModalSig = '';
+  renderPlanModal(true);
+  const overlay = document.getElementById('plan-overlay');
+  if (overlay) overlay.classList.add('on');
+}
+
+function approveFromPlanModal(missionId) {
+  closePlanModal();
+  replyMission(missionId, true);
+}
+
+function adjustFromPlanModal(missionId) {
+  closePlanModal();
+  const area = document.querySelector(`textarea[data-m="${missionId}"]`);
+  if (area) {
+    area.value = 'Ajuste no plano: ';
+    area.focus();
+    area.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+function renderPlanModal(force = false) {
+  if (!openPlanMissionId || !S) return;
+  const m = S.missions && S.missions.find((x) => x.id === openPlanMissionId);
+  if (!m) return closePlanModal();
+
+  const r = m.run_id ? S.runs.find((x) => x.id === m.run_id) : (m.runId ? S.runs.find((x) => x.id === m.runId) : null);
+  
+  let planText = '';
+  const agentMsgs = (m.messages || []).filter((msg) => msg.role === 'agent');
+  if (agentMsgs.length) {
+    planText = agentMsgs[agentMsgs.length - 1].text;
+  }
+  if (!planText && m.last_message) planText = m.last_message;
+
+  const scenarios = r?.scenarios || [];
+  const modal = document.getElementById('plan-modal');
+  if (!modal) return;
+
+  const sig = `${openPlanMissionId}_${m.updated_at}_${planText.length}_${scenarios.length}`;
+  if (!force && sig === planModalSig) return;
+  planModalSig = sig;
+
+  const scrollEl = modal.querySelector('.plan-modal-scroll');
+  const prevScroll = scrollEl ? scrollEl.scrollTop : 0;
+
+  modal.innerHTML = `
+    <div class="plan-modal-head">
+      <div>
+        <h3>🗺️ Plano de Testes Proposto · ${esc(m.target)}</h3>
+        <div class="pm-sub">${EMOJI[m.agent] || '🤖'} Operador: <b>${esc(m.agent === 'antigravity' ? 'Antigravity' : 'Claude')}</b> · Missão: <code>${esc(m.id)}</code> ${r ? `· Run: <code>${esc(r.id)}</code>` : ''}</div>
+      </div>
+      <button class="ghost close-btn" onclick="closePlanModal(null)">✖</button>
+    </div>
+
+    <div class="plan-modal-scroll">
+      ${scenarios.length ? `
+        <div style="margin-bottom: 16px;">
+          <h4 style="margin: 0 0 10px; font-family: var(--title-font); font-size: 14px; color: var(--blue);">📋 Cenários Estruturados (${scenarios.length})</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 10px;">
+            ${scenarios.map((s) => `
+              <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+                  <span style="font-family:var(--code); font-weight:700; font-size:11px; color:var(--yellow);">${esc(s.code)}</span>
+                  <span style="font-size:10px; color:var(--muted);">${esc(s.status)}</span>
+                </div>
+                <div style="font-size:12.5px; font-weight:600; color:var(--fg); line-height:1.35;">${esc(s.title)}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
+      <div class="plan-text-content">
+        <h4 style="margin: 0 0 12px; font-family: var(--title-font); font-size: 14.5px; color: var(--yellow);">📝 Proposta e Roteiro de Testes</h4>
+        <div style="font-size: 13.5px; line-height: 1.7; word-break: break-word;">${formatChatText(planText)}</div>
+      </div>
+    </div>
+
+    <div class="plan-modal-foot">
+      <div style="font-size:12px; color:var(--muted);">
+        💡 Revise os cenários e critérios antes de liberar as ações automáticas no navegador.
+      </div>
+      <div class="actions-right">
+        <button class="ghost" onclick="adjustFromPlanModal('${esc(m.id)}')">✏️ PEDIR AJUSTE NO CHAT</button>
+        <button onclick="approveFromPlanModal('${esc(m.id)}')">✨ APROVAR PLANO E INICIAR CAÇADA</button>
+      </div>
+    </div>
+  `;
+
+  if (prevScroll) {
+    const newScrollEl = modal.querySelector('.plan-modal-scroll');
+    if (newScrollEl) newScrollEl.scrollTop = prevScroll;
+  }
+}
+
+// ── Modal de Permissão e Ações de Risco ─────────────────────────────
+let openPromptId = null;
+const autoOpenedPrompts = new Set();
+let promptModalSig = '';
+
+function closePromptModal(e) {
+  if (e && e.target && e.target.id !== 'prompt-overlay' && !e.target.classList.contains('close-btn')) return;
+  openPromptId = null;
+  promptModalSig = '';
+  const overlay = document.getElementById('prompt-overlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function openPromptModal(promptId) {
+  openPromptId = promptId;
+  promptModalSig = '';
+  renderPromptModal(true);
+  const overlay = document.getElementById('prompt-overlay');
+  if (overlay) overlay.classList.add('on');
+}
+
+async function answerPromptFromModal(id, decision) {
+  closePromptModal();
+  await answerPrompt(id, decision);
+}
+
+function renderPromptModal(force = false) {
+  if (!openPromptId || !S) return;
+  const p = (S.prompts || []).find((x) => x.id === openPromptId);
+  if (!p || p.status !== 'PENDING') return closePromptModal();
+
+  const m = S.missions && S.missions.find((x) => x.id === p.mission_id);
+  const isRed = /act_approved$/.test(p.tool || '') || p.kind === 'red';
+  const modal = document.getElementById('prompt-modal');
+  if (!modal) return;
+
+  const sig = `${p.id}_${p.status}_${p.tool}_${isRed}`;
+  if (!force && sig === promptModalSig) return;
+  promptModalSig = sig;
+
+  modal.className = `report action-modal-box ${isRed ? 'red' : ''}`;
+  modal.innerHTML = `
+    <div class="plan-modal-head">
+      <div>
+        <h3>${isRed ? '⚠️ Autorização de Ação de Risco' : '🔐 Permissão Solicitada pelo Agente'}</h3>
+        <div class="pm-sub">${EMOJI[m?.agent] || '🤖'} Operador: <b>${esc(m?.agent === 'antigravity' ? 'Antigravity' : 'Claude')}</b> ${m?.target ? `· Alvo: <b>${esc(m.target)}</b>` : ''} · Pedido #${p.id} · ${hhmm(p.created_at)}</div>
+      </div>
+      <button class="ghost close-btn" onclick="closePromptModal(null)">✖</button>
+    </div>
+
+    <div class="plan-modal-scroll">
+      <div style="background: rgba(0,0,0,0.3); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; margin-bottom: 16px;">
+        <div style="font-size: 11.5px; font-family: var(--code); text-transform: uppercase; color: var(--muted); margin-bottom: 4px;">Resumo da Ação Solicitada</div>
+        <div style="font-size: 15px; font-weight: 700; color: ${isRed ? 'var(--red)' : 'var(--fg)'}; line-height: 1.4;">${esc(p.summary)}</div>
+        ${p.tool ? `<div style="margin-top: 10px;"><span class="state" style="font-size: 11.5px; font-family: var(--code);">${esc(p.tool)}</span></div>` : ''}
+      </div>
+
+      ${p.input_json ? `
+        <div class="plan-text-content">
+          <h4 style="margin: 0 0 8px; font-family: var(--title-font); font-size: 13px; color: var(--muted);">Detalhes Técnicos dos Parâmetros</h4>
+          <pre style="margin: 0; font-family: var(--code); font-size: 12px; line-height: 1.5; color: #a9b1d6; overflow-x: auto; white-space: pre-wrap; word-break: break-all;">${esc(p.input_json)}</pre>
+        </div>
+      ` : ''}
+    </div>
+
+    <div class="plan-modal-foot">
+      <div style="font-size:12px; color:var(--muted);">
+        ${isRed ? '⚠️ Esta ação pode alterar dados no ambiente. Confirme se autoriza o agente a prosseguir.' : 'Sua resposta será comunicada diretamente ao agente para destravar o turno.'}
+      </div>
+      <div class="actions-right">
+        <button class="ghost" onclick="answerPromptFromModal(${p.id}, 'deny')">✖ NEGAR AÇÃO</button>
+        <button class="${isRed ? 'danger' : ''}" onclick="answerPromptFromModal(${p.id}, 'allow')">✔ PERMITIR AÇÃO</button>
+      </div>
+    </div>
+  `;
+}
+
+// ── Modal de Diálogo com o Agente ──────────────────────────────────
+let openDialogueMissionId = null;
+const autoOpenedDialogues = new Set();
+let dialogueModalSig = '';
+
+function closeDialogueModal(e) {
+  if (e && e.target && e.target.id !== 'dialogue-overlay' && !e.target.classList.contains('close-btn')) return;
+  openDialogueMissionId = null;
+  dialogueModalSig = '';
+  const overlay = document.getElementById('dialogue-overlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function openDialogueModal(missionId) {
+  openDialogueMissionId = missionId;
+  dialogueModalSig = '';
+  renderDialogueModal(true);
+  const overlay = document.getElementById('dialogue-overlay');
+  if (overlay) overlay.classList.add('on');
+  setTimeout(() => {
+    const txt = document.getElementById('dialogue-modal-textarea');
+    if (txt) txt.focus();
+  }, 100);
+}
+
+function handleDialogueModalKey(e, missionId) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendDialogueFromModal(missionId);
+  }
+}
+
+async function sendDialogueFromModal(missionId) {
+  const txt = document.getElementById('dialogue-modal-textarea');
+  const val = txt ? txt.value.trim() : '';
+  if (!val) {
+    if (txt) txt.focus();
+    return;
+  }
+  closeDialogueModal();
+  const area = document.querySelector(`textarea[data-m="${missionId}"]`);
+  if (area) area.value = val;
+  drafts[missionId] = val;
+  await replyMission(missionId, false);
+}
+
+function renderDialogueModal(force = false) {
+  if (!openDialogueMissionId || !S) return;
+  const m = S.missions && S.missions.find((x) => x.id === openDialogueMissionId);
+  if (!m || m.status !== 'WAITING') return closeDialogueModal();
+
+  const modal = document.getElementById('dialogue-modal');
+  if (!modal) return;
+
+  const msgs = m.messages || [];
+  const lastMsg = m.last_message || (msgs.length ? msgs[msgs.length - 1].text : 'O agente concluiu o turno e aguarda sua orientação para continuar.');
+  const sig = `${m.id}_${m.updated_at}_${msgs.length}_${lastMsg.length}`;
+  if (!force && sig === dialogueModalSig) return;
+  dialogueModalSig = sig;
+
+  modal.innerHTML = `
+    <div class="plan-modal-head">
+      <div>
+        <h3>💬 Diálogo Direto · ${esc(m.target)}</h3>
+        <div class="pm-sub">${EMOJI[m.agent] || '🤖'} Operador: <b>${esc(m.agent === 'antigravity' ? 'Antigravity' : 'Claude')}</b> · Missão: <code>${esc(m.id)}</code></div>
+      </div>
+      <button class="ghost close-btn" onclick="closeDialogueModal(null)">✖</button>
+    </div>
+
+    <div class="plan-modal-scroll">
+      ${msgs.length > 1 ? `
+        <div style="background: rgba(0,0,0,0.25); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; max-height: 180px; overflow-y: auto;">
+          <div style="font-size: 11px; font-family: var(--code); text-transform: uppercase; color: var(--muted); margin-bottom: 8px;">Histórico recente da conversa:</div>
+          ${msgs.slice(-4).map((msg) => `
+            <div style="margin-bottom: 8px; font-size: 13px;">
+              <b style="color: ${msg.role === 'user' ? 'var(--blue)' : 'var(--lime)'};">${msg.role === 'user' ? 'Você' : esc(m.agent)}:</b>
+              <span style="color: var(--fg);">${esc(msg.text.slice(0, 300))}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <div class="plan-text-content" style="border-color: rgba(76, 201, 240, 0.4); margin-bottom: 16px;">
+        <h4 style="margin: 0 0 10px; font-family: var(--title-font); font-size: 14px; color: var(--blue);">📢 Mensagem / Pergunta do Agente:</h4>
+        <div style="font-size: 14px; line-height: 1.6; word-break: break-word;">${formatChatText(lastMsg)}</div>
+      </div>
+
+      <div style="margin-top: 14px;">
+        <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--fg); margin-bottom: 6px;">Sua resposta / instrução:</label>
+        <textarea id="dialogue-modal-textarea" style="width: 100%; min-height: 80px; max-height: 160px; font-family: var(--body-font); font-size: 14px; background: rgba(10, 11, 24, 0.65); color: var(--fg); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-sizing: border-box; outline: none;" placeholder="Digite aqui sua resposta ou instrução (Enter para enviar, Shift+Enter para nova linha)..." onkeydown="handleDialogueModalKey(event, '${esc(m.id)}')">${esc(drafts[m.id] || '')}</textarea>
+      </div>
+    </div>
+
+    <div class="plan-modal-foot">
+      <div style="font-size:12px; color:var(--muted);">
+        Enter para enviar resposta · Esc ou ✕ para fechar e ver no painel.
+      </div>
+      <div class="actions-right">
+        <button class="ghost" onclick="closeDialogueModal(null)">✕ FECHAR</button>
+        <button onclick="sendDialogueFromModal('${esc(m.id)}')">💬 ENVIAR RESPOSTA ↵</button>
+      </div>
+    </div>
+  `;
+}
+
+function checkAutoModals() {
+  if (!S) return;
+  // 1. Prioridade máxima: Plano de testes para aprovar
+  const waitingPlan = (S.missions || []).find((m) => m.runStatus === 'AWAITING_APPROVAL' && m.status === 'WAITING');
+  if (waitingPlan && !autoOpenedPlans.has(waitingPlan.id)) {
+    autoOpenedPlans.add(waitingPlan.id);
+    setTimeout(() => openPlanModal(waitingPlan.id), 250);
+    return;
+  }
+
+  // 2. Permissão pendente
+  const pendingPrompts = (S.prompts || []).filter((p) => p.status === 'PENDING');
+  if (pendingPrompts.length && !openPromptId && !openPlanMissionId && !openDialogueMissionId) {
+    const next = pendingPrompts.find((p) => !autoOpenedPrompts.has(p.id));
+    if (next) {
+      autoOpenedPrompts.add(next.id);
+      setTimeout(() => openPromptModal(next.id), 250);
+      return;
+    }
+  }
+
+  // 3. Diálogo / Pergunta do agente (WAITING)
+  const waitingDialogue = (S.missions || []).find((m) => m.status === 'WAITING' && m.runStatus !== 'AWAITING_APPROVAL');
+  if (waitingDialogue && !openPromptId && !openPlanMissionId && !openDialogueMissionId) {
+    const key = `${waitingDialogue.id}_${waitingDialogue.updated_at}`;
+    if (!autoOpenedDialogues.has(key)) {
+      autoOpenedDialogues.add(key);
+      setTimeout(() => openDialogueModal(waitingDialogue.id), 250);
+      return;
+    }
+  }
+}
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    closePlanModal(null);
+    closePromptModal(null);
+    closeDialogueModal(null);
+  }
+});
 
 // ── Aviso sonoro & Notificação Desktop de Tela ──────────────────────
 let knownNeeds = null;
@@ -1217,12 +2607,28 @@ const setFocus = (on) => {
   document.body.classList.toggle('focus', on);
   document.getElementById('focus').textContent = on ? 'MODO DESIGN' : 'MODO FOCO';
   store.set('novoqa.focus', on ? '1' : '0');
+  if (on) {
+    termSig = '';
+    renderTerminal();
+    setTimeout(() => {
+      const input = document.getElementById('term-input');
+      if (input) input.focus();
+    }, 100);
+  }
 };
 document.getElementById('focus').onclick = () => setFocus(!document.body.classList.contains('focus'));
 setFocus(store.get('novoqa.focus') === '1');
 document.getElementById('overlay').onclick = (e) => { if (e.target.id === 'overlay') closeReport(); };
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape') { closeReport(); closeLightbox(null); }
+  if (e.key === 'Escape') {
+    if (document.body.classList.contains('focus')) {
+      setFocus(false);
+      return;
+    }
+    closeReport();
+    closeLightbox(null);
+    closePlanModal(null);
+  }
 });
 
 // ── Renderização do Estado ───────────────────────────────────────────
@@ -1236,25 +2642,8 @@ function renderHeader() {
   document.getElementById('updated').textContent = `atualizado ${hhmm(S.generatedAt)}`;
 }
 
-const tokens = (n) => n >= 1e6 ? `${(n / 1e6).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} mi` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : String(n);
 function renderUsage() {
-  const box = document.getElementById('fuel');
-  const agents = S.usage?.agents || [];
-  box.style.display = agents.length ? '' : 'none';
-  const NAME = { claude: 'CLAUDE', codex: 'CODEX', antigravity: 'ANTIGRAVITY' };
-  const win = (title, w, weekly) => {
-    const free = w.usedPct === null ? null : Math.max(0, 100 - w.usedPct);
-    const reset = w.resetsAt ? new Date(w.resetsAt).toLocaleString('pt-BR', weekly ? { weekday: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' } : { hour: '2-digit', minute: '2-digit' }) : null;
-    const meta = [reset ? `renova <b>${esc(reset)}</b>` : w.renewedAt ? `renovou ${esc(new Date(w.renewedAt).toLocaleString('pt-BR', { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}` : (free === null ? 'sem leitura da %' : ''), `<b>${tokens(w.spent)}</b> tokens`].filter(Boolean).join(' · ');
-    const cls = free === null ? '' : free < 10 ? 'empty' : free < 30 ? 'low' : '';
-    return `<div class="win ${cls}"><div class="top2" style="display:flex;justify-content:space-between"><h3>${title}</h3><span style="font-weight:700;font-family:var(--title-font)">${free === null ? '–' : `${Math.round(free)}% livre`}</span></div>
-      <div class="tank"><i style="width:${free ?? 0}%"></i></div><div class="meta" style="font-size:12px;color:var(--muted)">${meta}</div></div>`;
-  };
-  box.innerHTML = agents.map((a) => `<div class="box gauge">
-    <div class="agent"><svg viewBox="0 0 64 64">${SVG[a.agent]}</svg><h2>${EMOJI[a.agent]} ${NAME[a.agent]}</h2></div>
-    ${a.available ? win('⛽ 5 HORAS', a.fiveHour, false) + win('📅 SEMANA', a.sevenDay, true)
-      : `<div class="na" style="color:var(--muted);font-size:13px;padding:8px 0">Sem leitura: ${esc(a.note || '')}.</div>`}
-  </div>`).join('');
+  // Medidor de combustível/tokens removido a pedido do usuário
 }
 
 function renderNeeds() {
@@ -1265,6 +2654,7 @@ function renderNeeds() {
   const n = prompts.length + waiting.length + external.length;
   const count = document.getElementById('needs-count');
   count.textContent = `${n} pendência${n === 1 ? '' : 's'}`; count.classList.toggle('zero', n === 0);
+  document.getElementById('needs-box')?.classList.toggle('zero-pending', n === 0);
 
   const detailText = waiting.length ? `Missão ${waiting[0].target} aguarda sua resposta.` : prompts.length ? `Permissão de ferramenta pendente.` : '';
   chime([...prompts.map((p) => `p${p.id}`), ...waiting.map((m) => `m${m.id}${m.updated_at}`), ...external.map((p) => `e${p.runId}${p.ts}`)], detailText);
@@ -1276,21 +2666,21 @@ function renderNeeds() {
   const red = (p) => /act_approved$/.test(p.tool || '');
   box.innerHTML = n ? [
     ...prompts.map((p) => `
-    <div class="ask ${red(p) ? 'red' : 'q'}">
+    <div class="ask ${red(p) ? 'red' : 'q'}" onclick="openPromptModal(${p.id})" style="cursor: pointer;" title="Clique para abrir modal de permissão">
       <div class="ic">${red(p) ? '⚠️' : /plan_approve$/.test(p.tool || '') ? '🗺️' : '🔐'}</div>
       <div class="body">
-        <div class="kind">${red(p) ? 'Ação de risco — autorizar?' : 'Permissão pedida pelo agente'}</div>
+        <div class="kind">${red(p) ? 'Ação de risco — clique para abrir modal' : 'Permissão pedida — clique para abrir modal'}</div>
         <div><b>${esc(p.summary)}</b></div>
         <div class="who">${EMOJI[((S.missions || []).find((m) => m.id === p.mission_id) || {}).agent] || '🤖'} missão ${esc(p.mission_id)} · ${hhmm(p.created_at)}</div>
-        <div class="acts"><button class="${red(p) ? 'danger' : ''}" onclick="answerPrompt(${p.id}, 'allow')">✔ PERMITIR</button><button class="ghost" onclick="answerPrompt(${p.id}, 'deny')">✖ NEGAR</button></div>
+        <div class="acts" onclick="event.stopPropagation()"><button class="${red(p) ? 'danger' : ''}" onclick="answerPrompt(${p.id}, 'allow')">✔ PERMITIR</button><button class="ghost" onclick="answerPrompt(${p.id}, 'deny')">✖ NEGAR</button></div>
       </div>
     </div>`),
     ...waiting.map((m) => `
-    <div class="ask plan">
+    <div class="ask plan" onclick="${m.runStatus === 'AWAITING_APPROVAL' ? `openPlanModal('${esc(m.id)}')` : `openDialogueModal('${esc(m.id)}')`}" style="cursor: pointer;" title="Clique para abrir modal">
       <div class="ic">${m.runStatus === 'AWAITING_APPROVAL' ? '🗺️' : '💬'}</div>
       <div class="body">
-        <div class="kind">${m.runStatus === 'AWAITING_APPROVAL' ? 'Plano para aprovar' : 'O agente perguntou'}</div>
-        <div><b>${esc(m.target)}</b> — responda no painel de conversa logo abaixo</div>
+        <div class="kind">${m.runStatus === 'AWAITING_APPROVAL' ? 'Plano para aprovar — clique para abrir modal' : 'Aguardando sua instrução — clique para abrir modal'}</div>
+        <div><b>${esc(m.target)}</b> — ${m.runStatus === 'AWAITING_APPROVAL' ? 'clique para avaliar e aprovar o plano' : 'clique aqui para responder no modal'}</div>
         <div class="who">${EMOJI[m.agent] || '🤖'} missão ${esc(m.id)} · ${hhmm(m.updated_at)}</div>
       </div>
     </div>`),
@@ -1337,15 +2727,21 @@ function hunterHtml(r, label) {
     <div class="top">
       <div class="avatar fun"><svg viewBox="0 0 64 64">${SVG[r.agent]}</svg><div class="bubble" data-k="bubble"></div></div>
       <div class="who2">
-        <div class="name">${EMOJI[r.agent]} ${esc(label)}</div>
+        <div class="who2-top">
+          <div class="name">${EMOJI[r.agent]} ${esc(label)}</div>
+          <span class="state" data-k="state"></span>
+        </div>
         <div class="lvl" data-k="lvl"></div>
         <div class="xp fun"><i data-k="xp"></i></div>
-        <div class="mission">Missão <b>${esc(r.card)}</b> ${jiraLink} · ${esc(MODE[r.mode] || r.mode)} · ${esc(r.env)} <span class="mtime" data-k="dur"></span></div>
+        <div class="mission-row">
+          <div class="mission">Missão <b>${esc(r.card)}</b> ${jiraLink} · ${esc(MODE[r.mode] || r.mode)} · ${esc(r.env)} <span class="mtime" data-k="dur"></span></div>
+          <div class="hunter-acts">
+            <button class="rep-btn" data-k="rep" style="display:none">📜 VER RELATÓRIO</button>
+            <button class="ghost" data-k="resume" style="display:none">▶ RETOMAR</button>
+            <button class="ghost" data-k="hide" style="display:none">✖ OCULTAR</button>
+          </div>
+        </div>
       </div>
-      <span class="state" data-k="state"></span>
-      <button class="rep-btn" data-k="rep" style="display:none">📜 VER RELATÓRIO COMPLETO</button>
-      <button class="ghost" data-k="resume" style="display:none">▶ RETOMAR</button>
-      <button class="ghost" data-k="hide" style="display:none">✖ OCULTAR</button>
     </div>
     <div class="phases" data-k="phases"></div>
     <div class="grid2">
@@ -1412,32 +2808,47 @@ function renderHunters() {
     q('xp').style.width = `${Math.min(100, Math.round(((a.xp - a.base) / Math.max(1, a.next - a.base)) * 100))}%`;
     el.classList.toggle('ended', !['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status));
     const waiting = S.pending.some((p) => p.runId === r.id);
-    q('phases').innerHTML = PHASES.map((p, n) => { const isDone = n < r.phase || r.phase === 5 || r.status === 'COMPLETED'; const label = isDone ? p.replace(/^[^\w\s]+\s*/, '✓ ') : p; const cls = isDone ? 'done' : n === r.phase ? (waiting || r.waiting ? 'wait' : 'now') : ''; return `<span class="ph ${cls}">${label}</span>${n < PHASES.length - 1 ? '<span class="arrow">▸</span>' : ''}`; }).join('');
 
-    const map = q('map');
-    map.classList.toggle('dense', r.scenarios.length > 16);
-    map.innerHTML = r.scenarios.map((s) => {
-      const [cls, ico] = ROOM[s.status] || ['', ''];
-      const tt = `[${s.code}] ${s.title} • ${s.priority} • ${VERDICT[s.status] || s.status}`;
-      return `<div class="room ${cls}" data-tooltip="${esc(tt)}"><span class="ico">${ico}</span><span class="code">${esc(s.code)}</span></div>`;
-    }).join('') + (r.current ? `<div class="token"><svg viewBox="0 0 64 64">${SVG[r.agent]}</svg></div>` : '');
+    const scenSig = r.scenarios.map((s) => s.code + s.status).join(',');
+    const feedLen = (r.feed || []).length;
+    const hunterSig = `${r.status}_${r.phase}_${r.current}_${r.lastShot}_${waiting}_${scenSig}_${feedLen}_${r.nowLine}`;
+    const sigChanged = el.dataset.hunterSig !== hunterSig;
+    el.dataset.hunterSig = hunterSig;
 
-    if (r.current) {
-      const idx = r.scenarios.findIndex((s) => s.code === r.current);
-      const room = map.children[idx], tok = map.querySelector('.token');
-      if (room && tok) { tok.style.left = `${room.offsetLeft + room.offsetWidth / 2 - tok.offsetWidth / 2}px`; tok.style.top = `${room.offsetTop - tok.offsetHeight / 2}px`; }
+    if (sigChanged) {
+      q('phases').innerHTML = PHASES.map((p, n) => { const isDone = n < r.phase || r.phase === 5 || r.status === 'COMPLETED'; const label = isDone ? p.replace(/^[^\w\s]+\s*/, '✓ ') : p; const cls = isDone ? 'done' : n === r.phase ? (waiting || r.waiting ? 'wait' : 'now') : ''; return `<span class="ph ${cls}">${label}</span>${n < PHASES.length - 1 ? '<span class="arrow">▸</span>' : ''}`; }).join('');
+
+      const map = q('map');
+      map.classList.toggle('dense', r.scenarios.length > 16);
+      map.innerHTML = r.scenarios.map((s) => {
+        const [cls, ico] = ROOM[s.status] || ['', ''];
+        const tt = `[${s.code}] ${s.title} • ${s.priority} • ${VERDICT[s.status] || s.status}`;
+        return `<div class="room ${cls}" data-tooltip="${esc(tt)}"><span class="ico">${ico}</span><span class="code">${esc(s.code)}</span></div>`;
+      }).join('') + (r.current ? `<div class="token"><svg viewBox="0 0 64 64">${SVG[r.agent]}</svg></div>` : '');
+
+      if (r.current) {
+        const idx = r.scenarios.findIndex((s) => s.code === r.current);
+        const room = map.children[idx], tok = map.querySelector('.token');
+        if (room && tok) { tok.style.left = `${room.offsetLeft + room.offsetWidth / 2 - tok.offsetWidth / 2}px`; tok.style.top = `${room.offsetTop - tok.offsetHeight / 2}px`; }
+      }
+
+      const screen = q('screen');
+      if (r.lastShot && screen.dataset.shot !== String(r.lastShot)) {
+        screen.dataset.shot = r.lastShot;
+        screen.querySelector('.empty-shot')?.remove();
+        screen.querySelector('img')?.remove();
+        const shotUrl = `/evidence/${r.lastShot}`;
+        screen.insertAdjacentHTML('beforeend', `<img alt="último print" src="${shotUrl}">`);
+        screen.onclick = () => openLightbox(shotUrl, `${r.card} · Último print do agente`);
+      }
+      q('shotlabel').textContent = r.lastShot ? 'clique para expandir ↗' : '';
+
+      const feed = q('feed');
+      const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 30;
+      feed.innerHTML = r.feed.map((f) => `<div><span class="t">${hhmm(f.ts)}</span><span class="${f.cls}">${esc(f.text)}</span></div>`).join('');
+      if (atBottom) feed.scrollTop = feed.scrollHeight;
     }
 
-    const screen = q('screen');
-    if (r.lastShot && screen.dataset.shot !== String(r.lastShot)) {
-      screen.dataset.shot = r.lastShot;
-      screen.querySelector('.empty-shot')?.remove();
-      screen.querySelector('img')?.remove();
-      const shotUrl = `/evidence/${r.lastShot}`;
-      screen.insertAdjacentHTML('beforeend', `<img alt="último print" src="${shotUrl}">`);
-      screen.onclick = () => openLightbox(shotUrl, `${r.card} · Último print do agente`);
-    }
-    q('shotlabel').textContent = r.lastShot ? 'clique para expandir ↗' : '';
     if (r.status === 'COMPLETED') {
       const passed = r.scenarios.filter((s) => s.status === 'PASSED').length;
       const failed = r.scenarios.filter((s) => s.status === 'FAILED').length;
@@ -1451,11 +2862,6 @@ function renderHunters() {
       q('now').textContent = isIdle(r) ? `Ninguém está operando este run. Retome ou encerre.` : `⏱️ Em execução há ${dText} · ${r.nowLine}`;
     }
     el.classList.toggle('idle', isIdle(r));
-
-    const feed = q('feed');
-    const atBottom = feed.scrollHeight - feed.scrollTop - feed.clientHeight < 30;
-    feed.innerHTML = r.feed.map((f) => `<div><span class="t">${hhmm(f.ts)}</span><span class="${f.cls}">${esc(f.text)}</span></div>`).join('');
-    if (atBottom) feed.scrollTop = feed.scrollHeight;
 
     const rep = q('rep');
     rep.style.display = ['COMPLETED', 'ABORTED'].includes(r.status) ? 'inline-block' : 'none';
@@ -1504,24 +2910,29 @@ function formatTimelineText(raw) {
   return s;
 }
 
+let lastBugSig = '';
 function renderBugs() {
   const count = (S.bugs || []).length;
   const pill = document.getElementById('bug-count-pill');
-  if (pill) pill.textContent = `${count} capturados`;
+  if (pill && pill.textContent !== `${count} capturados`) pill.textContent = `${count} capturados`;
   const statTotal = document.getElementById('jar-stat-total');
-  if (statTotal) statTotal.textContent = String(count);
+  if (statTotal && statTotal.textContent !== String(count)) statTotal.textContent = String(count);
 
   const unlocked = (S.badges || []).filter((b) => b.unlocked).length;
   const totalBadges = (S.badges || []).length || 8;
   const statBadges = document.getElementById('jar-stat-badges');
-  if (statBadges) statBadges.textContent = `${unlocked}/${totalBadges}`;
+  if (statBadges && statBadges.textContent !== `${unlocked}/${totalBadges}`) statBadges.textContent = `${unlocked}/${totalBadges}`;
   const unlCount = document.getElementById('unlocked-badge-count');
-  if (unlCount) unlCount.textContent = String(unlocked);
+  if (unlCount && unlCount.textContent !== String(unlocked)) unlCount.textContent = String(unlocked);
   const pct = Math.round((unlocked / totalBadges) * 100);
   const progFill = document.getElementById('jar-badge-progress');
   if (progFill) progFill.style.width = `${pct}%`;
   const progHint = document.getElementById('jar-progress-hint');
   if (progHint) progHint.textContent = `${pct}% Conquistas`;
+
+  const bugSig = JSON.stringify([count, unlocked, (S.bugs || []).map((b) => b.runId + b.code + (b.jira || ''))]);
+  if (bugSig === lastBugSig) return;
+  lastBugSig = bugSig;
 
   // Animação de bugs dentro do pote
   const top = (i) => 58 - Math.floor(i / 4) * 16;
@@ -1538,7 +2949,7 @@ function renderBugs() {
       const isCard = Boolean(b.card && /^[A-Z][A-Z0-9]+-\d+$/.test(b.card));
       const tagHtml = isJira
         ? `<a href="https://guruja.atlassian.net/browse/${esc(b.jira)}" target="_blank" rel="noopener" class="bug-tag jira" title="Abrir bug no Jira">🐞 ${esc(b.jira)} ↗</a>`
-        : `<span class="bug-tag code">🐞 ${esc(b.code)}</span>`;
+        : `<span class="bug-tag code">🐞 ${esc(b.code)}</span><button class="bug-tag-btn" onclick="createSingleBugInJira('${esc(b.card || '')}', '${esc(b.code)}', '${esc(b.title)}')" title="Pedir ao agente para abrir este bug no Jira">+ Criar no Jira</button>`;
       const cardHtml = isCard
         ? `<a href="https://guruja.atlassian.net/browse/${esc(b.card)}" target="_blank" rel="noopener" class="bug-card-pill" title="Card de origem no Jira">${esc(b.card)} ↗</a>`
         : (b.card ? `<span class="bug-card-pill">${esc(b.card)}</span>` : '');
@@ -1570,6 +2981,7 @@ function renderBugs() {
   prev.badges = new Set(S.badges.filter((b) => b.unlocked).map((b) => b.id));
 }
 
+let lastLogSig = '';
 function renderLog() {
   const logBox = document.getElementById('log');
   if (!logBox) return;
@@ -1579,6 +2991,10 @@ function renderLog() {
   } else if (timelineFilter === 'ok') {
     items = items.filter((f) => f.cls === 'ok' || /PASSED|APROVADO/i.test(f.text));
   }
+
+  const logSig = JSON.stringify([timelineFilter, items.length, items.slice(-8).map((f) => f.ts + f.cls)]);
+  if (logSig === lastLogSig) return;
+  lastLogSig = logSig;
 
   if (!items.length) {
     logBox.innerHTML = '<div class="empty-state">Nenhum evento registrado para este filtro.</div>';
@@ -1682,7 +3098,7 @@ async function tick() {
   if (state) {
     S = state;
     // Erro ao desenhar não é falta de conexão: mostra qual parte quebrou (e segue tentando).
-    const parts = { renderHeader, renderUsage, renderMissions, renderNeeds, renderHunters, renderBugs, renderLog, renderReport: () => renderReport(false) };
+    const parts = { renderHeader, renderUsage, renderMissions, renderNeeds, renderHunters, renderBugs, renderLog, renderReport: () => renderReport(false), renderPlanModal, renderPromptModal, renderDialogueModal, checkAutoModals, renderTerminal };
     const broken = [];
     for (const [name, fn] of Object.entries(parts)) {
       try { fn(); } catch (e) { broken.push(`${name}: ${e.message}`); console.error(name, e); }
@@ -1692,7 +3108,9 @@ async function tick() {
     prev.first = false;
   }
   clearTimeout(timer);
-  timer = setTimeout(tick, 2000);
+  const isTyping = document.activeElement && (document.activeElement.tagName === 'TEXTAREA' || document.activeElement.tagName === 'INPUT');
+  const delay = document.hidden ? 5000 : (isTyping ? 3500 : 2500);
+  timer = setTimeout(tick, delay);
 }
 let timer = null;
 function tickNow() { clearTimeout(timer); tick(); }

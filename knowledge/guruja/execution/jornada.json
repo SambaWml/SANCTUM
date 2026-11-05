@@ -34,15 +34,15 @@
     "action": "hover",
     "target": {
       "role": "button",
-      "name": "2",
+      "name": "13",
       "exact": true
     },
-    "playwright": "await page.getByRole('button', { name: '2', exact: true }).hover();",
-    "scenario": "CT-001",
+    "playwright": "await page.getByRole('button', { name: /^\\d+$/ }).hover();",
+    "scenario": "CT-009",
     "validatedIn": [
-      "GURUJA-9040-20261027T181641"
+      "GURUJA-9040-20261028T162120"
     ],
-    "lastSeen": "2026-10-27"
+    "lastSeen": "2026-10-28"
   },
   {
     "route": "/aluno/jornada",
@@ -70,11 +70,12 @@
     "playwright": "await page.getByRole('button', { name: 'Legenda' }).click();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261028T121247",
       "GURUJA-9040-20261027T181641"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/jornada",
@@ -86,12 +87,13 @@
     "playwright": "await page.getByRole('button', { name: 'Legenda' }).hover();",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261028T121247",
       "GURUJA-9040-20261028T120033",
       "GURUJA-9040-20261027T181641"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/visao-geral",
@@ -115,7 +117,7 @@
       "role": "button",
       "name": "Aprofundamentos 0"
     },
-    "playwright": "await page.getByRole('button', { name: 'Aprofundamentos 0' }).click();",
+    "playwright": "await page.getByRole('button', { name: /^Aprofundamentos \\d+$/ }).click();",
     "scenario": "CT-001",
     "validatedIn": [
       "GURUJA-9040-20261028T162120",
@@ -214,7 +216,7 @@
       "role": "row",
       "name": "Abrir aprofundamento 8VNWG7WW"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento 8VNWG7WW' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento \\d+VNWG\\d+WW$/ }).click();",
     "scenario": "CT-002",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -306,7 +308,7 @@
       "role": "row",
       "name": "Abrir aprofundamento RAMB78Y8"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento RAMB78Y8' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento RAMB\\d+Y\\d+$/ }).click();",
     "scenario": "CT-003",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -334,7 +336,7 @@
       "role": "button",
       "name": "Reforços 6"
     },
-    "playwright": "await page.getByRole('button', { name: 'Reforços 6' }).click();",
+    "playwright": "await page.getByRole('button', { name: /^Reforços \\d+$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -348,7 +350,7 @@
       "role": "row",
       "name": "Pendente 1 Direito Constitucional"
     },
-    "playwright": "await page.getByRole('row', { name: 'Pendente 1 Direito Constitucional' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Pendente \\d+ Direito Constitucional$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -413,21 +415,7 @@
       "role": "row",
       "name": "Pendente 2 Raciocínio Lógico"
     },
-    "playwright": "await page.getByRole('row', { name: 'Pendente 2 Raciocínio Lógico' }).click();",
-    "scenario": "CT-005",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
-    "route": "/aluno/visao-geral",
-    "action": "click",
-    "target": {
-      "role": "row",
-      "name": "Pendente 3 Raciocínio Lógico"
-    },
-    "playwright": "await page.getByRole('row', { name: 'Pendente 3 Raciocínio Lógico' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Pendente \\d+ Raciocínio Lógico$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -441,7 +429,7 @@
       "role": "row",
       "name": "Pendente 4 Administração Pública"
     },
-    "playwright": "await page.getByRole('row', { name: 'Pendente 4 Administração Pública' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Pendente \\d+ Administração Pública$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -512,7 +500,7 @@
       "role": "row",
       "name": "Pendente 1 Contabilidade Geral e Avançada Teoria"
     },
-    "playwright": "await page.getByRole('row', { name: 'Pendente 1 Contabilidade Geral e Avançada Teoria' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Pendente \\d+ Contabilidade Geral e Avançada Teoria$/ }).click();",
     "scenario": "CT-005",
     "validatedIn": [
       "GURUJA-9040-20261027T181641"
@@ -595,11 +583,12 @@
     "playwright": "await page.getByRole('button', { name: 'Entrar' }).click();",
     "scenario": "CT-006",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261028T120033",
       "GURUJA-9040-20261027T181641"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/visao-geral",
@@ -687,10 +676,11 @@
     "playwright": "await page.getByRole('button', { name: 'Mês anterior' }).click();",
     "scenario": "CT-008",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261027T181641"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/jornada",
@@ -735,58 +725,6 @@
     "lastSeen": "2026-10-27"
   },
   {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('15'), 1)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'15\\'), 1)').hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('13'), 1)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'13\\'), 1)').hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('22'), 1)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'22\\'), 1)').hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('1818'), 1)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'1818\\'), 1)').hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
     "route": "/aluno/visao-geral",
     "action": "viewport",
     "target": {
@@ -801,35 +739,6 @@
   },
   {
     "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('2727'), 2)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'2727\\'), 2)').hover();",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-27"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "viewport",
-    "target": {
-      "viewport": "768x1024"
-    },
-    "playwright": "await page.setViewportSize({ width: 768, height: 1024 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120",
-      "GURUJA-9040-20261028T121247",
-      "GURUJA-9040-20261028T120033",
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
     "action": "viewport",
     "target": {
       "viewport": "390x844"
@@ -837,12 +746,13 @@
     "playwright": "await page.setViewportSize({ width: 390, height: 844 });",
     "scenario": "CT-010",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261028T121247",
       "GURUJA-9040-20261028T120033",
       "GURUJA-9040-20261027T181641"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/jornada",
@@ -1001,7 +911,7 @@
       "role": "row",
       "name": "Abrir aprofundamento S9RN2EJU"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento S9RN2EJU' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento S\\d+RN\\d+EJU$/ }).click();",
     "scenario": "EXP-006",
     "validatedIn": [
       "GURUJA-9040-20261028T120033",
@@ -1042,20 +952,6 @@
     "lastSeen": "2026-10-28"
   },
   {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": "section button:has-text('28') >> nth=1"
-    },
-    "playwright": "await page.locator('section button:has-text(\\'28\\') >> nth=1').hover();",
-    "scenario": "EXP-006",
-    "validatedIn": [
-      "GURUJA-9040-20261028T120033",
-      "GURUJA-9040-20261027T181641"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
     "route": "/aluno/visao-geral",
     "action": "click",
     "target": {
@@ -1065,20 +961,6 @@
     "playwright": "await page.getByRole('button', { name: 'Fechar' }).click();",
     "scenario": "CT-007",
     "validatedIn": [
-      "GURUJA-9040-20261028T120033"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "css": ":nth-match(button:has-text('28'), 2)"
-    },
-    "playwright": "await page.locator(':nth-match(button:has-text(\\'28\\'), 2)').hover();",
-    "scenario": "CT-002",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120",
       "GURUJA-9040-20261028T120033"
     ],
     "lastSeen": "2026-10-28"
@@ -1120,7 +1002,7 @@
       "role": "row",
       "name": "Abrir aprofundamento DPTFE85W"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento DPTFE85W' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento DPTFE\\d+W$/ }).click();",
     "scenario": "CT-011",
     "validatedIn": [
       "GURUJA-9040-20261028T120033"
@@ -1152,7 +1034,7 @@
       "role": "row",
       "name": "Abrir aprofundamento Y5ZWV5QD"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento Y5ZWV5QD' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento Y\\d+ZWV\\d+QD$/ }).click();",
     "scenario": "CT-011",
     "validatedIn": [
       "GURUJA-9040-20261028T120033"
@@ -1166,7 +1048,7 @@
       "role": "row",
       "name": "Abrir aprofundamento 8GLSL3SY"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento 8GLSL3SY' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento \\d+GLSL\\d+SY$/ }).click();",
     "scenario": "CT-011",
     "validatedIn": [
       "GURUJA-9040-20261028T120033"
@@ -1195,7 +1077,7 @@
       "role": "row",
       "name": "Abrir aprofundamento J7EC4CJV"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento J7EC4CJV' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento J\\d+EC\\d+CJV$/ }).click();",
     "scenario": "CT-012",
     "validatedIn": [
       "GURUJA-9040-20261028T120033"
@@ -1224,23 +1106,9 @@
       "role": "row",
       "name": "Abrir aprofundamento DZB5SHF5"
     },
-    "playwright": "await page.getByRole('row', { name: 'Abrir aprofundamento DZB5SHF5' }).click();",
+    "playwright": "await page.getByRole('row', { name: /^Abrir aprofundamento DZB\\d+SHF\\d+$/ }).click();",
     "scenario": "CT-013",
     "validatedIn": [
-      "GURUJA-9040-20261028T120033"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "viewport",
-    "target": {
-      "viewport": "1440x900"
-    },
-    "playwright": "await page.setViewportSize({ width: 1440, height: 900 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9040-20261028T121247",
       "GURUJA-9040-20261028T120033"
     ],
     "lastSeen": "2026-10-28"
@@ -1268,22 +1136,10 @@
     "playwright": "await page.goto('/entrar');",
     "scenario": "CT-001",
     "validatedIn": [
+      "GURUJA-9040-20261104T192240",
       "GURUJA-9040-20261028T162120"
     ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "viewport",
-    "target": {
-      "viewport": "1366x768"
-    },
-    "playwright": "await page.setViewportSize({ width: 1366, height: 768 });",
-    "scenario": "CT-010",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120"
-    ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   },
   {
     "route": "/aluno/arquivo",
@@ -1293,7 +1149,7 @@
       "name": "4ª Meta",
       "exact": true
     },
-    "playwright": "await page.getByRole('button', { name: '4ª Meta', exact: true }).click();",
+    "playwright": "await page.getByRole('button', { name: /^\\d+ª Meta$/ }).click();",
     "scenario": "CT-013",
     "validatedIn": [
       "GURUJA-9040-20261028T162120"
@@ -1307,7 +1163,7 @@
       "role": "button",
       "name": "Aprofundamentos 2"
     },
-    "playwright": "await page.getByRole('button', { name: 'Aprofundamentos 2' }).click();",
+    "playwright": "await page.getByRole('button', { name: /^Aprofundamentos \\d+$/ }).click();",
     "scenario": "CT-013",
     "validatedIn": [
       "GURUJA-9040-20261028T162120"
@@ -1334,51 +1190,6 @@
     "lastSeen": "2026-10-28"
   },
   {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "role": "button",
-      "name": "13",
-      "exact": true
-    },
-    "playwright": "await page.getByRole('button', { name: '13', exact: true }).hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "role": "button",
-      "name": "5",
-      "exact": true
-    },
-    "playwright": "await page.getByRole('button', { name: '5', exact: true }).hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
-    "route": "/aluno/jornada",
-    "action": "hover",
-    "target": {
-      "role": "button",
-      "name": "18",
-      "exact": true
-    },
-    "playwright": "await page.getByRole('button', { name: '18', exact: true }).hover();",
-    "scenario": "CT-009",
-    "validatedIn": [
-      "GURUJA-9040-20261028T162120"
-    ],
-    "lastSeen": "2026-10-28"
-  },
-  {
     "route": "/aluno/visao-geral",
     "action": "click",
     "target": {
@@ -1393,17 +1204,108 @@
     "lastSeen": "2026-10-28"
   },
   {
-    "route": "/aluno/visao-geral",
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Usuário"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Usuário' }).fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/entrar",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Senha"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Senha' }).fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/jornada",
+    "action": "hover",
+    "target": {
+      "css": "button:text-is(\"3\")"
+    },
+    "playwright": "await page.locator('button:text-is(\"3\")').hover();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/jornada",
+    "action": "hover",
+    "target": {
+      "css": ":nth-match(button:has-text(\"3\"), 1)",
+      "within": {
+        "role": "region",
+        "name": "Dias de estudo"
+      }
+    },
+    "playwright": "await page.getByRole('region', { name: 'Dias de estudo' }).locator(':nth-match(button:has-text(\"3\"), 1)').hover();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/jornada",
+    "action": "click",
+    "target": {
+      "css": ":nth-match(button:has-text(\"3\"), 1)",
+      "within": {
+        "role": "region",
+        "name": "Dias de estudo"
+      }
+    },
+    "playwright": "await page.getByRole('region', { name: 'Dias de estudo' }).locator(':nth-match(button:has-text(\"3\"), 1)').click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/jornada",
+    "action": "hover",
+    "target": {
+      "role": "button",
+      "name": "Sobre os dias de estudo"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Sobre os dias de estudo' }).hover();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "GURUJA-9040-20261104T192240"
+    ],
+    "lastSeen": "2026-11-04"
+  },
+  {
+    "route": "/aluno/jornada",
     "action": "click",
     "target": {
       "role": "button",
-      "name": "Aprofundamentos 1"
+      "name": "Próximo mês"
     },
-    "playwright": "await page.getByRole('button', { name: 'Aprofundamentos 1' }).click();",
-    "scenario": "CT-001",
+    "playwright": "await page.getByRole('button', { name: 'Próximo mês' }).click();",
+    "scenario": "CT-003",
     "validatedIn": [
-      "GURUJA-9040-20261028T162120"
+      "GURUJA-9040-20261104T192240"
     ],
-    "lastSeen": "2026-10-28"
+    "lastSeen": "2026-11-04"
   }
 ]

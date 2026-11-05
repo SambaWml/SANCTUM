@@ -78,3 +78,17 @@ proposals:
     source:
       type: run
       reference: GURUJA-9040-20261028T162120
+  - statement: RN85 — Um dia só com aprofundamentos conta como dia estudado e mantém a sequência de dias de estudo.
+    kind: business_rule
+    status: DOCUMENTED
+    confidence: HIGH
+    source:
+      type: jira
+      reference: GURUJA-9040
+  - statement: "RN48 — Para a cor do dia e o tooltip: 1 atividade = 2 aprofundamentos = 4 reforços (carga em atividades equivalentes). A ponderação não é exibida ao aluno (tooltip apenas orientativo)."
+    kind: business_rule
+    status: DOCUMENTED
+    confidence: HIGH
+    source:
+      type: jira
+      reference: GURUJA-9040

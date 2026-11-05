@@ -81,6 +81,14 @@ export class MissionManager {
       claude: deps.drivers?.claude ?? claudeDriver(deps.claudeBin),
       antigravity: deps.drivers?.antigravity ?? antigravityDriver(deps.agyBin),
     };
+    try {
+      this.deps.db.prepare(`CREATE TABLE IF NOT EXISTS mission_messages (
+        id INTEGER PRIMARY KEY, mission_id TEXT NOT NULL REFERENCES missions(id),
+        role TEXT NOT NULL CHECK (role IN ('user','agent','system')), text TEXT NOT NULL, ts TEXT NOT NULL
+      )`).run();
+    } catch {
+      // Ignora silenciosamente se o schema de missions ainda não existir
+    }
   }
 
   /**
@@ -129,12 +137,37 @@ export class MissionManager {
     const message = text.trim() || (opts.approvePlan ? 'Plano aprovado. Pode seguir.' : '');
     if (!message) throw new MissionError('escreva a resposta');
     if (opts.approvePlan) createPrompt(this.deps.db, { missionId: id, kind: 'plan', summary: 'Plano aprovado pelo painel', decision: 'allow' }, this.now());
-    // Pedidos de permissão sem resposta perdem o sentido quando o usuário responde outra coisa.
-    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+
+    const allowedRules: string[] = [];
+    if (m.agent === 'antigravity' && opts.approvePlan) allowedRules.push('mcp(novo-qa/plan_approve)');
+
+    // Se havia pedidos de permissão pendentes para o Antigravity, e o usuário respondeu no chat:
+    const pendingPerms = this.deps.db.prepare(`SELECT id, tool FROM prompts WHERE mission_id = ? AND kind = 'permission' AND status = 'PENDING'`).all(id) as { id: number; tool: string }[];
+    if (m.agent === 'antigravity' && pendingPerms.length) {
+      const isDeny = /^(não|nao|negado|cancelar|recusar|cancela|pare)\b/i.test(message);
+      for (const p of pendingPerms) {
+        if (!isDeny) {
+          allowedRules.push(p.tool);
+          this.deps.db.prepare(`UPDATE prompts SET status = 'USED', decision = 'allow' WHERE id = ?`).run(p.id);
+          const tool = /^mcp\(novo-qa\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/.exec(p.tool)?.[1];
+          if (tool) {
+            const count = tool === 'jira_create_issue' || tool === 'jira_comment' ? 10 : 1;
+            for (let i = 0; i < count; i++) {
+              createPrompt(this.deps.db, { missionId: id, kind: 'plan', tool, summary: `Concessão de ${tool} via chat`, decision: 'allow' }, this.now());
+            }
+          }
+        } else {
+          this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED', decision = 'deny' WHERE id = ?`).run(p.id);
+        }
+      }
+    } else {
+      this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    }
+
     this.autoResumes.delete(id);
     this.push(id, `você: ${message}`);
     this.addMessage(id, 'user', message);
-    this.resume(id, message, m.agent === 'antigravity' && opts.approvePlan ? ['mcp(novo-qa/plan_approve)'] : []);
+    this.resume(id, message, allowedRules);
     return this.get(id);
   }
 
@@ -147,7 +180,27 @@ export class MissionManager {
     if (m.status === 'RUNNING' || m.status === 'WAITING') {
       this.deps.db.prepare(`UPDATE missions SET status = 'STOPPED', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
     }
+    if (m.run_id) {
+      this.deps.db.prepare(`UPDATE runs SET status = 'ABORTED', ended_at = COALESCE(ended_at, ?) WHERE id = ? AND status IN ('PLANNING','AWAITING_APPROVAL','EXECUTING')`)
+        .run(this.ts(), m.run_id);
+    }
     this.push(id, 'missão parada pelo usuário');
+    return this.get(id);
+  }
+
+  /** Conclui a missão manualmente a qualquer momento a pedido do usuário. */
+  complete(id: string): MissionRow {
+    const m = this.get(id);
+    if (m.pid && m.status === 'RUNNING') (this.deps.killTree ?? killTree)(m.pid);
+    this.tails.delete(id);
+    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    this.deps.db.prepare(`UPDATE missions SET status = 'DONE', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
+    if (m.run_id) {
+      this.deps.db.prepare(`UPDATE runs SET status = 'COMPLETED', ended_at = COALESCE(ended_at, ?) WHERE id = ? AND status IN ('PLANNING','AWAITING_APPROVAL','EXECUTING')`)
+        .run(this.ts(), m.run_id);
+    }
+    this.push(id, 'missão concluída pelo usuário');
+    this.addMessage(id, 'system', '🏁 Missão finalizada manualmente pelo usuário.');
     return this.get(id);
   }
 
@@ -222,12 +275,13 @@ export class MissionManager {
   poll(): void {
     this.link();
 
-    // 1. Conclui missões vinculadas cujo run de testes já atingiu COMPLETED e o processo não está mais executando
+    // 1. Conclui missões vinculadas cujo run de testes já atingiu COMPLETED e o processo não está mais executando, desde que não haja pendências
     const openWithRun = this.deps.db.prepare(`SELECT * FROM missions WHERE status IN ('WAITING', 'RUNNING') AND run_id IS NOT NULL`).all() as unknown as MissionRow[];
     for (const m of openWithRun) {
       if (this.runCompleted(m.id)) {
         const isRunning = m.status === 'RUNNING' && m.pid && (this.deps.isAlive ?? isAlive)(m.pid);
-        if (!isRunning) {
+        const hasPrompts = this.deps.db.prepare(`SELECT 1 FROM prompts WHERE mission_id = ? AND status IN ('PENDING', 'ANSWERED')`).get(m.id);
+        if (!isRunning && !hasPrompts) {
           this.deps.db.prepare(`UPDATE missions SET status = 'DONE', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), m.id);
           this.push(m.id, 'missão concluída com sucesso');
           this.addMessage(m.id, 'system', '🏁 Missão finalizada! Todos os cenários e relatório foram concluídos.');
@@ -250,7 +304,7 @@ export class MissionManager {
       }
     }
     // Antigravity: todos os pedidos de permissão do turno respondidos → continua com as regras liberadas.
-    const waiting = this.deps.db.prepare(`SELECT * FROM missions WHERE status = 'WAITING' AND agent = 'antigravity'`).all() as unknown as MissionRow[];
+    const waiting = this.deps.db.prepare(`SELECT * FROM missions WHERE status IN ('WAITING', 'DONE', 'STOPPED') AND agent = 'antigravity'`).all() as unknown as MissionRow[];
     for (const m of waiting) {
       const answered = this.deps.db.prepare(`SELECT id, tool, decision FROM prompts WHERE mission_id = ? AND kind = 'permission' AND status = 'ANSWERED'`).all(m.id) as { id: number; tool: string; decision: 'allow' | 'deny' }[];
       const pending = this.deps.db.prepare(`SELECT 1 FROM prompts WHERE mission_id = ? AND status = 'PENDING'`).get(m.id);
@@ -258,10 +312,15 @@ export class MissionManager {
       const allowed = answered.filter((a) => a.decision === 'allow').map((a) => a.tool);
       const denied = answered.filter((a) => a.decision === 'deny').map((a) => a.tool);
       for (const a of answered) this.deps.db.prepare(`UPDATE prompts SET status = 'USED' WHERE id = ?`).run(a.id);
-      // Ação sensível permitida: vale uma vez (o novo-qa confere a concessão ao executar).
+      // Ação sensível permitida: cria grants (múltiplos para criação de issues/comentários repetidos)
       for (const rule of allowed) {
         const tool = /^mcp\(novo-qa\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/.exec(rule)?.[1];
-        if (tool) createPrompt(this.deps.db, { missionId: m.id, kind: 'plan', tool, summary: `Concessão única de ${tool} pelo painel`, decision: 'allow' }, this.now());
+        if (tool) {
+          const count = tool === 'jira_create_issue' || tool === 'jira_comment' ? 10 : 1;
+          for (let i = 0; i < count; i++) {
+            createPrompt(this.deps.db, { missionId: m.id, kind: 'plan', tool, summary: `Concessão de ${tool} pelo painel`, decision: 'allow' }, this.now());
+          }
+        }
       }
       const message = [
         allowed.length ? `O usuário permitiu pelo painel: ${allowed.join(', ')}. Continue de onde parou.` : '',
@@ -387,8 +446,10 @@ export class MissionManager {
 
     if (tail.result && !tail.result.error) {
       this.autoResumes.delete(m.id);
-      const status: MissionStatus = this.runCompleted(m.id) ? 'DONE' : 'WAITING';
-      set(status, tail.result.text || null, null);
+      const hasPrompts = this.deps.db.prepare(`SELECT 1 FROM prompts WHERE mission_id = ? AND status IN ('PENDING', 'ANSWERED')`).get(m.id);
+      const status: MissionStatus = (this.runCompleted(m.id) && !hasPrompts) ? 'DONE' : 'WAITING';
+      const msg = tail.result.text || (status === 'WAITING' ? 'Execução pausada. Envie uma instrução no chat para retomar o agente.' : null);
+      set(status, msg, null);
       this.push(m.id, status === 'DONE' ? 'missão concluída' : 'esperando você');
       return;
     }
@@ -414,10 +475,6 @@ export class MissionManager {
 
   private addMessage(missionId: string, role: 'user' | 'agent' | 'system', text: string, ts = this.ts()): void {
     try {
-      this.deps.db.prepare(`CREATE TABLE IF NOT EXISTS mission_messages (
-        id INTEGER PRIMARY KEY, mission_id TEXT NOT NULL REFERENCES missions(id),
-        role TEXT NOT NULL CHECK (role IN ('user','agent','system')), text TEXT NOT NULL, ts TEXT NOT NULL
-      )`).run();
       this.deps.db.prepare('INSERT INTO mission_messages (mission_id, role, text, ts) VALUES (?, ?, ?, ?)').run(missionId, role, text, ts);
     } catch {
       // Ignora silenciosamente se o schema ainda não estiver pronto

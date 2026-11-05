@@ -126,6 +126,7 @@ export const antigravityDriver = (bin?: string): AgentDriver => ({
   bin: () => bin ?? join(homedir(), '.gemini', 'bin', process.platform === 'win32' ? 'agy.exe' : 'agy'),
   firstPrompt: boundPrompt,
   args: ({ prompt, resume, allow }) => ['-p', prompt, '--output-format', 'stream-json',
+    '--model', process.env.NOVO_QA_AGY_MODEL || 'gemini-3.8-flash-medium',
     '--settings', JSON.stringify({ permissions: {
       allow: [...NOVO_QA_TOOLS.map((t) => `mcp(novo-qa/${t})`), ...ATLASSIAN_READ.map((t) => `mcp(atlassian/${t})`), ...allow],
       deny: AGY_FORBIDDEN,
@@ -145,7 +146,8 @@ export const antigravityDriver = (bin?: string): AgentDriver => ({
       }
       if (s.step_type === 'tool' && s.state === 'ERROR') {
         const message = str(obj(info.error).message);
-        const rule = /denied permission for (\S+\(.*?\))(?:\s|$)/.exec(message)?.[1];
+        const rule = /denied permission for (\S+\(.*?\))(?:\s|$)/.exec(message)?.[1]
+          || (/permission (?:check failed|denied)/i.test(message) ? (s.tool_name === 'run_command' ? 'shell' : str(s.tool_name)) : undefined);
         if (rule) out.push({ denied: { rule, detail: JSON.stringify(params).slice(0, 2000) } });
         else if (message) out.push({ activity: `✗ ${message.split('\n')[0]!.slice(0, 160)}` });
       }
@@ -155,6 +157,12 @@ export const antigravityDriver = (bin?: string): AgentDriver => ({
     if (ev.event === 'result') {
       const r = obj(ev.result);
       const text = str(r.response).trim();
+      const deniedActions = Array.isArray(r.denied_actions) ? r.denied_actions as Obj[] : [];
+      for (const da of deniedActions) {
+        const action = str(da.action);
+        const rule = action === 'command' ? 'shell' : action;
+        out.push({ denied: { rule, detail: str(da.display_name) || rule } });
+      }
       out.push({ result: { text, error: !text && r.status !== 'SUCCESS' } });
     }
     return out;

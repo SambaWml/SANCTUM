@@ -9,3 +9,7 @@ projects:
     name: App fixture local (usado para testar as próprias ferramentas)
     jiraKeys: []
     language: pt
+  central-caca:
+    name: Central de Caça (painel ao vivo do NOVO QA)
+    jiraKeys: []
+    language: pt

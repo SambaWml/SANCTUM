@@ -3,6 +3,9 @@
     "novo-qa": {
       "command": "node",
       "args": ["--import", "tsx", "src/mcp/launcher.ts"]
+    },
+    "atlassian": {
+      "url": "https://mcp.atlassian.com/v1/mcp/authv2"
     }
   }
 }

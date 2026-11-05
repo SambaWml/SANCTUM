@@ -1,0 +1,100 @@
+{
+  "card_id": "GURUJA-9038",
+  "project_folder": "guruja",
+  "folder_id": "GURUJA-9038",
+  "card_url": "https://luby.atlassian.net/browse/GURUJA-9038",
+  "idioma": "pt",
+  "titulo_demanda": "APROFUNDAMENTOS | Fase 1 — Tela de Arquivo",
+  "resumo": "Histórico de aprofundamentos cumpridos em metas passadas e corrente, contadores no cartão, aba Aprofundamentos com 7 colunas, soma de métricas e perfil Professor.",
+  "criterios_aceite": [
+    "CA01 — Cartão da meta mostra {N} reforço(s) e {N} aprofundamento(s) cumpridos com tooltips",
+    "CA02 — Terceira aba \"Aprofundamentos ⓘ [N]\" com tooltip explicativo",
+    "CA03 — Tabela com 7 colunas (Nº, Disciplina, Tipo, Assunto, Banca, Tempo, Desempenho) e busca por assunto",
+    "CA04 — Somente cumpridos aparecem no Arquivo; pendentes nunca são exibidos",
+    "CA05 — Clique na linha abre modal do item (permitida edição pelo aluno mesmo em metas passadas)",
+    "CA07 — Indicadores de meta e janelas de detalhamento somam aprofundamentos (RN81)",
+    "CA08 — Perfil Professor/Admin acessa lista e detalhe em modo somente leitura (RN82)"
+  ],
+  "observacoes": "Suíte compilada e auditada pelo NOVO QA para o Épico GURUJA-9023. Garante isolamento estrito de pendentes no Arquivo, cálculo integrado de KPIs e modo somente leitura para perfis administrativos.",
+  "tag_classificacao": "feature_nova",
+  "bug_producao": false,
+  "tipo_issue": "Tarefa",
+  "prioridade": "Highest",
+  "status_card": "Testing QA",
+  "qa_account_id": "712020:152ad99c-4547-44f7-bfab-d31e9334f780",
+  "qa_nome": "Wesley de Moraes Leocadio",
+  "qa_email": "wesley.leocadio@luby.com.br",
+  "gerado_em": "2026-11-05T11:56:02.348Z",
+  "versao": 0,
+  "cenarios": [
+    {
+      "id": "CT-01",
+      "title": "Contadores no Cartão da Meta e Indicadores Somados",
+      "bdd": "Dado o histórico no Arquivo de metas com aprofundamentos cumpridos, quando o usuário visualiza o cartão e abre os indicadores, então os contadores e os totais de tempo, questões e acertos somam atividades e aprofundamentos.",
+      "precondicoes": "Aluno com aprofundamentos cumpridos em metas arquivadas",
+      "passos": [
+        "Abrir tela Arquivo e observar o cartão de uma meta com aprofundamentos cumpridos",
+        "Abrir a meta detalhada e checar indicadores de topo (Tempo, Questões, Acertos, Média Diária)",
+        "Verificar os tooltips explicativos"
+      ],
+      "resultadoEsperado": "Cartão exibe contadores de reforços e aprofundamentos cumpridos. Os indicadores de topo refletem a soma das atividades + aprofundamentos cumpridos (CA01, CA07)"
+    },
+    {
+      "id": "CT-02",
+      "title": "Aba Aprofundamentos da Meta: Colunas e Pílulas",
+      "bdd": "Dado uma meta selecionada no Arquivo, quando o usuário abre a aba Aprofundamentos, então a tabela exibe 7 colunas completas e pílulas de desempenho coloridas conforme o aproveitamento.",
+      "precondicoes": "Meta com aprofundamentos de tipos teóricos e questões cumpridos",
+      "passos": [
+        "Entrar na aba Aprofundamentos de uma meta no Arquivo",
+        "Conferir as colunas: Nº, Disciplina, Tipo, Assunto, Banca, Tempo, Desempenho",
+        "Verificar a coloração das pílulas de desempenho (verde, amarela, vermelha ou traço)"
+      ],
+      "resultadoEsperado": "Tabela exibe 7 colunas: Nº, Disciplina, Tipo, Assunto, Banca, Tempo, Desempenho. Pílula de desempenho: Verde (≥ 80%), Amarela (≥ 60%), Vermelha (< 60%) e \"-\" para tipos teóricos (CA03)"
+    },
+    {
+      "id": "CT-03",
+      "title": "Busca por Assunto na Tabela",
+      "bdd": "Dado a listagem de aprofundamentos da meta no Arquivo, quando o usuário digita no campo de busca, então a tabela filtra em tempo real apenas os registros correspondentes ao termo digitado.",
+      "precondicoes": "Aba Aprofundamentos aberta com registros cumpridos diversos",
+      "passos": [
+        "Digitar termo no campo \"Buscar por assunto\" da aba Aprofundamentos",
+        "Avaliar os itens restantes na tabela"
+      ],
+      "resultadoEsperado": "Lista filtra instantaneamente apenas os aprofundamentos correspondentes ao termo digitado (CA03)"
+    },
+    {
+      "id": "CT-04",
+      "title": "Isolamento total de itens pendentes",
+      "bdd": "Dado que o aluno possui aprofundamentos pendentes na Meta atual, quando acessa a aba Aprofundamentos no Arquivo, então nenhum pendente é exibido.",
+      "precondicoes": "Aluno com itens pendentes ativos no planejamento",
+      "passos": [
+        "Verificar se itens pendentes da meta atual aparecem na aba Aprofundamentos do Arquivo",
+        "Confirmar a ausência de registros sem data de cumprimento"
+      ],
+      "resultadoEsperado": "Nenhum pendente é exibido no Arquivo. Pendentes pertencem ao planejamento e só aparecem na Tela de Meta (CA04)"
+    },
+    {
+      "id": "CT-05",
+      "title": "Visualização do Perfil Professor (Somente Leitura)",
+      "bdd": "Dado um usuário autenticado com perfil Professor, quando consulta o Arquivo e os detalhes dos aprofundamentos do aluno, então a visualização é somente leitura sem permissão para editar ou excluir.",
+      "precondicoes": "Usuário autenticado como Professor/Admin",
+      "passos": [
+        "Logar como Professor",
+        "Navegar até o Arquivo do aluno e abrir a aba Aprofundamentos",
+        "Clicar em um item para visualizar a modal"
+      ],
+      "resultadoEsperado": "Lista e detalhes são exibidos perfeitamente, porém sem botões de edição, salvar ou excluir (CA08)"
+    },
+    {
+      "id": "CT-06",
+      "title": "Estado Vazio em Meta sem Aprofundamentos",
+      "bdd": "Dado uma meta arquivada em que nenhum aprofundamento foi cumprido, quando o usuário acessa a aba Aprofundamentos, então o estado vazio oficial é exibido.",
+      "precondicoes": "Meta sem aprofundamentos cumpridos",
+      "passos": [
+        "Abrir no Arquivo uma meta que não teve aprofundamentos cumpridos",
+        "Checar a mensagem na aba Aprofundamentos"
+      ],
+      "resultadoEsperado": "Exibe texto padrão: \"Nenhum aprofundamento cumprido nesta meta. Os pendentes não pertencem a uma meta e aparecem na Meta atual.\" (CA04)"
+    }
+  ]
+}

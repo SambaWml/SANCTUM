@@ -78,8 +78,9 @@ export function createLiveServer(deps: LiveServerDeps): Server {
         const agent = body.agent === 'antigravity' ? 'antigravity' : 'claude';
         return json(res, 200, missions.launch({ agent, target, kind, objective }));
       }
-      const m = /^\/api\/missions\/(M-[0-9T-]+)\/(reply|stop|resume|archive)$/.exec(path);
+      const m = /^\/api\/missions\/(M-[0-9T-]+)\/(reply|stop|resume|archive|done)$/.exec(path);
       if (m) {
+        if (m[2] === 'done') return json(res, 200, missions.complete(m[1]!));
         if (m[2] === 'stop') return json(res, 200, missions.stop(m[1]!));
         if (m[2] === 'resume') return json(res, 200, missions.resumeMission(m[1]!));
         if (m[2] === 'archive') return json(res, 200, missions.archive(m[1]!));

@@ -39,3 +39,10 @@ proposals:
     source:
       type: run
       reference: GURUJA-9038-20261104T150044
+  - statement: "RN34 atualizada: o aluno pode editar registros de aprofundamentos cumpridos também em metas passadas no Arquivo. Perfis de professor e admin continuam estritamente somente leitura (RN82)."
+    kind: business_rule
+    status: DOCUMENTED
+    confidence: HIGH
+    source:
+      type: jira
+      reference: "GURUJA-9038 comment #62495"

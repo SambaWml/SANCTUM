@@ -12,6 +12,9 @@ runs/
 reports/
 .cache/
 .auth/
+EVIDENCIAS*/
+*.db
+scratch/
 
 # saída do Playwright
 test-results/

@@ -431,4 +431,19 @@ describe('escrita no Jira pelo novo-qa', () => {
     expect(describeTool('mcp__novo-qa__jira_create_issue', subBug)).toBe('Criar Sub-bug no Jira em GURUJA-9038: "[Arquivo] Contador soma pendentes"');
     expect(ALLOWED_TOOLS.some((t) => /jira_|atlassian__create|atlassian__edit|atlassian__add/.test(t))).toBe(false);
   });
+
+  it('concluir e parar atualizam também o status do run correspondente no banco', () => {
+    const { spawnFn } = fakeSpawn(() => ({ lines: [] }));
+    const missions = manager(spawnFn, { isAlive: () => false });
+    const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'GURUJA-9999' }, kind: 'qa' });
+    const runId = 'GURUJA-9999-20261105T120000';
+    db.prepare(`INSERT INTO runs (id, issue_key, project, env, mode, status, started_at) VALUES (?, 'GURUJA-9999', 'GURUJA', 'hml', 'manual', 'EXECUTING', '2026-11-05T12:00:00Z')`).run(runId);
+    db.prepare('UPDATE missions SET run_id = ? WHERE id = ?').run(runId, m.id);
+
+    missions.complete(m.id);
+    expect(missions.get(m.id).status).toBe('DONE');
+    const runRow = db.prepare('SELECT status, ended_at FROM runs WHERE id = ?').get(runId) as { status: string; ended_at: string };
+    expect(runRow.status).toBe('COMPLETED');
+    expect(runRow.ended_at).toBeTruthy();
+  });
 });

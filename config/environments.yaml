@@ -129,3 +129,15 @@ environments:
       admin:
         username: admin
         password: { env: FIXTURE_ADMIN_PASSWORD }
+  # Painel ao vivo do próprio NOVO QA, cadastrado em 03/11 para a missão exploratória EXPLORA-202611030945.
+  # GET público (sem login); POST exige o token gerado a cada start do painel (embutido só na página, não é usuário/senha).
+  # allowDataCreation: true só para o fluxo "lançar missão" (cria linha em missions/prompts do próprio painel);
+  # alvo da missão de teste deve ser o ambiente fixture-local, nunca um card ou URL de sistema real.
+  central-caca-local:
+    project: central-caca
+    type: local
+    baseUrl: http://127.0.0.1:4777
+    allowDataCreation: true
+    mfa: false
+    captcha: false
+    roles: {}

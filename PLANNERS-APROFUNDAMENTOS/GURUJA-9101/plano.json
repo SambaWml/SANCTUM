@@ -1,0 +1,76 @@
+{
+  "card_id": "GURUJA-9101",
+  "project_folder": "guruja",
+  "folder_id": "GURUJA-9101",
+  "card_url": "https://luby.atlassian.net/browse/GURUJA-9101",
+  "idioma": "pt",
+  "titulo_demanda": "APROFUNDAMENTOS | Fase 1 — Tela de Padrão de erros",
+  "resumo": "Integração dos erros de aprofundamentos de Questões no motor de padrão de erros, filtro de origem \"Itens\" e detalhe por disciplina.",
+  "criterios_aceite": [
+    "CA01 — Apenas aprofundamentos do tipo Questões entram no Padrão de Erros; tipos teóricos e reforços não entram (RN51, RN52)",
+    "CA03 — Novo dropdown \"Itens\" com 3 opções: Todos os itens (padrão), Atividades, Aprofundamentos",
+    "CA04 — Filtro recalcula tabela, detalhe da disciplina e os 3 gráficos: Distribuição, Concentração e Evolução dos motivos (RN55)",
+    "CA05 — Piso de 10 erros com motivo aplica-se a todos os filtros (RN56)",
+    "CA06 — Tabela detalhada exibe coluna Código sem o prefixo \"AP-\" (ex: RETRI.FMS.2.Q001), Assunto e Meta (RN58)",
+    "CA07 — Ordenação por data de cumprimento (desempate: atividades primeiro, depois código)",
+    "CA08 — Aprofundamentos nunca geram novos reforços no motor (RN63)"
+  ],
+  "observacoes": "Suíte compilada e auditada pelo NOVO QA para o Épico GURUJA-9023. Valida a integração exclusiva dos aprofundamentos de Questões no Padrão de Erros e recálculo dos gráficos analíticos.",
+  "tag_classificacao": "feature_nova",
+  "bug_producao": false,
+  "tipo_issue": "Tarefa",
+  "prioridade": "Highest",
+  "status_card": "Testing QA",
+  "qa_account_id": "712020:152ad99c-4547-44f7-bfab-d31e9334f780",
+  "qa_nome": "Wesley de Moraes Leocadio",
+  "qa_email": "wesley.leocadio@luby.com.br",
+  "gerado_em": "2026-11-05T11:56:02.348Z",
+  "versao": 0,
+  "cenarios": [
+    {
+      "id": "CT-01",
+      "title": "Filtro \"Itens\" e Recálculo dos Gráficos",
+      "bdd": "Dado o aluno na tela Padrão de Erros, quando alterna a seleção do dropdown \"Itens\" entre Todos, Atividades e Aprofundamentos, então as tabelas e os 3 gráficos de motivos recalculam instantaneamente.",
+      "precondicoes": "Aluno com erros registrados em atividades e em aprofundamentos de Questões",
+      "passos": [
+        "Acessar tela Padrão de Erros",
+        "Alternar o filtro \"Itens\" entre \"Todos os itens\", \"Atividades\" e \"Aprofundamentos\"",
+        "Observar a atualização das tabelas e gráficos"
+      ],
+      "resultadoEsperado": "Tabela de disciplinas e gráficos (Distribuição, Concentração e Evolução) são recalculados instantaneamente de acordo com a seleção (CA03, CA04)"
+    },
+    {
+      "id": "CT-02",
+      "title": "Exclusão de Tipos Teóricos e Reforços",
+      "bdd": "Dado que o aluno cumpriu aprofundamentos teóricos e reforços com apontamentos, quando acessa o Padrão de Erros, então apenas erros originados de aprofundamentos de Questões são contabilizados.",
+      "precondicoes": "Aluno cumpriu aprofundamentos de Teoria/Lei Seca e reforços",
+      "passos": [
+        "Aluno cumpre aprofundamentos de Teoria/Lei Seca e reforços",
+        "Abrir Padrão de Erros e verificar as origens computadas"
+      ],
+      "resultadoEsperado": "Apenas erros oriundos de aprofundamentos de Questões são contabilizados. Reforços e tipos teóricos ficam de fora (CA01)"
+    },
+    {
+      "id": "CT-03",
+      "title": "Detalhe da Disciplina e Código sem \"AP-\"",
+      "bdd": "Dado o painel de detalhamento de uma disciplina no Padrão de Erros, quando o aluno visualiza as linhas de itens, então a coluna Código exibe a máscara padrão de aprofundamento sem o prefixo \"AP-\".",
+      "precondicoes": "Disciplina com aprofundamentos de questões concluídos",
+      "passos": [
+        "Clicar em uma disciplina no Padrão de Erros para abrir a lista detalhada",
+        "Verificar os códigos das linhas de aprofundamentos"
+      ],
+      "resultadoEsperado": "Linhas mesclam atividades e aprofundamentos de Questões. A coluna Código exibe o formato SIGLA.INICIAIS.PLAN.LETRA+SEQ (ex.: RETRI.FMS.2.Q001), sem o prefixo \"AP-\" (CA06)"
+    },
+    {
+      "id": "CT-04",
+      "title": "Critério de Desempate na Ordenação por Data",
+      "bdd": "Dado uma atividade e um aprofundamento cumpridos na mesma data, quando apresentados na listagem ordenada por data, então a atividade precede o aprofundamento desempatando em seguida por código.",
+      "precondicoes": "Atividade e aprofundamento cumpridos na mesma data",
+      "passos": [
+        "Identificar atividade e aprofundamento cumpridos na mesma data",
+        "Verificar a ordem de exibição na lista"
+      ],
+      "resultadoEsperado": "A atividade é listada antes do aprofundamento; dentro de cada grupo, ordena pelo código (CA07)"
+    }
+  ]
+}
