@@ -122,6 +122,14 @@ export function createLiveServer(deps: LiveServerDeps): Server {
         const page = readFileSync(PAGE, 'utf8').replace('__NOVO_QA_TOKEN__', deps.token && deps.missions ? deps.token : '');
         return send(res, 200, 'text/html; charset=utf-8', page);
       }
+      if (url.pathname === '/sanctum-logo.png') {
+        const logoPath = join(dirname(PAGE), 'sanctum-logo.png');
+        if (existsSync(logoPath)) return send(res, 200, 'image/png', readFileSync(logoPath));
+      }
+      if (url.pathname === '/favicon.png' || url.pathname === '/favicon.ico') {
+        const favPath = join(dirname(PAGE), 'favicon.png');
+        if (existsSync(favPath)) return send(res, 200, 'image/png', readFileSync(favPath));
+      }
       if (url.pathname === '/api/state') {
         return json(res, 200, {
           ...buildLiveState(db, { rootDir, now: deps.now?.() }),

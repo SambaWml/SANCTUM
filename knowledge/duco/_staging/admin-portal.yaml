@@ -1,0 +1,17 @@
+module: admin-portal
+reviewed: false
+proposals:
+  - statement: Usuário autenticado no portal DUCO é redirecionado diretamente para a listagem /events sem passar por /events/select.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: DCTS-739-20261105T201114
+  - statement: A tela de Clone History disponibiliza no cabeçalho ação de retorno apontando para /events.
+    kind: behavior
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: DCTS-739-20261105T201114

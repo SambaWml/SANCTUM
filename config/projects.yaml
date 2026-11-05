@@ -13,3 +13,7 @@ projects:
     name: Central de Caça (painel ao vivo do NOVO QA)
     jiraKeys: []
     language: pt
+  duco:
+    name: DUCO Travel Summit
+    jiraKeys: [DCTS]
+    language: pt

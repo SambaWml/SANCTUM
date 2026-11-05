@@ -1,0 +1,829 @@
+[
+  {
+    "route": "/login",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Enter"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Enter' }).click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "E-mail"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'E-mail' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Password"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Password' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "navigate",
+    "target": {
+      "url": "/events"
+    },
+    "playwright": "await page.goto('/events');",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Reports"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Reports' }).click();",
+    "scenario": "CT-007",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Novo User Email TESTE Administrator Open account menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Novo User Email TESTE Administrator Open account menu' }).click();",
+    "scenario": "CT-009",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "viewport",
+    "target": {
+      "viewport": "820x1180"
+    },
+    "playwright": "await page.setViewportSize({ width: 820, height: 1180 });",
+    "scenario": "CT-010",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "QA-REGRESSION-LIFECYCLE-1792772763028",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: /^QA-REGRESSION-LIFECYCLE-\\d+$/ }).click();",
+    "scenario": "CT-011",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Generation notifications, 4 unread"
+    },
+    "playwright": "await page.getByRole('button', { name: /^Generation notifications, \\d+ unread$/ }).click();",
+    "scenario": "CT-012",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Event actions"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Event actions' }).click();",
+    "scenario": "CT-014",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Import history"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Import history' }).click();",
+    "scenario": "CT-015",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/import/history",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Events",
+      "within": {
+        "role": "navigation",
+        "name": "Main"
+      }
+    },
+    "playwright": "await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Events' }).click();",
+    "scenario": "CT-016",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Search"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Search' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "press",
+    "target": {
+      "role": "textbox",
+      "name": "Search"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Search' }).press('Enter');",
+    "scenario": "CT-017",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Sort by: Creation date"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Sort by: Creation date' }).click();",
+    "scenario": "CT-018",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "option",
+      "name": "Period start"
+    },
+    "playwright": "await page.getByRole('option', { name: 'Period start' }).click();",
+    "scenario": "CT-018",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "radio",
+      "name": "Inactive"
+    },
+    "playwright": "await page.getByRole('radio', { name: 'Inactive' }).click();",
+    "scenario": "CT-019",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/inactive",
+    "action": "click",
+    "target": {
+      "role": "radio",
+      "name": "Active",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('radio', { name: 'Active', exact: true }).click();",
+    "scenario": "CT-020",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Agenda",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Agenda', exact: true }).click();",
+    "scenario": "CT-021",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/agenda",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Exhibitors",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Exhibitors', exact: true }).click();",
+    "scenario": "CT-022",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/exhibitors",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Users"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Users' }).click();",
+    "scenario": "CT-023",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/buyers",
+    "action": "navigate",
+    "target": {
+      "url": "/events/buyers"
+    },
+    "playwright": "await page.goto('/events/buyers');",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "navigate",
+    "target": {
+      "url": "/events/all"
+    },
+    "playwright": "await page.goto('/events/all');",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "QA-REGRESSION3B-1792793410718",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: /^QA-REGRESSION\\d+B-\\d+$/ }).click();",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Buyers",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Buyers', exact: true }).click();",
+    "scenario": "CT-024",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/buyers",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Exhibitors",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Exhibitors', exact: true }).click();",
+    "scenario": "CT-025",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/exhibitors",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Press Program"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Press Program' }).click();",
+    "scenario": "CT-026",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "navigate",
+    "target": {
+      "url": "/users"
+    },
+    "playwright": "await page.goto('/users');",
+    "scenario": "CT-027",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "User Levels"
+    },
+    "playwright": "await page.getByRole('button', { name: 'User Levels' }).click();",
+    "scenario": "CT-027",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Users"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Users' }).click();",
+    "scenario": "CT-028",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "fill",
+    "target": {
+      "role": "textbox",
+      "name": "Search users"
+    },
+    "playwright": "await page.getByRole('textbox', { name: 'Search users' }).fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-028",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Clear search"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Clear search' }).click();",
+    "scenario": "CT-029",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "columnheader",
+      "name": "Name"
+    },
+    "playwright": "await page.getByRole('columnheader', { name: 'Name' }).click();",
+    "scenario": "CT-029",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Actions for Vitor Hugo"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Actions for Vitor Hugo' }).click();",
+    "scenario": "CT-031",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Edit"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Edit' }).click();",
+    "scenario": "CT-031",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Close"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Close' }).click();",
+    "scenario": "CT-031",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "QA Test Event 2026-10-08",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('button', { name: /^QA Test Event \\d+-\\d+-\\d+$/ }).click();",
+    "scenario": "CT-032",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Table seats",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Table seats', exact: true }).click();",
+    "scenario": "CT-032",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/seat",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Agenda",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Agenda', exact: true }).click();",
+    "scenario": "CT-033",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/agenda",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Overview",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Overview', exact: true }).click();",
+    "scenario": "CT-034",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Public Buyers List"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Public Buyers List' }).click();",
+    "scenario": "CT-034",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Novo User Email TESTE Administrator Open account menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Novo User Email TESTE Administrator Open account menu' }).click();",
+    "scenario": "CT-035",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Edit profile"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Edit profile' }).click();",
+    "scenario": "CT-035",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/agenda",
+    "action": "click",
+    "target": {
+      "role": "radio",
+      "name": "Buyer's Agenda Template"
+    },
+    "playwright": "await page.getByRole('radio', { name: 'Buyer\\'s Agenda Template' }).click();",
+    "scenario": "CT-037",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/agenda",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Edit Buyer's Allocations page"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Edit Buyer\\'s Allocations page' }).click();",
+    "scenario": "CT-039",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/agenda",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Buyers",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Buyers', exact: true }).click();",
+    "scenario": "CT-040",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/buyers",
+    "action": "click",
+    "target": {
+      "role": "radio",
+      "name": "Pending"
+    },
+    "playwright": "await page.getByRole('radio', { name: 'Pending' }).click();",
+    "scenario": "CT-040",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/buyers",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Table seats",
+      "exact": true
+    },
+    "playwright": "await page.getByRole('link', { name: 'Table seats', exact: true }).click();",
+    "scenario": "CT-041",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/seat",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Weights"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Weights' }).click();",
+    "scenario": "CT-042",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/seat",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Reports"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Reports' }).click();",
+    "scenario": "CT-044",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/seat",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Bulk Agendas Reports"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Bulk Agendas Reports' }).click();",
+    "scenario": "CT-044",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/reports/admin/bulk-agendas",
+    "action": "click",
+    "target": {
+      "role": "link",
+      "name": "Admin reports"
+    },
+    "playwright": "await page.getByRole('link', { name: 'Admin reports' }).click();",
+    "scenario": "CT-045",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/reports/admin",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Novo User Email TESTE Administrator Open account menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Novo User Email TESTE Administrator Open account menu' }).click();",
+    "scenario": "CT-046",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/reports/admin",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Edit profile"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Edit profile' }).click();",
+    "scenario": "CT-046",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/reports/admin",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Generation notifications, 4 unread"
+    },
+    "playwright": "await page.getByRole('button', { name: /^Generation notifications, \\d+ unread$/ }).click();",
+    "scenario": "CT-047",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "button",
+      "name": "Novo User Email TESTE Administrator Open account menu"
+    },
+    "playwright": "await page.getByRole('button', { name: 'Novo User Email TESTE Administrator Open account menu' }).click();",
+    "scenario": "CT-050",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events/all",
+    "action": "click",
+    "target": {
+      "role": "menuitem",
+      "name": "Log Out"
+    },
+    "playwright": "await page.getByRole('menuitem', { name: 'Log Out' }).click();",
+    "scenario": "CT-050",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "navigate",
+    "target": {
+      "url": "/login"
+    },
+    "playwright": "await page.goto('/login');",
+    "scenario": "CT-050",
+    "validatedIn": [
+      "EXPLORA-202611051542-20261105T184358"
+    ],
+    "lastSeen": "2026-11-05"
+  }
+]

@@ -37,7 +37,7 @@ export interface LiveRun {
 }
 
 export interface AgentScore { agent: AgentKind; label: string; xp: number; level: number; title: string; next: number; base: number }
-export interface Badge { id: string; icon: string; name: string; hint: string; unlocked: boolean }
+export interface Badge { id: string; icon: string; name: string; hint: string; unlocked: boolean; tier?: 'bronze' | 'prata' | 'ouro' | 'lendario'; progress?: string }
 
 export interface LiveState {
   generatedAt: string;
@@ -49,7 +49,7 @@ export interface LiveState {
 const ACTIVE = ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'];
 const DONE = ['PASSED', 'FAILED', 'BLOCKED', 'NOT_EXECUTED', 'NEEDS_REVIEW'];
 const LABEL: Record<AgentKind, string> = { claude: 'Claude', antigravity: 'Antigravity', codex: 'Codex', other: 'Agente' };
-const TITLES = ['Novato Curioso', 'Recruta Promissor', 'Rastreador', 'Caçador', 'Caçador de Elite', 'Lenda do QA'];
+const TITLES = ['Aprendiz da Ordem', 'Escudeiro de Ferro', 'Caçador de Catacumbas', 'Cavaleiro Purificador', 'Mestre das Sombras', 'Lenda Ancestral'];
 const VERB: Record<string, string> = {
   click: 'clicou em', fill: 'preencheu', press: 'teclou em', select: 'escolheu em', check: 'marcou', uncheck: 'desmarcou',
   hover: 'passou o mouse em', upload: 'enviou arquivo em', dblclick: 'clicou duas vezes em',
@@ -313,20 +313,46 @@ function agentScores(all: (sql: string, ...a: (string | number)[]) => Row[]): Ag
 function badges(all: (sql: string, ...a: (string | number)[]) => Row[], get: (sql: string, ...a: (string | number)[]) => Row | undefined): Badge[] {
   const n = (sql: string) => Number(get(sql)?.n ?? 0);
   const bugs = all(`SELECT payload FROM events WHERE type = 'report.explain'`).reduce((acc, r) => acc + parse<unknown[]>(r.payload, []).length, 0);
+  const maxScen = n(`SELECT MAX(c) n FROM (SELECT COUNT(*) c FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW') GROUP BY run_id)`);
+  const totalScen = n(`SELECT COUNT(*) n FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW')`);
+  const approvedRuns = n(`SELECT COUNT(*) n FROM runs WHERE status = 'COMPLETED' AND recommendation = 'APROVADO'`);
+  const flawlessRuns = n(`SELECT COUNT(*) n FROM runs r WHERE r.recommendation = 'APROVADO' AND (SELECT COUNT(*) FROM scenarios s WHERE s.run_id = r.id) >= 10
+                 AND NOT EXISTS (SELECT 1 FROM scenarios s WHERE s.run_id = r.id AND s.status IN ('FAILED', 'BLOCKED'))`);
+  const cleanRuns = n(`SELECT COUNT(*) n FROM runs r WHERE r.status = 'COMPLETED' AND EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id)
+                 AND NOT EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id AND d.cleanup_status <> 'VERIFIED')`);
+  const guardBlocks = n(`SELECT COUNT(*) n FROM events WHERE type = 'guard.block'`);
+  const retestsApproved = n(`SELECT COUNT(*) n FROM runs WHERE mode = 'retest' AND recommendation = 'APROVADO'`);
+  const speedRuns = n(`SELECT COUNT(*) n FROM runs WHERE status = 'COMPLETED' AND recommendation = 'APROVADO' AND ended_at IS NOT NULL AND (strftime('%s', ended_at) - strftime('%s', started_at)) BETWEEN 5 AND 300`);
+  const maxSquad = n(`SELECT MAX(c) n FROM (SELECT COUNT(DISTINCT json_extract(agent, '$.client')) c FROM runs WHERE agent IS NOT NULL GROUP BY substr(started_at, 1, 10))`);
+  const distinctAgents = n(`SELECT COUNT(DISTINCT json_extract(agent, '$.client')) n FROM runs WHERE agent IS NOT NULL`);
+
   return [
-    { id: 'first-bug', icon: '🩸', name: 'Primeiro sangue', hint: 'primeiro bug explicado em relatório', unlocked: bugs >= 1 },
-    { id: 'hunter', icon: '🐞', name: 'Caçador', hint: '25 bugs explicados', unlocked: bugs >= 25 },
-    { id: 'marathon', icon: '🏃', name: 'Maratona', hint: 'run com 20+ cenários concluídos',
-      unlocked: n(`SELECT MAX(c) n FROM (SELECT COUNT(*) c FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW') GROUP BY run_id)`) >= 20 },
-    { id: 'clean', icon: '🧹', name: 'Faxineiro', hint: 'run concluído com todo dado criado verificado',
-      unlocked: n(`SELECT COUNT(*) n FROM runs r WHERE r.status = 'COMPLETED' AND EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id)
-                   AND NOT EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id AND d.cleanup_status <> 'VERIFIED')`) > 0 },
-    { id: 'flawless', icon: '💎', name: 'Sem arranhão', hint: 'run aprovado com 10+ cenários e nada bloqueado',
-      unlocked: n(`SELECT COUNT(*) n FROM runs r WHERE r.recommendation = 'APROVADO' AND (SELECT COUNT(*) FROM scenarios s WHERE s.run_id = r.id) >= 10
-                   AND NOT EXISTS (SELECT 1 FROM scenarios s WHERE s.run_id = r.id AND s.status = 'BLOCKED')`) > 0 },
-    { id: 'guardian', icon: '🛡️', name: 'Guardião', hint: 'guard segurou uma ação de risco', unlocked: n(`SELECT COUNT(*) n FROM events WHERE type = 'guard.block'`) > 0 },
-    { id: 'retest', icon: '🔁', name: 'Volta por cima', hint: 'reteste aprovado', unlocked: n(`SELECT COUNT(*) n FROM runs WHERE mode = 'retest' AND recommendation = 'APROVADO'`) > 0 },
-    { id: 'squad', icon: '🤝', name: 'Esquadrão', hint: 'dois agentes diferentes no mesmo dia',
-      unlocked: n(`SELECT MAX(c) n FROM (SELECT COUNT(DISTINCT json_extract(agent, '$.client')) c FROM runs WHERE agent IS NOT NULL GROUP BY substr(started_at, 1, 10))`) >= 2 },
+    // ── Trilha I: Caçador do Abismo (Bugs & Bestas Aprisionadas) ──
+    { id: 'first-bug', icon: '🩸', tier: 'bronze', name: 'Primeiro Sangue', hint: 'Abater e catalogar a primeira besta no grimório da fortaleza', progress: `${Math.min(bugs, 1)}/1`, unlocked: bugs >= 1 },
+    { id: 'hunter', icon: '🕷️', tier: 'prata', name: 'Exterminador do Abismo', hint: 'Aprisionar 25 bestas na masmorra da guilda', progress: `${Math.min(bugs, 25)}/25`, unlocked: bugs >= 25 },
+    { id: 'beast-slayer', icon: '⚔️', tier: 'ouro', name: 'Flagelo das Trevas', hint: 'Capturar e desvendar 50 bestas catalogadas no covil', progress: `${Math.min(bugs, 50)}/50`, unlocked: bugs >= 50 },
+    { id: 'reaper', icon: '💀', tier: 'lendario', name: 'Ceifador Arcano do Abismo', hint: 'Alcançar a marca lendária de 100 bestas exterminadas', progress: `${Math.min(bugs, 100)}/100`, unlocked: bugs >= 100 },
+
+    // ── Trilha II: Incursões & Profundezas (Câmaras & Criptas) ──
+    { id: 'crypt-walker', icon: '🕯️', tier: 'bronze', name: 'Explorador da Cripta', hint: 'Conquistar uma masmorra com 10+ câmaras provadas em um único run', progress: `${Math.min(maxScen, 10)}/10`, unlocked: maxScen >= 10 },
+    { id: 'marathon', icon: '🏰', tier: 'prata', name: 'Grande Incursão Profunda', hint: 'Incursão perigosa com 25+ câmaras provadas em combate', progress: `${Math.min(maxScen, 25)}/25`, unlocked: maxScen >= 25 },
+    { id: 'titan-labyrinth', icon: '🏛️', tier: 'ouro', name: 'Labirinto dos Titãs', hint: 'Incursão abissal extrema com 50+ câmaras provadas em um run', progress: `${Math.min(maxScen, 50)}/50`, unlocked: maxScen >= 50 },
+    { id: 'world-scout', icon: '🌌', tier: 'lendario', name: 'Cartógrafo do Infinito', hint: 'Mais de 200 câmaras provadas e purificadas acumuladas pela Ordem', progress: `${Math.min(totalScen, 200)}/200`, unlocked: totalScen >= 200 },
+
+    // ── Trilha III: Triunfo & Mestria Tática (Vitórias & Pureza) ──
+    { id: 'first-victory', icon: '⚜️', tier: 'bronze', name: 'Glória da Ordem', hint: 'Masmorra concluída com veredicto supremo de APROVADO', progress: `${Math.min(approvedRuns, 1)}/1`, unlocked: approvedRuns >= 1 },
+    { id: 'flawless', icon: '👑', tier: 'prata', name: 'Triunfo Imaculado', hint: 'Masmorra de 10+ câmaras conquistada sem nenhuma derrota ou bloqueio', progress: `${Math.min(flawlessRuns, 1)}/1`, unlocked: flawlessRuns >= 1 },
+    { id: 'citadel-champion', icon: '🏆', tier: 'ouro', name: 'Bastião Invencível', hint: 'Conquistar 5 masmorras distintas aprovadas com triunfos soberanos', progress: `${Math.min(approvedRuns, 5)}/5`, unlocked: approvedRuns >= 5 },
+    { id: 'warlord', icon: '🎖️', tier: 'lendario', name: 'Mestre Supremo da Guerra', hint: '10 masmorras conquistadas e purificadas com aprovação da corte', progress: `${Math.min(approvedRuns, 10)}/10`, unlocked: approvedRuns >= 10 },
+    { id: 'retest', icon: '🔁', tier: 'prata', name: 'Expurgo Triunfal', hint: 'Reteste expurgou todas as falhas e purificou o card', progress: `${Math.min(retestsApproved, 1)}/1`, unlocked: retestsApproved >= 1 },
+    { id: 'speedrun', icon: '⚡', tier: 'ouro', name: 'Incursão Relâmpago', hint: 'Masmorra aprovada e purificada em menos de 5 minutos de batalha', progress: `${Math.min(speedRuns, 1)}/1`, unlocked: speedRuns >= 1 },
+
+    // ── Trilha IV: Vigilância, Rituais & Irmandade (Defesa & Comitiva) ──
+    { id: 'clean', icon: '🧹', tier: 'bronze', name: 'Purificador da Ordem', hint: 'Masmorra concluída com todo rastro de dados purificado', progress: `${Math.min(cleanRuns, 1)}/1`, unlocked: cleanRuns >= 1 },
+    { id: 'void-alchemist', icon: '🧪', tier: 'ouro', name: 'Alquimista do Vazio', hint: '5 masmorras com todo rastro de dados expurgado da existência', progress: `${Math.min(cleanRuns, 5)}/5`, unlocked: cleanRuns >= 5 },
+    { id: 'guardian', icon: '🛡️', tier: 'bronze', name: 'Escudo Inabalável', hint: 'Guardião deteve ritual perigoso de ação de risco', progress: `${Math.min(guardBlocks, 1)}/1`, unlocked: guardBlocks >= 1 },
+    { id: 'iron-bastion', icon: '⛩️', tier: 'ouro', name: 'Muralha de Ferro Rúnico', hint: 'Neutralizar 5 rituais de risco iminente na fortaleza', progress: `${Math.min(guardBlocks, 5)}/5`, unlocked: guardBlocks >= 5 },
+    { id: 'squad', icon: '🤝', tier: 'prata', name: 'Comitiva Lendária', hint: 'Dois campeões operaram em batalha no mesmo dia em conjunto', progress: `${Math.min(maxSquad, 2)}/2`, unlocked: maxSquad >= 2 },
+    { id: 'conclave-triad', icon: '🧙‍♂️', tier: 'lendario', name: 'Conclave da Tríade Sagrada', hint: 'Os três campeões lendários (Ladino, Arquimago e Paladino) operando na guilda', progress: `${Math.min(distinctAgents, 3)}/3`, unlocked: distinctAgents >= 3 },
   ];
 }

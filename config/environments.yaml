@@ -1,4 +1,4 @@
-﻿# Ambientes onde o NOVO QA pode operar o navegador.
+# Ambientes onde o NOVO QA pode operar o navegador.
 #
 # type: local | dev | staging | prod   (prod = somente ações GREEN)
 # Valores podem ser literais ou { env: NOME_DA_VARIAVEL } (lido do .env).
@@ -141,3 +141,14 @@ environments:
     mfa: false
     captcha: false
     roles: {}
+  duco-hml:
+    project: duco
+    type: staging
+    baseUrl: https://pava2-hml.ducotravelsummit.com
+    allowDataCreation: true
+    mfa: false
+    captcha: false
+    roles:
+      user:
+        username: wesley.leocadio@luby.com.br
+        password: { env: DUCO_HML_USER_PASSWORD }

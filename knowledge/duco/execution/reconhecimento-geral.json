@@ -1,0 +1,226 @@
+[
+  {
+    "route": "/login",
+    "action": "fill",
+    "target": {
+      "label": "E-mail"
+    },
+    "playwright": "await page.getByLabel('E-mail').fill(<username>);",
+    "valueType": "username",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "fill",
+    "target": {
+      "css": "input[type='password']"
+    },
+    "playwright": "await page.locator('input[type=\\'password\\']').fill(<password>);",
+    "valueType": "password",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "click",
+    "target": {
+      "text": "Enter"
+    },
+    "playwright": "await page.getByText('Enter').click();",
+    "scenario": "CT-001",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "text": "Reports"
+    },
+    "playwright": "await page.getByText('Reports').click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Open account menu')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Open account menu\\')').click();",
+    "scenario": "CT-002",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "fill",
+    "target": {
+      "placeholder": "Search"
+    },
+    "playwright": "await page.getByPlaceholder('Search').fill(<literal>);",
+    "valueType": "literal",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/events",
+    "action": "press",
+    "target": {
+      "placeholder": "Search"
+    },
+    "playwright": "await page.getByPlaceholder('Search').press('Enter');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "navigate",
+    "target": {
+      "url": "/users"
+    },
+    "playwright": "await page.goto('/users');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/users",
+    "action": "click",
+    "target": {
+      "text": "User Levels"
+    },
+    "playwright": "await page.getByText('User Levels').click();",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs",
+    "action": "navigate",
+    "target": {
+      "url": "/press-programs"
+    },
+    "playwright": "await page.goto('/press-programs');",
+    "scenario": "CT-003",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs",
+    "action": "click",
+    "target": {
+      "css": "a[href*='/press-programs/6']"
+    },
+    "playwright": "await page.locator('a[href*=\\'/press-programs/6\\']').click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs/6/wizard/general",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Next')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Next\\')').click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs/6/wizard/slots",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Next')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Next\\')').click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs/6/wizard/brands",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Next')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Next\\')').click();",
+    "scenario": "CT-004",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs/6/wizard/journalists",
+    "action": "click",
+    "target": {
+      "css": "button:has-text('Open account menu')"
+    },
+    "playwright": "await page.locator('button:has-text(\\'Open account menu\\')').click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/press-programs/6/wizard/journalists",
+    "action": "click",
+    "target": {
+      "text": "Log Out"
+    },
+    "playwright": "await page.getByText('Log Out').click();",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  },
+  {
+    "route": "/login",
+    "action": "navigate",
+    "target": {
+      "url": "/login"
+    },
+    "playwright": "await page.goto('/login');",
+    "scenario": "CT-005",
+    "validatedIn": [
+      "EXPLORA-202611051514-20261105T181711"
+    ],
+    "lastSeen": "2026-11-05"
+  }
+]

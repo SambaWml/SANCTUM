@@ -1,117 +1,208 @@
-# NOVO QA
+<p align="center">
+  <img src="src/live/sanctum-logo.png" alt="SANCTUM Logo" width="128" height="128">
+</p>
 
-Agente local de QA que roda dentro do [Claude Code](https://claude.com/claude-code). O Claude atua como QA: lê o card do Jira, planeja os testes por risco, executa no navegador, investiga anomalias, classifica os resultados e gera o relatório com evidências. O código deste repositório oferece as ferramentas para isso (servidor MCP `novo-qa`), guarda o estado, aplica as regras de segurança e registra as evidências.
+<h1 align="center">SANCTUM</h1>
 
-Tudo roda na sua máquina. Evidências, banco e relatórios ficam em pastas locais fora do git.
+<p align="center">
+  <b>Fortaleza Sagrada de Testes, Auditoria & Conclave Autônomo de QA</b><br>
+  <i>Incursões táticas de qualidade em software operadas por agentes de IA com verificação implacável e aprovação soberana.</i>
+</p>
 
-Também pode ser comandado pelo **Codex local**, mantendo o uso pelo Claude Code.
-Configuração, autenticação do Jira, comandos e limites: [Usar pelo Codex](docs/CODEX.md).
-Use apenas um cliente por vez no mesmo workspace.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-22%20%7C%2024-00e599?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js">
+  <img src="https://img.shields.io/badge/Playwright-Chromium-f6bd41?style=for-the-badge&logo=playwright&logoColor=black" alt="Playwright">
+  <img src="https://img.shields.io/badge/TypeScript-ESM-3b82f6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/MCP-Server-a855f7?style=for-the-badge" alt="MCP Server">
+  <img src="https://img.shields.io/badge/Status-Santuário%20Blindado-d9383a?style=for-the-badge" alt="Status">
+</p>
 
-## O que ele faz
+---
 
-- **Testa um card:** lê o Jira (critérios de aceite e comentários relevantes), monta um plano por risco e **espera sua aprovação** antes de abrir o navegador.
-- **Executa com verificação:** cada passo é conferido na tela, na rede, na API ou depois de recarregar a página. Sem verificação registrada, o cenário não pode ser marcado como PASSED.
-- **Investiga antes de acusar bug:** olha rede, console e API, reproduz o problema e classifica o resultado (bug do produto, falha de ambiente, massa de dados, ambiguidade do requisito…).
-- **Protege o ambiente:** o Action Guard bloqueia ações destrutivas (excluir, pagar…) sem aprovação humana, impede DELETE na rede e, em produção, só permite ações de leitura.
-- **Gera evidências:** vídeo da sessão com capítulos por cenário, prints, respostas de erro da API e trace, tudo com senhas e tokens mascarados.
-- **Gera o relatório:** `.md` e `.html`, com seção "Bugs explicados" em linguagem simples, e um rascunho de comentário para o Jira (não publicado).
-- **Aprende com os testes:** grava os passos validados por módulo, para reutilizar nos próximos cards e na automação, e propõe regras para revisão humana.
-- **Automatiza:** opcionalmente gera testes Playwright a partir do que foi executado e verificado manualmente.
+## 🛡️ O que é o SANCTUM?
 
-## Requisitos
+O **SANCTUM** é um agente autônomo e orquestrador local de QA que roda integrado a ferramentas de IA (**Claude Code**, **Google Antigravity** e **Codex local**). 
 
-- Node.js 22.13 ou mais recente (testado no 24)
-- Claude Code (CLI, desktop ou extensão do VS Code)
-- Atlassian MCP conectado ao Claude Code, para ler os cards do Jira
+Ele transforma a garantia de qualidade de software em uma **incursão tática de RPG Dark Fantasy**:
+* **A Comitiva de Campeões:** Seus agentes autônomos de IA (*Arquimago Antigravity*, *Ladino Claude*, *Paladino Codex*) descem às profundezas do sistema, operam o navegador, investigam consoles, inspecionam requisições de rede e catalogam falhas.
+* **O Mestre do Santuário (Você):** Mantém o controle soberano do sistema. Nenhuma ação destrutiva é executada sem autorização, e os planos de teste são aprovados por você com **1 clique**.
+* **Painel Salão de Guerra (Cockpit 16-bit):** Interface tática em tempo real servida localmente (`http://127.0.0.1:4777`), zero-scroll, com gamificação completa, Bestiário de Bugs colecionáveis, cálculo dinâmico da Blindagem da Fortaleza e notificações sonoras e nativas do Windows.
 
-## Instalação
+---
 
+## ⚡ Regras Sagradas que o Código Garante
+
+1. **Nenhum PASSED Sem Prova:** Um cenário de teste só pode ser marcado como `PASSED` se uma asserção for fisicamente executada e registrada pela ferramenta `verify`. Sem verificação, a aprovação é rejeitada pelo núcleo.
+2. **Action Guard & Proteção de Produção:** Ações de risco (*RED*, como pagamentos, exclusões e mutações de banco) são retidas pelo guardião até a autorização explícita do usuário. Em ambientes do tipo `prod`, mutações de escrita são permanentemente bloqueadas.
+3. **Segredos Nunca Vazados:** Senhas e tokens residem exclusivamente no `.env` local e são referenciados apenas por alias (`secret:NOME` ou `role:usuario.password`). Toda e qualquer saída (terminal, prints, logs e relatórios) passa pelo sanitizador de redação.
+4. **Isolamento Total:** Todo o banco SQLite (`data/novo-qa.db`), vídeos, capturas de tela e relatórios gerados permanecem 100% locais na sua máquina, fora do git.
+
+---
+
+## 📋 Pré-Requisitos
+
+Antes de iniciar, certifique-se de possuir em sua máquina:
+
+* **Node.js:** Versão `>= 22.13` (testado e homologado no Node 22 e 24).
+* **Git:** Para versionamento e clone do repositório.
+* **Navegador para Automação:** Chromium gerenciado pelo Playwright.
+* **Agente de IA Suportado:**
+  * [Claude Code](https://claude.com/claude-code) (CLI, extensão do VS Code ou Desktop)
+  * [Google Antigravity](https://antigravity.google) (com suporte nativo a MCP)
+  * [Codex local](docs/CODEX.md)
+* **Jira / Confluence:** Atlassian MCP conectado ao seu cliente de IA ou TWG local para leitura direta de cards.
+
+---
+
+## 🚀 Instalação Passo a Passo
+
+### 1. Clonar o Repositório e Instalar Dependências
 ```bash
+git clone <url-do-repositorio>
+cd "NEW QA"
 npm install
+```
+
+### 2. Instalar os Binários do Navegador Playwright
+```bash
 npx playwright install chromium
+```
+
+### 3. Configurar as Variáveis de Ambiente (`.env`)
+Copie o arquivo de exemplo e defina suas credenciais locais:
+```bash
 cp .env.example .env
+```
+Abra o `.env` no seu editor e configure as chaves necessárias:
+```ini
+# Configuração do Jira (Atlassian)
+JIRA_HOST=https://seu-dominio.atlassian.net
+JIRA_EMAIL=seu-email@dominio.com
+JIRA_API_TOKEN=seu_token_api_atlassian
+
+# Senhas dos Ambientes de Teste (NUNCA coloque no YAML nem no chat)
+# Dica: Use aspas simples caso a senha contenha '#' ou caracteres especiais
+GURUJA_DEV_ADMIN_PASSWORD='senha_do_admin'
+GURUJA_DEV_ALUNO_PASSWORD='senha_do_aluno'
+DUCO_DEV_PASSWORD='senha_do_ambiente_duco'
+```
+
+### 4. Diagnosticar a Saúde do Santuário
+Execute o verificador do sistema para garantir que tudo está pronto:
+```bash
 npm run doctor
 ```
+Se tudo estiver correto, o doutor validará Node.js, dependências, Playwright, arquivos de configuração e credenciais.
 
-O `.mcp.json` já registra o servidor `novo-qa`. Ao abrir o Claude Code na pasta do projeto, aprove o servidor quando ele pedir.
+---
 
-## Configurar um ambiente
+## 🏰 Central de Caça / Salão de Guerra ao Vivo
 
-1. Cadastre o ambiente em `config/environments.yaml`: URL, tipo (`dev`, `staging` ou `prod`), papéis e usuários, se pode criar dados.
-2. Coloque as senhas **no `.env`**, nunca no YAML nem no chat. Use aspas se a senha tiver `#`:
-   ```
-   GURUJA_DEV_ALUNO_PASSWORD='minha#senha'
-   ```
-3. No Claude Code, rode a ferramenta `config_reload` (ou `npm run doctor`) para conferir se não falta nada.
+O SANCTUM possui um painel tático web ao vivo com estética **Dark Fantasy Pixel RPG 16-bit**.
 
-O projeto do Jira é mapeado em `config/projects.yaml`, e as regras de evidência e de risco ficam em `config/qa-policy.yaml`.
+### Iniciar o Painel:
+```bash
+npm run live
+```
+Abra em seu navegador: **`http://127.0.0.1:4777`**
 
-## Uso
+### Funcionalidades do Cockpit:
+* **Salão Tático (Zero-Scroll):** Terminal Tático e Comitiva de Heróis dispostos lado a lado (50%/50%) para visualização simultânea de conversas e logs.
+* **Aprovações Rápidas em 1 Clique:** Detecção inteligente de pedidos de permissão (`write_file`, rituais) com botões rápidos `[✔ AUTORIZAR]` e `[✖ NEGAR]` para prosseguir sem digitação manual.
+* **Covil das Bestas & Grimório:** Cartas de monstros colecionáveis categorizadas por raridade (*Maldito, Espectral, Abissal, Ancestral*) com fotos de evidências e pontuação de dano/XP.
+* **Blindagem da Fortaleza (0-100%):** Medidor dinâmico da saúde da release com base na taxa de sucesso dos cenários provados.
+* **Glórias da Ordem:** Sistema de 20 conquistas e troféus épicos em 4 patamares de dificuldade (*Tier I · Bronze, Tier II · Prata, Tier III · Ouro e Tier IV · Mítico/Lendário*).
+* **Sinais & Notificações:** Áudio sintetizado via Web Audio API (Corneta Heróica e Sino de Sangue da Masmorra) e notificações nativas do Windows com o brasão oficial de SANCTUM.
 
-No Claude Code, dentro da pasta do projeto:
+---
 
-| Comando | O que faz |
-|---|---|
-| `/qa CARD-123` | Testa o card: descoberta, plano (para aprovação), execução, relatório |
-| `/qa CARD-123 --explore` | O mesmo, com mais testes exploratórios |
-| `/qa CARD-123 --automate` | Ao final, gera e valida automação Playwright |
-| `/qa-resume CARD-123` | Retoma um teste interrompido sem refazer o que já terminou |
-| `/retest CARD-123` | Reteste após correção: refaz o que falhou e compara com o anterior |
-| `/automate CARD-123` | Gera a automação de um teste manual já concluído |
+## 🎮 Comandos de Operação via IA
 
-Durante o teste, o Claude pede sua confirmação para ações destrutivas, como excluir ou remover. Ele não aprova essas ações sozinho.
+Dentro do seu agente de IA (Claude Code, Antigravity ou Codex), no diretório do projeto:
 
-## Onde ficam os resultados
+| Comando | O que faz no Santuário |
+| :--- | :--- |
+| `/qa CARD-123` | **Incursão Completa:** lê o card no Jira, elabora plano tático por risco, aguarda seu aval, executa no navegador e gera relatório com evidências. |
+| `/qa CARD-123 --explore` | **Reconhecimento Exploratório:** o mesmo fluxo, porém explorando caminhos alternativos, limites de campos e bordas do sistema. |
+| `/qa CARD-123 --automate` | **Incursão com Automação:** ao final da execução manual bem-sucedida, gera e valida testes automatizados Playwright. |
+| `/qa-resume CARD-123` | **Retomada de Expedição:** retoma um teste pausado ou interrompido exatamente da câmara onde parou. |
+| `/retest CARD-123` | **Ritual de Expurgo:** retesta apenas os cenários que falharam no ciclo anterior e compara os resultados. |
+| `/automate CARD-123` | **Forja de Automação:** transforma passos e evidências de um teste manual anterior em suite Playwright. |
 
-| Pasta | Conteúdo |
-|---|---|
-| `reports/<card>/` | Relatório `.md` e `.html` de cada execução |
-| `runs/<card>/<execução>/` | Evidências: vídeos, prints, traces, respostas de erro |
-| `knowledge/<projeto>/execution/` | Passos validados por módulo (versionado) |
-| `knowledge/<projeto>/_staging/` | Regras e comportamentos propostos, aguardando revisão humana |
-| `data/novo-qa.db` | Estado das execuções (SQLite) |
+---
 
-`runs/`, `reports/`, `data/` e `.env` estão no `.gitignore`, porque podem conter dados sensíveis.
+## ⚙️ Configuração de Ambientes & Projetos
 
-## Regras que o código garante
+Os arquivos de configuração ficam na pasta `config/`:
 
-- PASSED só com verificação executada e registrada pela ferramenta. Se a verificação falha, o print vira evidência automaticamente.
-- A confiança do resultado é calculada por regras fixas, não pela opinião do modelo.
-- Segredos só como referência (`secret:NOME` ou papel do ambiente), e toda saída é sanitizada antes de chegar ao modelo e aos arquivos.
-- Operar o app só pelas ferramentas do `novo-qa`. Um hook bloqueia scripts que controlam o navegador por fora do Action Guard.
-- Comportamento observado não vira regra de negócio sem fonte documental.
+* **`config/environments.yaml`**: Mapeamento de URLs, tipo de ambiente (`dev`, `staging`, `prod`), perfis de acesso e papéis de usuário. Senhas **sempre** referenciam variáveis do `.env`:
+  ```yaml
+  environments:
+    duco-hml:
+      project: duco
+      type: staging
+      baseUrl: https://pava2-duco-frontend.azurewebsites.net
+      allowDataCreation: true
+      roles:
+        admin:
+          username: admin_duco
+          password: { env: DUCO_DEV_PASSWORD }
+  ```
+* **`config/projects.yaml`**: Mapeamento dos projetos atendidos e suas chaves do Jira (`GURUJA`, `DCTS`, etc.).
+* **`config/qa-policy.yaml`**: Definição de regras de risco (ações GREEN vs RED), exigências de evidência e tolerância de anomalias.
 
-## Desenvolvimento
+---
+
+## 🛠️ Comandos de Desenvolvimento & Auditoria
 
 ```bash
-npm test            # vitest
-npm run typecheck   # tsc --noEmit
-npm run doctor      # checagem de ambiente e configuração
-npm run fixture     # app de exemplo local (porta 4400) para testar as ferramentas
+# Executa a suite de testes automatizados (Vitest)
+npm test
+
+# Validação estática de tipos TypeScript
+npm run typecheck
+
+# Diagnóstico de integridade do ambiente e configurações
+npm run doctor
+
+# Sobe aplicação fixture local (porta 4400) para testes de ferramentas
+npm run fixture
+
+# Executa bateria completa de auditoria E2E e performance
+npx tsx scratch/test-full-audit.ts
 ```
 
-TypeScript ESM executado via `tsx`, com imports usando a extensão `.ts`. Acesso ao SQLite só por `src/state/sqlite.ts`.
+---
+
+## 📂 Estrutura do Repositório
 
 ```text
-src/
-  mcp/         servidor MCP e ferramentas (estado, navegador, contexto, QA, automação)
-  browser/     sessão Playwright, observadores de rede/console, snapshot
-  guard/       Action Guard
-  security/    segredos, sanitização, traces
-  state/       SQLite, regras de status e confiança, limpeza de dados
-  sources/     cache de digests (Jira)
-  context/     pacote de contexto do card
-  knowledge/   execution knowledge e propostas para revisão
-  reporting/   relatório .md e .html
-  metrics/     uso de tokens e tempo a partir dos transcripts
-  automation/  avaliação, spec e execução da automação
-.claude/
-  skills/      /qa, /qa-resume, /retest, /automate
-  agents/      test-executor (executa os cenários em lotes)
-  hooks/       guard-shell (bloqueia operação do navegador por fora do MCP)
-config/        ambientes, projetos e política de QA
-test/          testes (vitest) e app fixture
+SANCTUM/
+├── config/                  # Ambientes, projetos e política de segurança de QA
+│   ├── environments.yaml    # URLs e mapeamento de perfis
+│   ├── projects.yaml        # Chaves de projetos do Jira
+│   └── qa-policy.yaml       # Classificação de ações de risco (RED vs GREEN)
+├── data/                    # Banco SQLite compartilhado (data/novo-qa.db, gitignored)
+├── docs/                    # Arquitetura, guias do Codex e decisões técnicas
+├── knowledge/               # Base de conhecimento de execuções reutilizáveis por projeto
+├── reports/                 # Relatórios HTML e Markdown gerados por card (gitignored)
+├── runs/                    # Evidências: vídeos, screenshots, traces de rede (gitignored)
+├── src/
+│   ├── browser/             # Sessão Playwright, observadores de rede e console
+│   ├── guard/               # Action Guard (salvaguarda de ações perigosas)
+│   ├── live/                # Servidor do painel tático ao vivo e página HTML 16-bit
+│   │   ├── sanctum-logo.png # Brasão oficial do SANCTUM
+│   │   ├── page.html        # Interface Dark Fantasy Pixel RPG
+│   │   ├── server.ts        # Servidor HTTP local (127.0.0.1:4777)
+│   │   └── state.ts         # Cálculo de métricas, bestiário e 20 glórias multi-tier
+│   ├── mcp/                 # Servidor MCP expondo as ferramentas para os agentes de IA
+│   ├── security/            # Sanitização de dados, mascaramento de senhas e redação
+│   └── state/               # Persistência em SQLite e regras de verificação
+└── test/                    # Suite de testes unitários e de integração
 ```
 
-Decisões de design, fluxo completo e ferramentas MCP: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+---
+
+<p align="center">
+  <b>SANCTUM</b> · Protegido pela Ordem de QA · <i>Nenhuma falha passa pelo Santuário.</i>
+</p>
