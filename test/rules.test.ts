@@ -1,0 +1,202 @@
+import { describe, expect, it } from 'vitest';
+import { evaluateCompletion, recommendationCeiling, type CompletionFacts, type RecommendationFact, type VerificationFact } from '../src/state/rules.ts';
+
+function facts(over: Partial<CompletionFacts> = {}): CompletionFacts {
+  return {
+    currentStatus: 'IN_PROGRESS',
+    priority: 'P2',
+    verifications: [],
+    evidenceCount: 0,
+    wroteData: false,
+    investigation: { network: false, console: false, api: false, reproductions: 0 },
+    consoleErrors: 0,
+    ...over,
+  };
+}
+const v = (kind: VerificationFact['kind'], passed = true, description = `${kind} check`): VerificationFact => ({ kind, description, passed });
+
+function problems(result: ReturnType<typeof evaluateCompletion>): string {
+  if (result.ok) throw new Error('esperava rejeição');
+  return result.problems.join('\n');
+}
+
+describe('PASSED', () => {
+  it('é rejeitado sem verificação', () => {
+    expect(problems(evaluateCompletion({ status: 'PASSED' }, facts()))).toMatch(/ao menos 1 verificação aprovada/);
+  });
+
+  it('é rejeitado só com verificação de console', () => {
+    expect(problems(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('console')] })))).toMatch(/além de console/);
+  });
+
+  it('é rejeitado com verificação reprovada não refeita', () => {
+    const r = evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui'), v('network', false)] }));
+    expect(problems(r)).toMatch(/reprovadas não refeitas \(network: network check\)/);
+  });
+
+  it('aceita quando a verificação reprovada foi refeita e passou', () => {
+    const r = evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui', false), v('ui', true)] }));
+    expect(r.ok).toBe(true);
+  });
+
+  it('P0/P1 com escrita de dados exige verificação forte', () => {
+    const base = { priority: 'P1' as const, wroteData: true };
+    expect(problems(evaluateCompletion({ status: 'PASSED' }, facts({ ...base, verifications: [v('ui'), v('url')] })))).toMatch(
+      /verificação forte/,
+    );
+    expect(evaluateCompletion({ status: 'PASSED' }, facts({ ...base, verifications: [v('persistence')] })).ok).toBe(true);
+  });
+
+  it('P2 com escrita aceita verificação fraca', () => {
+    expect(evaluateCompletion({ status: 'PASSED' }, facts({ wroteData: true, verifications: [v('ui')] })).ok).toBe(true);
+  });
+
+  it('exige cenário iniciado', () => {
+    expect(problems(evaluateCompletion({ status: 'PASSED' }, facts({ currentStatus: 'PENDING', verifications: [v('ui')] })))).toMatch(
+      /scenario_start/,
+    );
+  });
+});
+
+describe('FAILED', () => {
+  const failing = { verifications: [v('ui', false)], evidenceCount: 1 };
+
+  it('exige verificação reprovada, evidência, observed e classificação', () => {
+    const p = problems(evaluateCompletion({ status: 'FAILED' }, facts()));
+    expect(p).toMatch(/verificação reprovada/);
+    expect(p).toMatch(/evidência/);
+    expect(p).toMatch(/observed/);
+    expect(p).toMatch(/classificação/);
+  });
+
+  it('PRODUCT_BUG visto uma vez é rejeitado, mesmo investigado (só é bug o que reproduz)', () => {
+    const once = evaluateCompletion({ status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' }, facts(failing));
+    expect(problems(once)).toMatch(/PRODUCT_BUG exige reprodução[\s\S]*NEEDS_REVIEW[\s\S]*intermitente X de Y/);
+    const investigatedOnce = evaluateCompletion(
+      { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' },
+      facts({ ...failing, investigation: { network: true, console: true, api: false, reproductions: 0 } }),
+    );
+    expect(investigatedOnce.ok).toBe(false);
+  });
+
+  it('PRODUCT_BUG reproduzido é aceito', () => {
+    const r = evaluateCompletion(
+      { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' },
+      facts({ ...failing, investigation: { network: false, console: false, api: false, reproductions: 1 } }),
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  it('UNKNOWN é aceito sem investigação', () => {
+    expect(evaluateCompletion({ status: 'FAILED', classification: 'UNKNOWN', observed: 'x' }, facts(failing)).ok).toBe(true);
+  });
+
+  it('ambiguidade e comportamento esperado não são falha', () => {
+    expect(problems(evaluateCompletion({ status: 'FAILED', classification: 'REQUIREMENT_AMBIGUITY', observed: 'x' }, facts(failing)))).toMatch(
+      /NEEDS_REVIEW/,
+    );
+    expect(problems(evaluateCompletion({ status: 'FAILED', classification: 'EXPECTED_BEHAVIOR', observed: 'x' }, facts(failing)))).toMatch(
+      /não é falha/,
+    );
+  });
+});
+
+describe('BLOCKED / NEEDS_REVIEW / NOT_EXECUTED', () => {
+  it('BLOCKED exige motivo e classificação compatível', () => {
+    expect(problems(evaluateCompletion({ status: 'BLOCKED', classification: 'PRODUCT_BUG' }, facts()))).toMatch(/reason[\s\S]*classificação entre/);
+    expect(evaluateCompletion({ status: 'BLOCKED', reason: 'ambiente fora', classification: 'ENVIRONMENT_FAILURE' }, facts({ currentStatus: 'PENDING' })).ok).toBe(true);
+  });
+
+  it('NOT_EXECUTED pode sair de PENDING com motivo', () => {
+    expect(evaluateCompletion({ status: 'NOT_EXECUTED', reason: 'fora do escopo' }, facts({ currentStatus: 'PENDING' })).ok).toBe(true);
+    expect(problems(evaluateCompletion({ status: 'NOT_EXECUTED' }, facts()))).toMatch(/reason/);
+  });
+
+  it('cenário já concluído não muda', () => {
+    expect(problems(evaluateCompletion({ status: 'NEEDS_REVIEW', reason: 'x' }, facts({ currentStatus: 'PASSED' })))).toMatch(/já concluído/);
+  });
+});
+
+describe('confidence (rubrica D3)', () => {
+  const conf = (r: ReturnType<typeof evaluateCompletion>) => (r.ok ? r.confidence : 'REJECTED');
+
+  it('PASSED: HIGH com 2+ verificações incluindo forte e sem erro de console', () => {
+    expect(conf(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui'), v('network')] })))).toBe('HIGH');
+  });
+
+  it('PASSED: erro de console impede HIGH', () => {
+    expect(conf(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui'), v('network')], consoleErrors: 1 })))).toBe('MEDIUM');
+  });
+
+  it('PASSED: MEDIUM com 1 forte ou 2 fracas; LOW com 1 fraca', () => {
+    expect(conf(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('api')] })))).toBe('MEDIUM');
+    expect(conf(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui'), v('url')] })))).toBe('MEDIUM');
+    expect(conf(evaluateCompletion({ status: 'PASSED' }, facts({ verifications: [v('ui')] })))).toBe('LOW');
+  });
+
+  it('FAILED: HIGH só investigado e reproduzido', () => {
+    const base = { verifications: [v('ui', false)], evidenceCount: 1 };
+    const req = { status: 'FAILED' as const, classification: 'PRODUCT_BUG' as const, observed: 'x' };
+    expect(conf(evaluateCompletion(req, facts({ ...base, investigation: { network: true, console: false, api: false, reproductions: 1 } })))).toBe('HIGH');
+    expect(conf(evaluateCompletion(req, facts({ ...base, investigation: { network: false, console: false, api: false, reproductions: 1 } })))).toBe('MEDIUM');
+    expect(conf(evaluateCompletion({ ...req, classification: 'UNKNOWN' }, facts(base)))).toBe('LOW');
+  });
+
+  it('Claude pode rebaixar, não elevar', () => {
+    const down = evaluateCompletion({ status: 'PASSED', confidence: 'LOW' }, facts({ verifications: [v('ui'), v('network')] }));
+    expect(down.ok && down.confidence).toBe('LOW');
+    const up = evaluateCompletion({ status: 'PASSED', confidence: 'HIGH' }, facts({ verifications: [v('ui')] }));
+    expect(up.ok && up.confidence).toBe('LOW');
+    expect(up.ok && up.notes[0]).toMatch(/ignorada/);
+  });
+
+  it('BLOCKED não tem confidence', () => {
+    const r = evaluateCompletion({ status: 'BLOCKED', reason: 'x', classification: 'UNKNOWN' }, facts());
+    expect(r.ok && r.confidence).toBeNull();
+  });
+});
+
+describe('teto da recomendação do run', () => {
+  const s = (code: string, priority: RecommendationFact['priority'], status: RecommendationFact['status'], classification: RecommendationFact['classification'] = null): RecommendationFact =>
+    ({ code, priority, status, classification });
+  const pass = s('CT-001', 'P0', 'PASSED');
+
+  it('tudo passou: APROVADO', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P1', 'PASSED')]).ceiling).toBe('APROVADO');
+  });
+
+  it('PRODUCT_BUG em P0/P1 só permite REPROVADO', () => {
+    for (const p of ['P0', 'P1'] as const) {
+      const r = recommendationCeiling([pass, s('CT-002', p, 'FAILED', 'PRODUCT_BUG')]);
+      expect(r.ceiling).toBe('REPROVADO');
+      expect(r.reasons.join(' ')).toMatch(/CT-002/);
+    }
+  });
+
+  it('P0/P1 FAILED sem bug, BLOCKED ou NEEDS_REVIEW não permitem APROVADO', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'FAILED', 'ENVIRONMENT_FAILURE')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'BLOCKED', 'TEST_DATA_FAILURE')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([pass, s('CT-002', 'P1', 'NEEDS_REVIEW', 'REQUIREMENT_AMBIGUITY')]).ceiling).toBe('INCONCLUSIVO');
+  });
+
+  it('NEEDS_REVIEW como comportamento esperado e NOT_EXECUTED com motivo não travam', () => {
+    expect(recommendationCeiling([pass, s('CT-002', 'P0', 'NEEDS_REVIEW', 'EXPECTED_BEHAVIOR'), s('CT-003', 'P1', 'NOT_EXECUTED')]).ceiling).toBe('APROVADO');
+  });
+
+  it('P0/P1 aprovado com confiança baixa não sustenta APROVADO; em P2/P3 não trava', () => {
+    const low = (code: string, priority: RecommendationFact['priority']): RecommendationFact => ({ ...s(code, priority, 'PASSED'), confidence: 'LOW' });
+    const r = recommendationCeiling([pass, low('CT-002', 'P1')]);
+    expect(r.ceiling).toBe('INCONCLUSIVO');
+    expect(r.reasons.join(' ')).toMatch(/CT-002 \(P1\) PASSED com confiança baixa/);
+    expect(recommendationCeiling([pass, { ...s('CT-003', 'P0', 'PASSED'), confidence: 'MEDIUM' }, low('CT-004', 'P2')]).ceiling).toBe('APROVADO');
+  });
+
+  it('falhas em P2/P3 não travam (política do execute-and-close)', () => {
+    expect(recommendationCeiling([pass, s('EXP-001', 'P2', 'FAILED', 'PRODUCT_BUG'), s('CT-003', 'P3', 'BLOCKED', 'UNKNOWN')]).ceiling).toBe('APROVADO');
+  });
+
+  it('sem nenhum PASSED não há o que aprovar', () => {
+    expect(recommendationCeiling([s('CT-001', 'P2', 'NOT_EXECUTED')]).ceiling).toBe('INCONCLUSIVO');
+    expect(recommendationCeiling([]).ceiling).toBe('INCONCLUSIVO');
+  });
+});

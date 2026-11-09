@@ -1,0 +1,10 @@
+module: painel-geral
+reviewed: false
+proposals:
+  - statement: "Nenhuma ferramenta do agente (navigate, verify kind:api) consegue acessar a Central de Caça (127.0.0.1/localhost na porta do painel, padrão 4777): o código recusa com BrowserError porque é o painel onde o usuário aprova os pedidos do próprio agente. Missão exploratória com alvo na própria Central de Caça não é executável por este agente; testar esse painel exige outro caminho (manual, ou suíte automatizada do repositório como test/live.test.ts)."
+    kind: risk
+    status: OBSERVED
+    confidence: HIGH
+    source:
+      type: run
+      reference: EXPLORA-202611030945-20261103T124843

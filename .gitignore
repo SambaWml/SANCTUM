@@ -1,0 +1,60 @@
+node_modules/
+dist/
+coverage/
+
+# segredos
+.env
+.env.*
+!.env.example
+
+# sistemas testados nesta instalação (URLs, usuários e conhecimento de cliente): nunca no repositório
+config/*.local.yaml
+knowledge/*
+!knowledge/central-caca/
+automation/
+PLANNERS-*/
+CASOS-DE-TESTE-*.md
+
+# estado local, evidências e cache (podem conter dados sensíveis)
+data/
+runs/
+reports/
+.cache/
+.auth/
+EVIDENCIAS*/
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite-*
+scratch/
+tmp/
+
+# saída do Playwright
+test-results/
+playwright-report/
+blob-report/
+*.zip
+*.webm
+*.mp4
+*.har
+
+# Scripts avulsos na raiz operam o app por fora do Action Guard (auditoria 02/11).
+/*.cjs
+/*.mjs
+/*.py
+
+# lixo de sistema, editor e logs
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.log
+npm-debug.log*
+*.tmp
+*.bak
+*.orig
+.claude/settings.local.json
+.claude/worktrees/

@@ -1,0 +1,14 @@
+{
+  "statusLine": { "type": "command", "command": "node .claude/statusline.mjs" },
+  "permissions": {
+    "ask": ["mcp__sanctum__plan_approve", "mcp__sanctum__act_approved", "mcp__sanctum__jira_create_issue", "mcp__sanctum__jira_comment", "mcp__sanctum__jira_transition"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [{ "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-shell.mjs\"" }]
+      }
+    ]
+  }
+}

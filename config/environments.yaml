@@ -1,0 +1,32 @@
+# Ambientes onde o Sanctum pode operar o navegador.
+#
+# type: local | dev | staging | prod   (prod = somente ações GREEN)
+# Valores podem ser literais ou { env: NOME_DA_VARIAVEL } (lido do .env).
+# Senhas SEMPRE como { env: ... } — literal é rejeitado na validação.
+#
+# Ambientes reais são adicionados quando o /qa pedir os dados (URL, papéis,
+# usuários, MFA/captcha, se pode criar dados).
+environments:
+  fixture-local:
+    project: fixture
+    type: local
+    baseUrl: http://localhost:4400
+    allowDataCreation: true
+    mfa: false
+    captcha: false
+    roles:
+      admin:
+        username: admin
+        password: { env: FIXTURE_ADMIN_PASSWORD }
+  # Painel ao vivo do próprio Sanctum, cadastrado em 03/11 para a missão exploratória EXPLORA-202611030945.
+  # GET público (sem login); POST exige o token gerado a cada start do painel (embutido só na página, não é usuário/senha).
+  # allowDataCreation: true só para o fluxo "lançar missão" (cria linha em missions/prompts do próprio painel);
+  # alvo da missão de teste deve ser o ambiente fixture-local, nunca um card ou URL de sistema real.
+  central-caca-local:
+    project: central-caca
+    type: local
+    baseUrl: http://127.0.0.1:4777
+    allowDataCreation: true
+    mfa: false
+    captcha: false
+    roles: {}
