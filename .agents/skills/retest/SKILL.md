@@ -1,6 +1,6 @@
 ---
 name: retest
-description: Retesta um card do NOVO QA após correção, usando o ciclo anterior e regressão por risco, com comparação dos resultados.
+description: Retesta um card do Sanctum após correção, usando o ciclo anterior e regressão por risco, com comparação dos resultados.
 ---
 
 # Reteste pelo Codex

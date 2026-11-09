@@ -22,7 +22,7 @@ function call(session: string, id: string, ts: string, usage: { i: number; o: nu
 describe('parseTranscript', () => {
   it('deduplica por message.id, junta ferramentas, ignora linha truncada e não-assistant', () => {
     const text = [
-      call('S1', 'm1', '2026-10-23T10:00:00.000Z', { i: 10, o: 100, r: 5000, w: 300 }, ['mcp__novo-qa__act', 'mcp__novo-qa__verify']),
+      call('S1', 'm1', '2026-10-23T10:00:00.000Z', { i: 10, o: 100, r: 5000, w: 300 }, ['mcp__sanctum__act', 'mcp__sanctum__verify']),
       JSON.stringify({ type: 'user', sessionId: 'S1', timestamp: '2026-10-23T10:00:01.000Z', message: { content: 'oi' } }),
       '{"type":"assistant","sessionId":"S1"', // truncada
       call('S1', 'm2', '2026-10-23T10:00:02.000Z', { i: 5, o: 50 }, [], { isSidechain: true }),
@@ -30,7 +30,7 @@ describe('parseTranscript', () => {
     const calls = parseTranscript(text);
     expect(calls).toHaveLength(2);
     expect(calls[0]).toMatchObject({ messageId: 'm1', sidechain: false, usage: { input_tokens: 10, output_tokens: 100, cache_read_input_tokens: 5000, cache_creation_input_tokens: 300 } });
-    expect([...calls[0]!.tools]).toEqual(['mcp__novo-qa__act', 'mcp__novo-qa__verify']);
+    expect([...calls[0]!.tools]).toEqual(['mcp__sanctum__act', 'mcp__sanctum__verify']);
     expect(calls[1]).toMatchObject({ messageId: 'm2', sidechain: true });
   });
 });
@@ -43,7 +43,7 @@ describe('ingestão e atribuição por run', () => {
   const at = (iso: string) => { clock = new Date(iso); };
 
   beforeEach(() => {
-    root = mkdtempSync(join(tmpdir(), 'novo-qa-metrics-'));
+    root = mkdtempSync(join(tmpdir(), 'sanctum-metrics-'));
     db = openDb(':memory:');
     clock = new Date('2026-10-23T10:00:00Z');
     store = new StateStore(db, loadConfig(join(import.meta.dirname, '..')), { now: () => clock });
@@ -83,6 +83,7 @@ describe('ingestão e atribuição por run', () => {
     at('2026-10-23T10:30:00Z');
     store.startScenario(run.id, 'CT-002');
     store.recordVerification(run.id, 'CT-002', { kind: 'ui', description: 'b', passed: false });
+    store.recordVerification(run.id, 'CT-002', { kind: 'ui', description: 'b', passed: false });
     store.recordEvidence(run.id, 'CT-002', { kind: 'screenshot', path: 'x.png' });
     store.logEvent(run.id, store.getScenario(run.id, 'CT-002').id, 'inspect.network', null);
     at('2026-10-23T10:40:00Z');
@@ -93,15 +94,15 @@ describe('ingestão e atribuição por run', () => {
     const dir = join(root, 'transcripts');
     mkdirSync(join(dir, 'S1', 'subagents'), { recursive: true });
     writeFileSync(join(dir, 'S1.jsonl'), [
-      call('S1', 'd1', '2026-10-23T09:56:00.000Z', { i: 100, o: 200, r: 1000, w: 50 }, ['mcp__novo-qa__context_build']), // descoberta
-      call('S1', 'p1', '2026-10-23T10:05:00.000Z', { i: 10, o: 300 }, ['mcp__novo-qa__plan_save']),
-      call('S1', 'old', '2026-10-23T08:00:00.000Z', { i: 999, o: 999 }, ['mcp__novo-qa__run_status']), // fora da janela
+      call('S1', 'd1', '2026-10-23T09:56:00.000Z', { i: 100, o: 200, r: 1000, w: 50 }, ['mcp__sanctum__context_build']), // descoberta
+      call('S1', 'p1', '2026-10-23T10:05:00.000Z', { i: 10, o: 300 }, ['mcp__sanctum__plan_save']),
+      call('S1', 'old', '2026-10-23T08:00:00.000Z', { i: 999, o: 999 }, ['mcp__sanctum__run_status']), // fora da janela
     ].join('\n'));
     writeFileSync(join(dir, 'S1', 'subagents', 'agent-a.jsonl'), [
-      call('S1', 'e1', '2026-10-23T10:15:00.000Z', { i: 20, o: 400, r: 2000 }, ['mcp__novo-qa__act']), // CT-001
-      call('S1', 'e2', '2026-10-23T10:35:00.000Z', { i: 30, o: 600 }, ['mcp__novo-qa__verify']), // CT-002
+      call('S1', 'e1', '2026-10-23T10:15:00.000Z', { i: 20, o: 400, r: 2000 }, ['mcp__sanctum__act']), // CT-001
+      call('S1', 'e2', '2026-10-23T10:35:00.000Z', { i: 30, o: 600 }, ['mcp__sanctum__verify']), // CT-002
     ].join('\n'));
-    // Outra sessão no mesmo horário, sem ferramentas do NOVO QA: não conta.
+    // Outra sessão no mesmo horário, sem ferramentas do Sanctum: não conta.
     writeFileSync(join(dir, 'S2.jsonl'), call('S2', 'x1', '2026-10-23T10:15:00.000Z', { i: 5000, o: 5000 }, ['Bash']));
 
     expect(ingestTranscripts(db, [dir])).toEqual({ files: 3, calls: 6 });
@@ -119,8 +120,9 @@ describe('ingestão e atribuição por run', () => {
     expect(m.perScenario).toMatchObject({ avgFresh: 525, avgMinutes: 10 });
     expect(m.bugs).toBe(1);
     expect(m.perBug).toBe(1710);
-    expect(m.decisions).toEqual({ total: 4, scenariosFinished: 2, verifications: 2, exploratory: 0 });
-    expect(m.perDecision).toBe(428);
+    // CT-002 reproduzido: a mesma verificação reprovada duas vezes (regra "só é bug o que reproduz").
+    expect(m.decisions).toEqual({ total: 5, scenariosFinished: 2, verifications: 3, exploratory: 0 });
+    expect(m.perDecision).toBe(342);
     expect(m.cache).toEqual({ hits: 0, misses: 1, stale: 0, hitRate: 0 });
     expect(m.deterministic.screenshots).toBe(1);
     expect(formatMetrics(m)[0]).toBe('Uso do modelo: 1710 tokens novos (entrada 160 · escrita cache 50 · saída 1500) + 3000 lidos do cache');

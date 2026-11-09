@@ -5,7 +5,7 @@ import type { DigestCache, JiraDigest } from './digest.ts';
 
 export function getTwgBin(): string | null {
   // Desligada nos testes (vitest.config.ts): teste nunca fala com o Jira real.
-  if (process.env.NOVO_QA_TWG === 'off') return null;
+  if (process.env.SANCTUM_TWG === 'off') return null;
   if (process.env.TWG_BIN && existsSync(process.env.TWG_BIN)) return process.env.TWG_BIN;
   const localAppData = process.env.LOCALAPPDATA;
   if (localAppData) {
@@ -26,6 +26,9 @@ export interface RawJiraIssue {
   components?: { name: string }[];
   labels?: string[];
   issuelinks?: { type?: { name: string }; outwardIssue?: { key: string; fields?: { summary?: string } }; inwardIssue?: { key: string; fields?: { summary?: string } } }[];
+  subtasks?: { key: string; summary?: string; fields?: { summary?: string; status?: { name?: string }; issuetype?: { name?: string } } }[];
+  comment?: { comments?: { body?: unknown; author?: { displayName?: string } }[] } | { body?: unknown; author?: { displayName?: string } }[];
+  attachment?: { filename?: string; mimeType?: string }[];
   updated?: string;
   url?: string;
 }
@@ -89,12 +92,52 @@ export function toJiraDigest(issue: RawJiraIssue): JiraDigest {
 
   const links = (issue.issuelinks ?? []).map((l) => {
     const out = l.outwardIssue ?? l.inwardIssue;
+    const relName = l.type?.name?.toLowerCase() ?? '';
+    const isBug = /bug|defeito|falha|problem/i.test(relName);
     return {
       key: out?.key ?? '',
-      relation: l.type?.name ?? 'relates to',
+      relation: isBug ? `sub-bug (${l.type?.name ?? 'bug'})` : (l.type?.name ?? 'relates to'),
       title: out?.fields?.summary?.slice(0, 300),
     };
   }).filter((l) => l.key);
+
+  const subtasks = (issue.subtasks ?? []).map((s) => {
+    const typeName = s.fields?.issuetype?.name?.toLowerCase() ?? '';
+    const isTest = /test|cen[aá]rio|ensaio/i.test(typeName);
+    return {
+      key: s.key,
+      relation: isTest ? 'sub-test' : 'subtask',
+      title: (s.fields?.summary ?? s.summary ?? '')?.slice(0, 300),
+      status: s.fields?.status?.name?.slice(0, 80),
+    };
+  }).filter((s) => s.key);
+
+  const allLinks = [...links, ...subtasks].slice(0, 25);
+
+  const rawComments = Array.isArray((issue.comment as { comments?: unknown[] })?.comments)
+    ? (issue.comment as { comments: { body?: unknown; author?: { displayName?: string } }[] }).comments
+    : Array.isArray(issue.comment)
+      ? (issue.comment as { body?: unknown; author?: { displayName?: string } }[])
+      : [];
+
+  const comments = rawComments
+    .slice(-10)
+    .map((c) => {
+      const text = typeof c.body === 'string' ? c.body : adfToText(c.body);
+      const author = c.author?.displayName ? `${c.author.displayName}: ` : '';
+      return `${author}${text}`.trim().slice(0, 400);
+    })
+    .filter((c) => c.length > 0);
+
+  const attachments = (issue.attachment ?? []).slice(0, 15).map((a) => {
+    const name = (a.filename ?? 'anexo').slice(0, 200);
+    const mime = a.mimeType ?? '';
+    const kind: 'image' | 'video' | 'document' | 'other' =
+      /image/i.test(mime) || /\.(png|jpe?g|webp|gif)$/i.test(name) ? 'image'
+      : /video/i.test(mime) || /\.(mp4|webm|mov)$/i.test(name) ? 'video'
+      : /\.(pdf|docx?|xlsx?|txt|md)$/i.test(name) ? 'document' : 'other';
+    return { name, kind };
+  });
 
   const parentTitle = issue.parent?.summary ?? issue.parent?.fields?.summary;
 
@@ -110,14 +153,14 @@ export function toJiraDigest(issue: RawJiraIssue): JiraDigest {
     summary: desc ? desc.slice(0, 1200) : issue.summary.slice(0, 1200),
     acceptanceCriteria: criteria.length ? criteria.slice(0, 30) : [issue.summary.slice(0, 600)],
     businessRules: rules.slice(0, 30),
-    roles: ['aluno', 'professor'],
+    roles: [],
     openQuestions: [],
-    links: links.slice(0, 15),
-    attachments: [],
+    links: allLinks,
+    attachments,
     figma: [],
     confluence: [],
-    comments: [],
-    environmentHints: ['guruja-dev'],
+    comments,
+    environmentHints: [],
   };
 }
 

@@ -18,7 +18,7 @@ let store: StateStore;
 let clock: Date;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'novo-qa-storage-'));
+  root = mkdtempSync(join(tmpdir(), 'sanctum-storage-'));
   db = openDb(':memory:');
   clock = new Date(now.getTime() - 30 * DAY);
   store = new StateStore(db, config, { now: () => clock });
@@ -43,9 +43,11 @@ function completedRun(issue: string, withBug: boolean): string {
   store.approvePlan(run.id);
   store.startScenario(run.id, 'CT-001');
   store.recordVerification(run.id, 'CT-001', { kind: 'ui', description: 'ok', passed: true });
+  store.recordVerification(run.id, 'CT-001', { kind: 'network', description: 'GET 200', passed: true });
   store.completeScenario(run.id, 'CT-001', { status: 'PASSED' });
   if (withBug) {
     store.startScenario(run.id, 'CT-002');
+    store.recordVerification(run.id, 'CT-002', { kind: 'ui', description: 'falhou', passed: false });
     store.recordVerification(run.id, 'CT-002', { kind: 'ui', description: 'falhou', passed: false });
     store.recordEvidence(run.id, 'CT-002', { kind: 'screenshot', path: 'x.png' });
     store.logEvent(run.id, store.getScenario(run.id, 'CT-002').id, 'inspect.network', null);

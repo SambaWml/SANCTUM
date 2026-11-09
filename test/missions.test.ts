@@ -31,7 +31,7 @@ function fakeSpawn(script: (call: number) => { lines: unknown[]; stderr?: string
 }
 /** Gerente com saída numa pasta temporária; por padrão o processo do turno já terminou. */
 const manager = (spawnFn: typeof import('node:child_process').spawn, extra: Partial<ConstructorParameters<typeof MissionManager>[0]> = {}) =>
-  new MissionManager({ db, rootDir: '/x', logDir: mkdtempSync(join(tmpdir(), 'novo-qa-ml-')), spawnFn, killTree: () => {}, isAlive: () => false, ...extra });
+  new MissionManager({ db, rootDir: '/x', logDir: mkdtempSync(join(tmpdir(), 'sanctum-ml-')), spawnFn, killTree: () => {}, isAlive: () => false, ...extra });
 const settle = () => new Promise((r) => setTimeout(r, 20));
 
 let db: Db;
@@ -47,7 +47,7 @@ describe('missões do painel', () => {
     const { spawnFn, calls } = fakeSpawn(() => ({
       lines: [
         { type: 'system', subtype: 'init', session_id: 'sess-1' },
-        { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__novo-qa__run_start' }, { type: 'text', text: 'Plano pronto.\nAprova?' }] } },
+        { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'mcp__sanctum__run_start' }, { type: 'text', text: 'Plano pronto.\nAprova?' }] } },
         { type: 'result', subtype: 'success', result: 'Plano pronto. Aprova?', session_id: 'sess-1' },
       ],
     }));
@@ -59,9 +59,9 @@ describe('missões do painel', () => {
     const args = calls[0]!.args;
     expect(calls[0]!.detached).toBe(true);
     expect(args[args.indexOf('-p') + 1]).toBe('/qa FIX-1 --explore foco no cadastro');
-    expect(args[args.indexOf('--permission-prompt-tool') + 1]).toBe('mcp__novo-qa__permission_prompt');
+    expect(args[args.indexOf('--permission-prompt-tool') + 1]).toBe('mcp__sanctum__permission_prompt');
     expect(args[args.indexOf('--allowedTools') + 1]).not.toMatch(/plan_approve|act_approved/);
-    expect(calls[0]!.env.NOVO_QA_MISSION).toBe(m.id);
+    expect(calls[0]!.env.SANCTUM_MISSION).toBe(m.id);
     const view = missions.list()[0]!;
     expect(view).toMatchObject({ status: 'WAITING', session_id: 'sess-1', last_message: 'Plano pronto. Aprova?' });
     expect(view.activity.map((a) => a.text)).toEqual(['→ run_start', 'Plano pronto.', 'esperando você']);
@@ -75,19 +75,20 @@ describe('missões do painel', () => {
     expect(calls[0]!.args).toContain('/qa https://app.exemplo.com/ --explore');
 
     missions.reply(m.id, '', { approvePlan: true });
-    missions.poll();
     const resume = calls[1]!.args;
     expect(resume[resume.indexOf('--resume') + 1]).toBe('sess-1');
     expect(resume[resume.indexOf('-p') + 1]).toBe('Plano aprovado. Pode seguir.');
-    expect(missions.get(m.id).last_message).toBe('Executando.');
 
-    const first = await decidePermission({ db, redactor, missionId: m.id }, 'mcp__novo-qa__plan_approve', { runId: 'R1' });
+    // Durante o turno retomado, o plan_approve usa a aprovação do botão.
+    const first = await decidePermission({ db, redactor, missionId: m.id }, 'mcp__sanctum__plan_approve', { runId: 'R1' });
     expect(first).toEqual({ behavior: 'allow', updatedInput: { runId: 'R1' } });
     // A aprovação vale uma vez: o próximo plan_approve volta a pedir.
-    const again = decidePermission({ db, redactor, missionId: m.id, pollMs: 1, timeoutMs: 50 }, 'mcp__novo-qa__plan_approve', { runId: 'R1' });
+    const again = decidePermission({ db, redactor, missionId: m.id, pollMs: 1, timeoutMs: 50 }, 'mcp__sanctum__plan_approve', { runId: 'R1' });
     await settle();
     expect(pendingPrompts(db)).toHaveLength(1);
     expect(await again).toMatchObject({ behavior: 'deny' });
+    missions.poll();
+    expect(missions.get(m.id).last_message).toBe('Executando.');
   });
 
   it('não deixa responder enquanto o agente trabalha nem lançar duas vezes o mesmo alvo', () => {
@@ -103,7 +104,7 @@ describe('missões do painel', () => {
   it('painel reiniciado continua acompanhando o turno que seguiu rodando', () => {
     let alive = true;
     const { spawnFn } = fakeSpawn(() => ({ lines: [{ type: 'system', session_id: 's' }, { type: 'assistant', message: { content: [{ type: 'text', text: 'Lendo o card.' }] } }] }));
-    const logDir = mkdtempSync(join(tmpdir(), 'novo-qa-ml-'));
+    const logDir = mkdtempSync(join(tmpdir(), 'sanctum-ml-'));
     const first = manager(spawnFn, { logDir, isAlive: () => alive });
     const m = first.launch({ agent: 'claude', target: { kind: 'card', key: 'FIX-6' }, kind: 'qa' });
     first.poll();
@@ -125,7 +126,7 @@ describe('missões do painel', () => {
     const { spawnFn } = fakeSpawn(() => ({ lines: [] }));
     const missions = manager(spawnFn, { isAlive: () => true, killTree: (pid) => killed.push(pid) });
     const m = missions.launch({ agent: 'claude', target: { kind: 'card', key: 'FIX-2' }, kind: 'qa' });
-    const pending = decidePermission({ db, redactor, missionId: m.id, pollMs: 1, timeoutMs: 1000 }, 'Bash', { command: 'npm test' });
+    const pending = decidePermission({ db, redactor, missionId: m.id, pollMs: 1, timeoutMs: 1000 }, 'WebFetch', { url: 'https://dev.exemplo.com/status' });
     await settle();
     expect(missions.stop(m.id).status).toBe('STOPPED');
     expect(killed).toEqual([1001]);
@@ -147,7 +148,7 @@ describe('missões do painel', () => {
 
   it('grava o uso do plano informado pelo agente para o medidor do painel', async () => {
     const { readFileSync } = await import('node:fs');
-    const limitsFile = join(mkdtempSync(join(tmpdir(), 'novo-qa-lim-')), 'usage-limits.json');
+    const limitsFile = join(mkdtempSync(join(tmpdir(), 'sanctum-lim-')), 'usage-limits.json');
     const { spawnFn } = fakeSpawn(() => ({ lines: [
       { type: 'rate_limit_event', rate_limit_info: { unifiedWindows: { five_hour: { utilization: 0.58, resetsAt: 1793722800 }, seven_day: { utilization: 0.78, resetsAt: 1794045600 } } } },
       { type: 'result', result: 'ok', session_id: 's' },
@@ -174,11 +175,11 @@ describe('missões do painel', () => {
 describe('pedido de permissão pelo painel', () => {
   it('espera a decisão do usuário; o painel vê o pedido redigido, o Claude Code recebe o input original', async () => {
     db.prepare(`INSERT INTO missions (id, agent, target, kind, status, created_at, updated_at) VALUES ('M-1', 'claude', 'FIX-1', 'qa', 'RUNNING', 'x', 'x')`).run();
-    const input = { command: `curl -u admin:${SECRET} https://dev.exemplo.com` };
+    const input = { url: `https://admin:${SECRET}@dev.exemplo.com/status` };
     const result = decidePermission({ db, redactor, missionId: 'M-1', pollMs: 1, sleep: async () => {
       const p = pendingPrompts(db)[0];
       if (p) answerPrompt(db, p.id, 'allow', undefined);
-    } }, 'Bash', input);
+    } }, 'WebFetch', input);
     expect(await result).toEqual({ behavior: 'allow', updatedInput: input });
     const row = db.prepare('SELECT summary, input_json, status FROM prompts').get() as { summary: string; input_json: string; status: string };
     expect(row.summary).not.toContain(SECRET);
@@ -187,21 +188,21 @@ describe('pedido de permissão pelo painel', () => {
   });
 
   it('nega quando não é missão do painel, quando o usuário nega e quando ninguém responde', async () => {
-    expect(await decidePermission({ db, redactor, missionId: undefined }, 'Bash', {})).toMatchObject({ behavior: 'deny' });
+    expect(await decidePermission({ db, redactor, missionId: undefined }, 'WebFetch', {})).toMatchObject({ behavior: 'deny' });
     db.prepare(`INSERT INTO missions (id, agent, target, kind, status, created_at, updated_at) VALUES ('M-1', 'claude', 'FIX-1', 'qa', 'RUNNING', 'x', 'x')`).run();
     const denied = decidePermission({ db, redactor, missionId: 'M-1', pollMs: 1, sleep: async () => {
       const p = pendingPrompts(db)[0];
       if (p) answerPrompt(db, p.id, 'deny', 'não remova nada');
-    } }, 'mcp__novo-qa__act_approved', { action: 'click', target: { name: 'Remover' }, justification: 'teste' });
+    } }, 'mcp__sanctum__act_approved', { action: 'click', target: { name: 'Remover' }, justification: 'teste' });
     expect(await denied).toEqual({ behavior: 'deny', message: 'o usuário negou pelo painel: não remova nada' });
-    expect(await decidePermission({ db, redactor, missionId: 'M-1', pollMs: 1, timeoutMs: 5 }, 'Bash', {})).toMatchObject({ behavior: 'deny' });
+    expect(await decidePermission({ db, redactor, missionId: 'M-1', pollMs: 1, timeoutMs: 5 }, 'WebFetch', {})).toMatchObject({ behavior: 'deny' });
     expect(db.prepare(`SELECT status FROM prompts ORDER BY id DESC LIMIT 1`).get()).toEqual({ status: 'EXPIRED' });
   });
 
   it('descreve a ação de risco em uma linha', () => {
-    expect(describeTool('mcp__novo-qa__act_approved', { action: 'click', target: { role: 'button', name: 'Remover' }, justification: 'CT-007' }))
+    expect(describeTool('mcp__sanctum__act_approved', { action: 'click', target: { role: 'button', name: 'Remover' }, justification: 'CT-007' }))
       .toBe('Ação de risco: click em "Remover" — CT-007');
-    expect(ALLOWED_TOOLS).not.toContain('mcp__novo-qa__act_approved');
+    expect(ALLOWED_TOOLS).not.toContain('mcp__sanctum__act_approved');
   });
 });
 
@@ -213,7 +214,7 @@ describe('ações do painel pelo servidor', () => {
   beforeEach(async () => {
     const { spawnFn } = fakeSpawn(() => ({ lines: [{ type: 'system', session_id: 's' }, { type: 'result', result: 'ok', session_id: 's' }] }));
     const missions = manager(spawnFn);
-    server = createLiveServer({ db, rootDir: mkdtempSync(join(tmpdir(), 'novo-qa-m-')), redactor, missions, token: TOKEN });
+    server = createLiveServer({ db, rootDir: mkdtempSync(join(tmpdir(), 'sanctum-m-')), redactor, missions, token: TOKEN });
     await new Promise<void>((r) => server.listen(0, '127.0.0.1', r));
     port = (server.address() as AddressInfo).port;
   });
@@ -221,7 +222,7 @@ describe('ações do painel pelo servidor', () => {
 
   const post = (path: string, body: unknown, headers: Record<string, string> = {}) => new Promise<{ status: number; body: string }>((resolve, reject) => {
     const data = JSON.stringify(body);
-    const req = request({ host: '127.0.0.1', port, path, method: 'POST', headers: { host: `127.0.0.1:${port}`, 'content-type': 'application/json', 'x-novo-qa-token': TOKEN, ...headers } }, (res) => {
+    const req = request({ host: '127.0.0.1', port, path, method: 'POST', headers: { host: `127.0.0.1:${port}`, 'content-type': 'application/json', 'x-sanctum-token': TOKEN, ...headers } }, (res) => {
       let out = '';
       res.on('data', (c) => (out += c));
       res.on('end', () => resolve({ status: res.statusCode!, body: out }));
@@ -231,7 +232,7 @@ describe('ações do painel pelo servidor', () => {
   });
 
   it('exige a chave da página e corpo JSON', async () => {
-    expect((await post('/api/missions', { target: 'FIX-1' }, { 'x-novo-qa-token': 'errada' })).status).toBe(403);
+    expect((await post('/api/missions', { target: 'FIX-1' }, { 'x-sanctum-token': 'errada' })).status).toBe(403);
     expect((await post('/api/missions', { target: 'FIX-1' }, { 'content-type': 'text/plain' })).status).toBe(415);
   });
 
@@ -242,7 +243,7 @@ describe('ações do painel pelo servidor', () => {
     expect((await post('/api/missions', { target: 'javascript:alert(1)' })).status).toBe(400);
 
     const missionId = JSON.parse(launched.body).id as string;
-    const pending = decidePermission({ db, redactor, missionId, pollMs: 5, timeoutMs: 2000 }, 'Bash', { command: 'npm test' });
+    const pending = decidePermission({ db, redactor, missionId, pollMs: 5, timeoutMs: 2000 }, 'WebFetch', { url: 'https://dev.exemplo.com/status' });
     await settle();
     const id = pendingPrompts(db)[0]!.id;
     expect((await post(`/api/prompts/${id}`, { decision: 'allow' })).status).toBe(200);
@@ -255,7 +256,7 @@ describe('painel fora do alcance do navegador do teste', () => {
   it('reconhece o painel na porta padrão e na porta gravada, em qualquer nome local', async () => {
     const { isLivePanel, recordLivePort } = await import('../src/live/panel-url.ts');
     const { mkdirSync } = await import('node:fs');
-    const root = mkdtempSync(join(tmpdir(), 'novo-qa-pu-'));
+    const root = mkdtempSync(join(tmpdir(), 'sanctum-pu-'));
     mkdirSync(join(root, 'data'));
     expect(isLivePanel(new URL('http://127.0.0.1:4777/'), root)).toBe(true);
     expect(isLivePanel(new URL('http://localhost:4777/api/prompts/1'), root)).toBe(true);
@@ -273,7 +274,7 @@ describe('missões do Antigravity', () => {
   const result = (response = '') => ({ event: 'result', result: { conversation_id: 'conv-1', status: 'SUCCESS', response } });
   const settingsOf = (args: string[]) => JSON.parse(args[args.indexOf('--settings') + 1]!) as { permissions: { allow: string[]; deny: string[] } };
 
-  it('lança com o roteiro amarrado e as regras: novo-qa liberado, terminal e navegador próprio proibidos', () => {
+  it('lança com o roteiro amarrado e as regras: sanctum liberado, terminal e navegador próprio proibidos', () => {
     const { spawnFn, calls } = fakeSpawn(() => ({ lines: [agyInit, result('Plano pronto. Aprova?')] }));
     const missions = manager(spawnFn);
     const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'FIX-1' }, kind: 'explore' });
@@ -281,8 +282,8 @@ describe('missões do Antigravity', () => {
     const args = calls[0]!.args;
     expect(args[args.indexOf('-p') + 1]).toMatch(/Siga o roteiro \.claude\/skills\/qa\/SKILL\.md[\s\S]*Missão: \/qa FIX-1 --explore/);
     const { allow, deny } = settingsOf(args).permissions;
-    expect(allow).toContain('mcp(novo-qa/run_status)');
-    expect(allow).not.toContain('mcp(novo-qa/act_approved)');
+    expect(allow).toContain('mcp(sanctum/run_status)');
+    expect(allow).not.toContain('mcp(sanctum/act_approved)');
     expect(deny).toEqual(expect.arrayContaining(['run_command', 'open_browser_url', 'browser_subagent']));
     expect(missions.get(m.id)).toMatchObject({ status: 'WAITING', session_id: 'conv-1', last_message: 'Plano pronto. Aprova?' });
   });
@@ -290,40 +291,40 @@ describe('missões do Antigravity', () => {
   it('ação de risco negada vira pedido no painel; permitida, continua com a regra e vale uma vez', async () => {
     const { consumeGrant } = await import('../src/live/prompts.ts');
     const { spawnFn, calls } = fakeSpawn((n) => ({ lines: n === 1
-      ? [agyInit, denied('mcp(novo-qa/act_approved)', { ServerName: 'novo-qa', ToolName: 'act_approved', Arguments: { action: 'click', target: { name: 'Remover' }, justification: 'CT-007' } }), result()]
+      ? [agyInit, denied('mcp(sanctum/act_approved)', { ServerName: 'sanctum', ToolName: 'act_approved', Arguments: { action: 'click', target: { name: 'Remover' }, justification: 'CT-007' } }), result()]
       : [agyInit, result('Removido.')] }));
     const missions = manager(spawnFn);
     const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'FIX-2' }, kind: 'qa' });
     missions.poll();
     expect(missions.get(m.id).status).toBe('WAITING');
     const [p] = pendingPrompts(db);
-    expect(p).toMatchObject({ tool: 'mcp(novo-qa/act_approved)', summary: 'Ação de risco: click em "Remover" — CT-007' });
+    expect(p).toMatchObject({ tool: 'mcp(sanctum/act_approved)', summary: 'Ação de risco: click em "Remover" — CT-007' });
 
     answerPrompt(db, p!.id, 'allow', undefined);
     missions.poll();
     const args = calls[1]!.args;
     expect(args[args.indexOf('--conversation') + 1]).toBe('conv-1');
-    expect(settingsOf(args).permissions.allow).toContain('mcp(novo-qa/act_approved)');
-    expect(args[args.indexOf('-p') + 1]).toMatch(/O usuário permitiu pelo painel: mcp\(novo-qa\/act_approved\)/);
+    expect(settingsOf(args).permissions.allow).toContain('mcp(sanctum/act_approved)');
+    expect(args[args.indexOf('-p') + 1]).toMatch(/O usuário permitiu pelo painel: mcp\(sanctum\/act_approved\)/);
     expect(consumeGrant(db, m.id, 'act_approved')).toBe(true);
     expect(consumeGrant(db, m.id, 'act_approved')).toBe(false);
     missions.poll();
     expect(missions.get(m.id).last_message).toBe('Removido.');
   });
 
-  it('ação proibida pelo NOVO QA não vira pedido: segue com o aviso e, se insistir, chama o usuário', () => {
+  it('ação proibida pelo Sanctum não vira pedido: segue com o aviso e, se insistir, chama o usuário', () => {
     const { spawnFn, calls } = fakeSpawn(() => ({ lines: [agyInit, denied('run_command(node teste.js)', { CommandLine: 'node teste.js' }), result()] }));
     const missions = manager(spawnFn);
     const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'FIX-3' }, kind: 'qa' });
     for (let i = 0; i < 4; i++) missions.poll();
     expect(pendingPrompts(db)).toEqual([]);
     expect(calls).toHaveLength(3);
-    expect(calls[1]!.args[calls[1]!.args.indexOf('-p') + 1]).toMatch(/O NOVO QA proíbe: run_command/);
+    expect(calls[1]!.args[calls[1]!.args.indexOf('-p') + 1]).toMatch(/O Sanctum proíbe: run_command/);
     expect(missions.get(m.id)).toMatchObject({ status: 'WAITING' });
     expect(missions.get(m.id).last_message).toMatch(/insistiu em ações proibidas/);
   });
 
-  it('liga ao run do Antigravity pelo alvo e cliente; o novo-qa exige a concessão do painel no plan_approve', async () => {
+  it('liga ao run do Antigravity pelo alvo e cliente; o sanctum exige a concessão do painel no plan_approve', async () => {
     const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
     const { InMemoryTransport } = await import('@modelcontextprotocol/sdk/inMemory.js');
     const { createServer } = await import('../src/mcp/server.ts');
@@ -343,7 +344,7 @@ describe('missões do Antigravity', () => {
       return { error: r.isError === true, text: r.content[0]!.text };
     };
     const start = JSON.parse((await call('run_start', { issueKey: 'FIX-8', env: 'fixture-local', mode: 'manual' })).text) as { runId: string };
-    await call('plan_save', { runId: start.runId, scenarios: [{ code: 'CT-001', title: 'Login válido', priority: 'P2', risk: 'LOW', types: ['functional'], steps: ['logar'], expected: 'dashboard' }] });
+    await call('plan_save', { runId: start.runId, scenarios: [{ code: 'CT-001', title: 'Login válido', priority: 'P2', risk: 'LOW', types: ['functional'], preconditions: 'admin cadastrado, sem sessão', steps: ['logar'], expected: 'dashboard visível após o login' }] });
     missions.poll();
     expect(missions.get(m.id).run_id).toBe(start.runId);
 
@@ -392,10 +393,10 @@ describe('gerenciar missões e runs no painel', () => {
   });
 });
 
-describe('escrita no Jira pelo novo-qa', () => {
+describe('escrita no Jira pelo sanctum', () => {
   // Nunca chama a twg real nos testes: sem binário, a ferramenta para antes de falar com o Jira.
   const saved = { twg: process.env.TWG_BIN, local: process.env.LOCALAPPDATA };
-  beforeEach(() => { process.env.TWG_BIN = join(tmpdir(), 'nao-existe-twg.exe'); process.env.LOCALAPPDATA = mkdtempSync(join(tmpdir(), 'novo-qa-la-')); });
+  beforeEach(() => { process.env.TWG_BIN = join(tmpdir(), 'nao-existe-twg.exe'); process.env.LOCALAPPDATA = mkdtempSync(join(tmpdir(), 'sanctum-la-')); });
   afterEach(() => { process.env.TWG_BIN = saved.twg; process.env.LOCALAPPDATA = saved.local; });
 
   async function client(name: string) {
@@ -428,11 +429,11 @@ describe('escrita no Jira pelo novo-qa', () => {
   });
 
   it('o pedido no painel diz o que vai ser criado', () => {
-    expect(describeTool('mcp__novo-qa__jira_create_issue', subBug)).toBe('Criar Sub-bug no Jira em GURUJA-9038: "[Arquivo] Contador soma pendentes"');
+    expect(describeTool('mcp__sanctum__jira_create_issue', subBug)).toBe('Criar Sub-bug no Jira em GURUJA-9038: "[Arquivo] Contador soma pendentes"');
     expect(ALLOWED_TOOLS.some((t) => /jira_|atlassian__create|atlassian__edit|atlassian__add/.test(t))).toBe(false);
   });
 
-  it('concluir e parar atualizam também o status do run correspondente no banco', () => {
+  it('concluir a missão com o run ainda aberto aborta o run pelo core (nunca COMPLETED por fora do run_complete)', () => {
     const { spawnFn } = fakeSpawn(() => ({ lines: [] }));
     const missions = manager(spawnFn, { isAlive: () => false });
     const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'GURUJA-9999' }, kind: 'qa' });
@@ -442,8 +443,11 @@ describe('escrita no Jira pelo novo-qa', () => {
 
     missions.complete(m.id);
     expect(missions.get(m.id).status).toBe('DONE');
-    const runRow = db.prepare('SELECT status, ended_at FROM runs WHERE id = ?').get(runId) as { status: string; ended_at: string };
-    expect(runRow.status).toBe('COMPLETED');
+    const runRow = db.prepare('SELECT status, ended_at, summary, recommendation FROM runs WHERE id = ?').get(runId) as { status: string; ended_at: string; summary: string; recommendation: string | null };
+    expect(runRow.status).toBe('ABORTED');
+    expect(runRow.recommendation).toBeNull();
+    expect(runRow.summary).toMatch(/concluída pelo usuário/);
     expect(runRow.ended_at).toBeTruthy();
+    expect(db.prepare(`SELECT 1 FROM events WHERE run_id = ? AND type = 'run.abort'`).get(runId)).toBeTruthy();
   });
 });

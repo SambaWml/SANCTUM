@@ -4,7 +4,7 @@ import { join } from 'node:path';
 /**
  * Endereço da Central de Caça. O painel aprova os pedidos do agente; se o navegador do teste
  * abrisse o painel, o agente poderia aprovar a si mesmo. O painel grava a porta em uso e o
- * navegador do NOVO QA recusa qualquer endereço local nessa porta.
+ * navegador do Sanctum recusa qualquer endereço local nessa porta.
  */
 export const DEFAULT_LIVE_PORT = 4777;
 const portFile = (rootDir: string) => join(rootDir, 'data', 'live-port.txt');

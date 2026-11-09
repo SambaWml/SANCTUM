@@ -3,7 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import type { AddressInfo } from 'node:net';
 
 /**
- * App local mínimo para testar as ferramentas do NOVO QA sem tocar sistema real.
+ * App local mínimo para testar as ferramentas do Sanctum sem tocar sistema real.
  * Tem login, lista com busca, criação (com falha proposital), exclusão com confirm()
  * e uma página que gera erro de console.
  */

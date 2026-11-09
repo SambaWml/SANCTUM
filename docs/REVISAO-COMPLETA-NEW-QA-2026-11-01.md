@@ -67,7 +67,7 @@ Gravidade nesta análise: **alta** = pode gerar aprovação indevida, escrita n�
 ### F05 — Override de URL pode contrariar a proteção de produção da automação
 
 - **Local:** `src/automation/scaffold.ts:39–49`.
-- **Causa:** a proteção verifica `env.type`, mas `baseURL()` aceita `NOVO_QA_BASE_URL` livre depois dessa decisão.
+- **Causa:** a proteção verifica `env.type`, mas `baseURL()` aceita `SANCTUM_BASE_URL` livre depois dessa decisão.
 - **Evidência:** inspeção estática do código gerado. O override é propagado do ambiente do processo pelo runner.
 - **Impacto:** uma seleção de ambiente dev pode executar a suíte contra outra origem, inclusive uma origem de produção, se o override for definido incorretamente.
 - **Correção:** validar origem final contra ambiente/allowlist; override apenas de teste controlado pelo servidor ou restrito a fixture local. Considerar ainda URLs absolutas nos testes, que não usam baseURL.

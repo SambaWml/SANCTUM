@@ -25,7 +25,7 @@ let runId: string;
 
 beforeAll(async () => {
   fixture = await startFixtureServer({ password: PASSWORD });
-  root = mkdtempSync(join(tmpdir(), 'novo-qa-browser-'));
+  root = mkdtempSync(join(tmpdir(), 'sanctum-browser-'));
   const config = loadConfig(join(import.meta.dirname, '..'));
   config.environments['fixture-local']!.baseUrl = fixture.url;
   const secrets = SecretStore.fromConfig(config, { FIXTURE_ADMIN_PASSWORD: PASSWORD });
@@ -70,11 +70,11 @@ async function ok(name: string, args: Record<string, unknown> = {}) {
 }
 
 const plan = [
-  { code: 'CT-001', title: 'Login com admin', priority: 'P0', risk: 'HIGH', types: ['functional'], steps: ['logar'], expected: 'lista de alunos' },
-  { code: 'CT-002', title: 'Cadastrar aluno', priority: 'P0', risk: 'HIGH', types: ['functional'], steps: ['cadastrar'], expected: 'aluno na lista após reload' },
-  { code: 'CT-003', title: 'Erro ao salvar', priority: 'P1', risk: 'MEDIUM', types: ['negative'], steps: ['salvar "erro"'], expected: 'mensagem de erro amigável' },
-  { code: 'CT-004', title: 'Exclusão exige aprovação', priority: 'P1', risk: 'MEDIUM', types: ['functional'], steps: ['excluir sem e com aprovação'], expected: 'só exclui com aprovação' },
-  { code: 'CT-005', title: 'Relatórios sem erros', priority: 'P2', risk: 'LOW', types: ['smoke'], steps: ['abrir relatórios'], expected: 'sem erro de console' },
+  { code: 'CT-001', title: 'Login com admin', priority: 'P0', risk: 'HIGH', types: ['functional'], preconditions: 'admin cadastrado, sem sessão', steps: ['logar'], expected: 'lista de alunos visível após o login' },
+  { code: 'CT-002', title: 'Cadastrar aluno', priority: 'P0', risk: 'HIGH', types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['cadastrar'], expected: 'aluno na lista após reload' },
+  { code: 'CT-003', title: 'Erro ao salvar', priority: 'P1', risk: 'MEDIUM', types: ['negative'], preconditions: 'admin logado no app de teste', steps: ['salvar "erro"'], expected: 'mensagem de erro amigável' },
+  { code: 'CT-004', title: 'Exclusão exige aprovação', priority: 'P1', risk: 'MEDIUM', types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['excluir sem e com aprovação'], expected: 'só exclui com aprovação' },
+  { code: 'CT-005', title: 'Relatórios sem erros', priority: 'P2', risk: 'LOW', types: ['smoke'], preconditions: 'admin logado no app de teste', steps: ['abrir relatórios'], expected: 'sem erro de console' },
 ];
 
 describe('ferramentas de navegador (ponta a ponta no app fixture)', () => {
@@ -151,7 +151,7 @@ describe('ferramentas de navegador (ponta a ponta no app fixture)', () => {
     expect(await ok('scenario_complete', { runId, code: 'CT-002', status: 'PASSED' })).toMatchObject({ confidence: 'HIGH' });
   }, 60_000);
 
-  it('CT-003: falha gera evidência; PRODUCT_BUG só depois de investigar; trace sanitizado', async () => {
+  it('CT-003: falha gera evidência; PRODUCT_BUG só depois de reproduzir; trace sanitizado', async () => {
     await ok('scenario_start', { runId, code: 'CT-003' });
     await ok('act', { action: 'click', target: { role: 'button', name: 'Novo aluno' } });
     // Segredo digitado dentro de um cenário que vai falhar: o trace.zip guardado não pode contê-lo.
@@ -166,12 +166,18 @@ describe('ferramentas de navegador (ponta a ponta no app fixture)', () => {
     expect(existsSync(join(root, check.evidence))).toBe(true);
 
     const premature = await call('scenario_complete', { runId, code: 'CT-003', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'API 500' });
-    expect(premature.text).toMatch(/PRODUCT_BUG exige investigação/);
+    expect(premature.text).toMatch(/PRODUCT_BUG exige reprodução/);
 
     const errors = await ok('console', { errorsOnly: true });
     expect(errors.messages.some((m: string) => /falha ao salvar aluno/.test(m))).toBe(true);
+    // Visto uma vez e investigado ainda não é bug: precisa reproduzir (mesma verificação, falha de novo).
+    const stillOnce = await call('scenario_complete', { runId, code: 'CT-003', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'API 500' });
+    expect(stillOnce.text).toMatch(/PRODUCT_BUG exige reprodução/);
+    await ok('act', { action: 'click', target: { role: 'button', name: 'Salvar' } });
+    const again = await ok('verify', { kind: 'network', description: 'aluno criado', method: 'POST', urlContains: '/api/students', status: '201', timeoutMs: 500 });
+    expect(again.passed).toBe(false);
     const failed = await ok('scenario_complete', { runId, code: 'CT-003', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'POST /api/students devolve 500 com nome "erro"' });
-    expect(failed).toMatchObject({ status: 'FAILED', confidence: 'MEDIUM' });
+    expect(failed).toMatchObject({ status: 'FAILED', confidence: 'HIGH' });
 
     const trace = join(root, 'runs', 'FIX-10', runId, 'evidence', 'CT-003-trace.zip');
     expect(existsSync(trace)).toBe(true);
@@ -221,14 +227,14 @@ describe('ferramentas de navegador (ponta a ponta no app fixture)', () => {
   }, 60_000);
 
   it('conclusão exige limpeza verificada e grava execution knowledge validado', async () => {
-    expect((await call('run_complete', { runId, recommendation: 'REPROVADO', summary: 'tentativa' })).text).toMatch(/UNREGISTERED/);
+    expect((await call('run_complete', { runId, recommendation: 'REPROVADO', summary: 'tentativa', noExplorationReason: 'teste da ferramenta, sem exploração' })).text).toMatch(/UNREGISTERED/);
     await ok('data_register', {
       runId, id: 1,
       cleanup: { method: 'manual', note: 'excluído pela UI no CT-004 (act_approved)', verify: { path: '/api/students', absentText: 'Carla Dias' } },
     });
     expect((await ok('cleanup_run', { runId })).results[0].status).toBe('VERIFIED');
 
-    const done = await ok('run_complete', { runId, recommendation: 'REPROVADO', summary: '1 bug confirmado' });
+    const done = await ok('run_complete', { runId, recommendation: 'REPROVADO', summary: '1 bug confirmado', noExplorationReason: 'teste da ferramenta, sem exploração' });
     expect(done.executionKnowledge.entries).toBeGreaterThan(0);
     const entries = JSON.parse(readFileSync(join(root, done.executionKnowledge.path), 'utf8')) as { playwright: string; scenario: string; valueType?: string }[];
     const lines = entries.map((e) => e.playwright);

@@ -61,7 +61,7 @@ describe('página da Central de Caça', () => {
       ...buildLiveState(db, { rootDir: '/x' }),
       usage: { agents: [{ agent: 'claude', available: true, fiveHour: { usedPct: 40, resetsAt: new Date(Date.now() + 3600_000).toISOString(), renewedAt: null, spent: 1000, cacheRead: 10, calls: 2 }, sevenDay: { usedPct: null, resetsAt: null, renewedAt: null, spent: 0, cacheRead: 0, calls: 0 }, limitsUpdatedAt: null }] },
       missions: [{ id: 'M-1', agent: 'antigravity', target: 'FIX-1', kind: 'qa', objective: null, status: 'WAITING', session_id: 's', pid: null, last_message: 'Aprova?', error: null, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), log_path: null, run_id: run.id, archived_at: null, runId: run.id, runStatus: 'EXECUTING', activity: [{ ts: new Date().toISOString(), text: '→ run_start' }] }],
-      prompts: [{ id: 1, mission_id: 'M-1', kind: 'permission', tool: 'mcp(novo-qa/jira_create_issue)', summary: 'Criar Sub-bug', input_json: '{"a":1}', status: 'PENDING', decision: null, message: null, created_at: new Date().toISOString(), answered_at: null }],
+      prompts: [{ id: 1, mission_id: 'M-1', kind: 'permission', tool: 'mcp(sanctum/jira_create_issue)', summary: 'Criar Sub-bug', input_json: '{"a":1}', status: 'PENDING', decision: null, message: null, created_at: new Date().toISOString(), answered_at: null }],
     };
     expect(await renderErrors(state)).toEqual([]);
   });

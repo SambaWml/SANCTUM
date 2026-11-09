@@ -69,15 +69,20 @@ describe('FAILED', () => {
     expect(p).toMatch(/classificação/);
   });
 
-  it('PRODUCT_BUG sem investigação é rejeitado', () => {
-    const r = evaluateCompletion({ status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' }, facts(failing));
-    expect(problems(r)).toMatch(/PRODUCT_BUG exige investigação/);
+  it('PRODUCT_BUG visto uma vez é rejeitado, mesmo investigado (só é bug o que reproduz)', () => {
+    const once = evaluateCompletion({ status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' }, facts(failing));
+    expect(problems(once)).toMatch(/PRODUCT_BUG exige reprodução[\s\S]*NEEDS_REVIEW[\s\S]*intermitente X de Y/);
+    const investigatedOnce = evaluateCompletion(
+      { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' },
+      facts({ ...failing, investigation: { network: true, console: true, api: false, reproductions: 0 } }),
+    );
+    expect(investigatedOnce.ok).toBe(false);
   });
 
-  it('PRODUCT_BUG investigado é aceito', () => {
+  it('PRODUCT_BUG reproduzido é aceito', () => {
     const r = evaluateCompletion(
       { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'erro 500' },
-      facts({ ...failing, investigation: { network: true, console: false, api: false, reproductions: 0 } }),
+      facts({ ...failing, investigation: { network: false, console: false, api: false, reproductions: 1 } }),
     );
     expect(r.ok).toBe(true);
   });
@@ -176,6 +181,14 @@ describe('teto da recomendação do run', () => {
 
   it('NEEDS_REVIEW como comportamento esperado e NOT_EXECUTED com motivo não travam', () => {
     expect(recommendationCeiling([pass, s('CT-002', 'P0', 'NEEDS_REVIEW', 'EXPECTED_BEHAVIOR'), s('CT-003', 'P1', 'NOT_EXECUTED')]).ceiling).toBe('APROVADO');
+  });
+
+  it('P0/P1 aprovado com confiança baixa não sustenta APROVADO; em P2/P3 não trava', () => {
+    const low = (code: string, priority: RecommendationFact['priority']): RecommendationFact => ({ ...s(code, priority, 'PASSED'), confidence: 'LOW' });
+    const r = recommendationCeiling([pass, low('CT-002', 'P1')]);
+    expect(r.ceiling).toBe('INCONCLUSIVO');
+    expect(r.reasons.join(' ')).toMatch(/CT-002 \(P1\) PASSED com confiança baixa/);
+    expect(recommendationCeiling([pass, { ...s('CT-003', 'P0', 'PASSED'), confidence: 'MEDIUM' }, low('CT-004', 'P2')]).ceiling).toBe('APROVADO');
   });
 
   it('falhas em P2/P3 não travam (política do execute-and-close)', () => {

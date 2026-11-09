@@ -25,9 +25,9 @@ export function slug(text: string, max = 70): string {
     .replace(/\s+/g, ' ').trim().slice(0, max).trim();
 }
 
-/** ffmpeg: NOVO_QA_FFMPEG, o que vem com o navegador de teste (versão mais nova) ou o do PATH. */
+/** ffmpeg: SANCTUM_FFMPEG, o que vem com o navegador de teste (versão mais nova) ou o do PATH. */
 export function findFfmpeg(): string | null {
-  if (process.env.NOVO_QA_FFMPEG && existsSync(process.env.NOVO_QA_FFMPEG)) return process.env.NOVO_QA_FFMPEG;
+  if (process.env.SANCTUM_FFMPEG && existsSync(process.env.SANCTUM_FFMPEG)) return process.env.SANCTUM_FFMPEG;
   const base = process.env.LOCALAPPDATA ? join(process.env.LOCALAPPDATA, 'ms-playwright') : '';
   if (base && existsSync(base)) {
     const dirs = readdirSync(base).filter((d) => /^ffmpeg-\d+$/.test(d)).sort((a, b) => Number(b.slice(7)) - Number(a.slice(7)));

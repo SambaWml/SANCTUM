@@ -633,8 +633,12 @@ body[data-view="all"] .bottom { display: grid !important; }
 .chip-act.blue:hover {
   background: #182738; border-color: #74b9ff;
 }
-.chip-act.blue:hover {
-  background: #182738; border-color: #74b9ff;
+.chip-act.purple {
+  background: #23122c; color: #d68aff; border-color: #a242f5;
+  box-shadow: inset 1px 1px 0 #e4adff, inset -1px -1px 0 #0e0a07, 0 2px 0 rgba(0,0,0,0.5);
+}
+.chip-act.purple:hover {
+  background: #341844; border-color: #c77dff; transform: translateY(-1px);
 }
 
 /* ── Modal Amplo de Aprovação de Plano (Pixel Box RPG 16-bit) ── */
@@ -659,6 +663,53 @@ body[data-view="all"] .bottom { display: grid !important; }
   background: #181410; border: 3px solid #2e241b;
   box-shadow: inset 2px 2px 0 #5a4430, inset -2px -2px 0 #0e0a07, 0 16px 0 rgba(0, 0, 0, 0.85);
   border-radius: 4px; padding: 24px 28px;
+}
+.done-modal-box {
+  max-width: 880px; width: 94vw; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden;
+  background: #110e14; border: 3px solid #7a4312;
+  box-shadow: inset 2px 2px 0 #ffd166, inset -2px -2px 0 #09070c, 0 16px 0 rgba(0, 0, 0, 0.9), 0 0 35px rgba(246, 189, 65, 0.15);
+  border-radius: 4px; padding: 22px 26px; box-sizing: border-box;
+}
+.done-modal-box.passed {
+  border-color: #00e599;
+  box-shadow: inset 2px 2px 0 #55efc4, inset -2px -2px 0 #09070c, 0 16px 0 rgba(0, 0, 0, 0.9), 0 0 35px rgba(0, 229, 153, 0.18);
+}
+.done-modal-box.failed {
+  border-color: #d9383a;
+  box-shadow: inset 2px 2px 0 #ff6b6b, inset -2px -2px 0 #09070c, 0 16px 0 rgba(0, 0, 0, 0.9), 0 0 35px rgba(217, 56, 58, 0.18);
+}
+.done-status-banner {
+  padding: 10px 14px; border-radius: 4px; font-weight: bold; font-size: 13px; margin: 12px 0 14px 0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.done-status-banner.passed {
+  background: rgba(0, 229, 153, 0.12); border: 1px solid #00e599; color: #55efc4;
+}
+.done-status-banner.failed {
+  background: rgba(217, 56, 58, 0.12); border: 1px solid #d9383a; color: #ff8585;
+}
+.done-sec {
+  background: #151118; border: 1px solid #2b1f33; border-radius: 4px; padding: 12px 14px; margin-bottom: 12px;
+}
+.done-sec-title {
+  font-family: var(--pixel-font, inherit); font-size: 11px; letter-spacing: 0.5px; color: var(--gold, #f6bd41); font-weight: bold;
+}
+.chat-img-previews {
+  flex-direction: column;
+  background: #141018;
+  border: 1px dashed #7a4312;
+  border-radius: 4px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.cip-thumb-wrap:hover {
+  border-color: var(--gold) !important;
+}
+.cip-del-btn:hover {
+  background: #ff4757 !important;
+  transform: scale(1.1);
 }
 
 /* ── Borda de Alerta Pulsante no Viewport (Zero Repaint via GPU Compositor) ── */
@@ -1708,7 +1759,7 @@ body.focus #terminal-mode {
     <div class="brand-text">
       <div class="brand-badge">⚔️ FORTALEZA SAGRADA DE TESTES</div>
       <div class="brand-status">CONCLAVE AUTÔNOMO DE IA · <b id="jar-shield-header-status">SANTUÁRIO ATIVO & BLINDADO</b></div>
-      <div class="brand-sub">CENTRAL DE CAÇA · NOVO QA · <span id="updated">conectando…</span></div>
+      <div class="brand-sub">CENTRAL DE CAÇA · Sanctum · <span id="updated">conectando…</span></div>
     </div>
   </div>
   <div class="header-right">
@@ -1743,7 +1794,7 @@ body.focus #terminal-mode {
         <label>🏰 Masmorra / Alvo (Card Jira ou URL)</label>
         <input id="m-card" placeholder="PROJ-123, link do Jira ou https://sistema" spellcheck="false">
         <label>⚔️ Tipo de Incursão</label>
-        <div class="seg" id="m-type"><span class="on" data-v="qa">⚔️ Teste</span><span data-v="retest">🔁 Reteste</span><span data-v="explore">🕯️ Reconhecimento</span><span data-v="resume">🛡️ Retomar</span></div>
+        <div class="seg" id="m-type"><span class="on" data-v="qa">⚔️ Teste</span><span data-v="retest">🔁 Reteste</span><span data-v="explore">🕯️ Reconhecimento</span><span data-v="resume">🛡️ Retomar</span><span data-v="analyze">🔎 Analisar US</span></div>
         <label>🗡️ Campeão Escolhido</label>
         <div class="seg" id="m-agent"><span class="on" data-v="claude">🗡️ Ladino (Claude)</span><span data-v="antigravity">🔮 Arquimago (Antigravity)</span><span data-v="codex">🛡️ Paladino (Codex)</span></div>
         <label>📜 Diretrizes & Éditos da Incursão</label>
@@ -1912,6 +1963,7 @@ body.focus #terminal-mode {
 <div class="overlay" id="plan-overlay" onclick="closePlanModal(event)"><div class="report plan-modal-box" id="plan-modal"></div></div>
 <div class="overlay" id="prompt-overlay" onclick="closePromptModal(event)"><div class="report action-modal-box" id="prompt-modal"></div></div>
 <div class="overlay" id="dialogue-overlay" onclick="closeDialogueModal(event)"><div class="report dialogue-modal-box" id="dialogue-modal"></div></div>
+<div class="overlay" id="done-overlay" onclick="closeDoneModal(event)"><div class="report done-modal-box" id="done-modal"></div></div>
 <div class="overlay" id="bestiary-overlay" onclick="closeBestiaryModal(event)"><div class="report action-modal-box" id="bestiary-modal" style="max-width: 640px;"></div></div>
 <div class="lightbox" id="lightbox" onclick="closeLightbox(event)">
   <div class="lightbox-box">
@@ -2018,6 +2070,12 @@ function formatChatText(raw) {
   s = s.replace(/^##\s+(.*$)/gim, '<div style="font-weight:700;font-size:15px;color:var(--blue);margin:12px 0 6px">$1</div>');
   s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-family:var(--code);font-size:12px;color:var(--lime)">$1</code>');
+  s = s.replace(/!\[(.*?)\]\((.*?)\)/g, (m, alt, url) => {
+    const clean = String(url || '').trim();
+    const safe = /^(https?:\/\/|\/|\.\/)/i.test(clean) ? clean : '';
+    if (!safe) return '';
+    return `<div class="chat-img-wrap" style="margin:8px 0;display:inline-block;"><a onclick="openLightbox('${safe}', '${alt || 'Anexo visual'}')"><img src="${safe}" alt="${alt}" style="max-width:280px;max-height:180px;border-radius:4px;border:1px solid #7a4312;cursor:pointer;display:block;box-shadow:0 4px 12px rgba(0,0,0,0.6);" /></a><span style="font-size:11px;color:var(--muted);display:block;margin-top:2px;">🖼️ ${alt}</span></div>`;
+  });
   s = s.replace(/\[(.*?)\]\((.*?)\)/g, (m, label, url) => {
     const clean = String(url || '').trim();
     const safe = /^(https?:\/\/|\/|\.\/|#)/i.test(clean) ? clean : '#';
@@ -2150,7 +2208,7 @@ async function toggleAlerts() {
 }
 const toggleDesktopNotifications = toggleAlerts;
 
-function notifyDesktop(title, body, tag = 'novo-qa', onClickAction = null) {
+function notifyDesktop(title, body, tag = 'sanctum', onClickAction = null) {
   if (!alertsEnabled) return;
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   try {
@@ -2189,20 +2247,32 @@ function closeLightbox(e) {
 }
 
 // ── Missões lançadas pelo painel ─────────────────────────────────────
-const TOKEN = '__NOVO_QA_TOKEN__';
+const TOKEN = '__SANCTUM_TOKEN__';
+// Site do Jira desta instalação (SANCTUM_JIRA_URL no .env); sem ele os links ficam inativos.
+const JIRA_BASE = '__SANCTUM_JIRA__';
+const jiraHref = (key) => (JIRA_BASE ? `${JIRA_BASE}/browse/${encodeURIComponent(key)}` : '#');
 const CAN_ACT = TOKEN !== '' && !TOKEN.startsWith('__');
 async function api(path, body) {
-  const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-novo-qa-token': TOKEN }, body: JSON.stringify(body || {}) });
+  const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sanctum-token': TOKEN }, body: JSON.stringify(body || {}) });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.error || `erro ${res.status}`);
   return data;
 }
 const MSTATUS = { RUNNING: ['⚔️', 'EM COMBATE'], WAITING: ['🩸', 'EXIGE DECISÃO'], DONE: ['👑', 'TRIUNFO'], FAILED: ['💀', 'DERROTA'], STOPPED: ['🛑', 'RETIRADA'] };
 const drafts = {};
+const missionImages = typeof window !== 'undefined' ? (window.missionImages = window.missionImages || {}) : {};
 const missionViews = {}; // 'chat' ou 'feed'
 let missionSig = '';
 let openPlanMissionId = null;
 const autoOpenedPlans = new Set();
+let openDoneRunId = null;
+let openDoneMissionId = null;
+let doneModalSig = '';
+const autoOpenedDoneMissions = new Set();
+const seenActiveRuns = new Set();
+const seenActiveMissions = new Set();
+const shownDoneRuns = new Set();
+const cachedRuns = {};
 const MTABS = [['ativas', '⚔️ Em Batalha', ['RUNNING', 'WAITING']], ['pausadas', '🕯️ Quedas & Retiradas', ['STOPPED', 'FAILED']], ['concluidas', '🏆 Triunfos da Ordem', ['DONE']]];
 let mtab = 'ativas';
 function setTab(t) {
@@ -2216,14 +2286,42 @@ function setTab(t) {
   missionSig = '';
   renderMissions();
 }
-function setMissionView(id, view) { missionViews[id] = view; missionSig = ''; renderMissions(); }
+function setMissionView(id, view) {
+  missionViews[id] = view;
+  missionSig = '';
+  renderMissions();
+  if (view === 'chat') {
+    setTimeout(() => {
+      const chat = document.getElementById(`chat-${id}`);
+      if (chat) chat.scrollTop = chat.scrollHeight;
+      const el = document.querySelector(`textarea[data-m="${id}"]`);
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 60);
+  }
+}
+
 function toggleMissionView(id, targetView) {
   const m = S?.missions?.find((x) => x.id === id);
   const def = m?.status === 'DONE' ? 'closed' : 'chat';
   const current = missionViews[id] !== undefined ? missionViews[id] : def;
-  missionViews[id] = current === targetView ? 'closed' : targetView;
+  const next = current === targetView ? 'closed' : targetView;
+  missionViews[id] = next;
   missionSig = '';
   renderMissions();
+  if (next === 'chat') {
+    setTimeout(() => {
+      const chat = document.getElementById(`chat-${id}`);
+      if (chat) chat.scrollTop = chat.scrollHeight;
+      const el = document.querySelector(`textarea[data-m="${id}"]`);
+      if (el) {
+        el.focus();
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 60);
+  }
 }
 
 function setDashboardView(v) {
@@ -2278,12 +2376,12 @@ function renderMissions() {
     const [emoji, label] = MSTATUS[m.status] || ['', m.status];
     const open = m.status === 'RUNNING' || m.status === 'WAITING';
     const paused = m.status === 'STOPPED' || m.status === 'FAILED';
-    const planWaiting = m.runStatus === 'AWAITING_APPROVAL' && m.status === 'WAITING';
+    const run = (m.runId && S.runs.find((r) => r.id === m.runId)) || (m.run_id && S.runs.find((r) => r.id === m.run_id)) || (m.target && S.runs.find((r) => r.card === m.target));
+    const planWaiting = m.runStatus === 'AWAITING_APPROVAL' || run?.status === 'AWAITING_APPROVAL' || (S.pending || []).some((p) => p.kind === 'plan' && (p.runId === m.runId || p.card === m.target));
     if (planWaiting && !autoOpenedPlans.has(m.id)) {
       autoOpenedPlans.add(m.id);
       setTimeout(() => openPlanModal(m.id), 250);
     }
-    const run = m.runId && S.runs.find((r) => r.id === m.runId);
     const defaultView = m.status === 'DONE' ? 'closed' : 'chat';
     const view = missionViews[m.id] !== undefined ? missionViews[m.id] : defaultView;
     let msgs = [...(m.messages || [])];
@@ -2304,7 +2402,7 @@ function renderMissions() {
     }
 
     const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(m.target);
-    const jiraLink = isCard ? `<a href="https://guruja.atlassian.net/browse/${esc(m.target)}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
+    const jiraLink = isCard ? `<a href="${esc(jiraHref(m.target))}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
 
     return `<div class="mission-card ${m.status.toLowerCase()} ${view === 'closed' ? 'closed' : ''}">
       <div class="mhead">
@@ -2317,7 +2415,7 @@ function renderMissions() {
         <span class="mstop">
           ${open ? `<button class="ghost" onclick="stopMission('${esc(m.id)}')">🛑 RETIRADA</button>` : ''}
           ${m.status !== 'DONE' ? `<button class="ghost" onclick="completeMission('${esc(m.id)}')">👑 ENCERRAR</button>` : ''}
-          ${run && m.status === 'DONE' ? `<button onclick="openReport('${esc(m.runId)}')">📜 RELATÓRIO</button>` : ''}
+          ${m.status === 'DONE' ? `<button onclick="openDoneModal('${esc(m.runId || m.run_id || m.target)}', '${esc(m.id)}')">📜 DESPACHO QA</button><button class="chip-act purple" style="padding:4px 8px;font-size:11px" onclick="expandScenarios('${esc(m.target)}', '${esc(m.id)}')" title="Gera novos cenários e reabre no painel">🔮 EXPANDIR</button>${m.runId || m.run_id ? `<button class="ghost" onclick="openReport('${esc(m.runId || m.run_id)}')">RELATÓRIO</button>` : ''}` : ''}
           ${!open ? `<button class="ghost" onclick="archiveMission('${esc(m.id)}')">🗑️ EXPULSAR</button>` : ''}
         </span>
       </div>
@@ -2335,7 +2433,7 @@ function renderMissions() {
                 <span class="chat-badge">${msg.role === 'user' ? '👑 Você (Comandante)' : `${EMOJI[m.agent] || '🗡️'} ${m.agent === 'antigravity' ? 'Arquimago Antigravity' : (m.agent === 'codex' ? 'Paladino Codex' : 'Ladino Claude')}`}</span>
                 <span class="ts">⏱️ ${hhmm(msg.ts)}</span>
               </div>
-              <div class="chat-text">${msg.role === 'agent' ? formatChatText(msg.text) : esc(msg.text)}</div>
+              <div class="chat-text">${formatChatText(msg.text)}</div>
             </div>
           `).join('')}
 
@@ -2360,20 +2458,33 @@ function renderMissions() {
 
         ${m.status === 'DONE' ? `
           <div class="post-done-acts">
-            <span class="pda-label">⚔️ Éditos Pós-Batalha:</span>
-            <button class="chip-act primary" onclick="quickAction('${esc(m.id)}', 'bugs')">🕷️ Forjar Sub-Bugs no Jira</button>
-            ${m.run_id ? `<button class="chip-act blue" onclick="copySummary('${esc(m.run_id)}', this)">📜 Copiar Édito de Guerra</button>` : ''}
-            <button class="chip-act" onclick="quickAction('${esc(m.id)}', 'retest')">🔁 Expurgo de Falhas</button>
-            <button class="chip-act" onclick="focusChatInput('${esc(m.id)}')">📜 Despachar Ordem</button>
+            <span class="pda-label">⚔️ Ações de Conclusão:</span>
+            <button class="chip-act gold" onclick="openDoneModal('${esc(m.run_id || m.runId || m.target)}', '${esc(m.id)}')">📜 Despacho QA (.md)</button>
+            <button class="chip-act purple" onclick="quickAction('${esc(m.id)}', 'expand')" title="Gera novos cenários de borda, concorrência e injeção de falhas baseado no conhecimento acumulado">🔮 Expandir Cenários</button>
+            <button class="chip-act primary" onclick="quickAction('${esc(m.id)}', 'bugs')">🕷️ Criar Sub-Bugs no Jira</button>
+            <button class="chip-act" onclick="quickAction('${esc(m.id)}', 'retest')">🔁 Retestar Falhas</button>
+            <button class="chip-act" onclick="focusChatInput('${esc(m.id)}')">💬 Despachar Ordem</button>
           </div>
         ` : ''}
 
-        <div class="chat-input-row">
-          <textarea data-m="${esc(m.id)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'" onkeydown="handleChatKey(event, '${esc(m.id)}')" placeholder="${paused ? 'Édito para retomar a incursão (ex.: atacar o portal de login)...' : (m.status === 'RUNNING' ? 'Campeão em combate mortal... você pode rascunhar o próximo édito militar aqui' : (m.status === 'DONE' ? 'Expedição triunfante. Ordene abertura de sub-bugs ou despache novas diretrizes...' : 'Despache ordens ao campeão (Enter para enviar, Shift+Enter para linha)...'))}">${esc(drafts[m.id] || '')}</textarea>
-          ${paused ? `<button onclick="resumeMission('${esc(m.id)}')">▶ RETOMAR</button>`
-            : (m.status === 'RUNNING'
-                ? `<button class="ghost working-btn" onclick="replyMission('${esc(m.id)}', false)" title="Aguarde o campeão terminar o turno em andamento">⏳ EM COMBATE...</button>`
-                : `<button class="${planWaiting ? 'ghost' : ''}" onclick="replyMission('${esc(m.id)}', false)">${planWaiting ? '✏️ ENVIAR DIRETRIZ' : '⚔️ DESPACHAR'}</button>`)}
+        <div class="chat-input-row" id="chat-input-row-${esc(m.id)}" style="flex-direction:column;align-items:stretch;">
+          <div class="chat-img-previews" id="chat-img-previews-${esc(m.id)}" style="${(missionImages[m.id] && missionImages[m.id].length) ? 'display:flex;' : 'display:none;'}">
+            ${renderImagePreviewsHtml(m.id)}
+          </div>
+          <div style="display:flex;gap:8px;width:100%;">
+            <textarea data-m="${esc(m.id)}" oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,180)+'px'" onkeydown="handleChatKey(event, '${esc(m.id)}')" onpaste="handleChatPaste(event, '${esc(m.id)}')" ondrop="handleChatDrop(event, '${esc(m.id)}')" ondragover="event.preventDefault()" placeholder="${paused ? 'Édito para retomar a incursão (ex.: atacar o portal de login)...' : (m.status === 'RUNNING' ? 'Campeão em combate mortal... cole prints com Ctrl+V' : (m.status === 'DONE' ? 'Expedição concluída. Digite novas ordens ou clique em 🔮 Expandir Cenários...' : 'Despache ordens ao campeão (Ctrl+V para colar imagens, Enter para enviar)...'))}">${esc(drafts[m.id] || '')}</textarea>
+            ${paused ? `<button onclick="resumeMission('${esc(m.id)}')">▶ RETOMAR</button>`
+              : (m.status === 'RUNNING'
+                  ? `<button class="ghost working-btn" onclick="replyMission('${esc(m.id)}', false)" title="Aguarde o campeão terminar o turno em andamento">⏳ EM COMBATE...</button>`
+                  : `<button class="${planWaiting ? 'ghost' : ''}" onclick="replyMission('${esc(m.id)}', false)">${planWaiting ? '✏️ ENVIAR DIRETRIZ' : (m.status === 'DONE' ? '⚔️ REABRIR & DESPACHAR' : '⚔️ DESPACHAR')}</button>`)}
+          </div>
+          <div class="chat-tools-bar" style="display:flex;align-items:center;justify-content:space-between;margin-top:6px;width:100%;">
+            <label class="chip-act gold" style="cursor:pointer;margin:0;font-size:11px;padding:3px 8px;display:inline-flex;align-items:center;gap:4px;" title="Anexar imagens ou mockups do Figma">
+              <span>🖼️ Anexar Imagens</span>
+              <input type="file" multiple accept="image/*" style="display:none;" onchange="handleChatFileInput(event, '${esc(m.id)}')" />
+            </label>
+            <span style="font-size:11px;color:var(--muted);">Aceita múltiplos prints com <b>Ctrl+V</b> ou arrastar</span>
+          </div>
         </div>
         <div class="merr" id="merr-${esc(m.id)}"></div>
       ` : view === 'feed' ? `
@@ -2431,31 +2542,148 @@ async function resumeRun(card) {
   if (!confirm(`Retomar ${card} com o ${agent === 'antigravity' ? 'Antigravity' : 'Claude'}?`)) return;
   try { await api('/api/missions', { agent, target: card, kind: 'resume' }); setTab('ativas'); tickNow(); } catch (e) { alert(e.message); }
 }
+function handleChatPaste(e, missionId) {
+  const items = (e.clipboardData || e.originalEvent?.clipboardData)?.items;
+  if (!items) return;
+  const files = [];
+  for (let i = 0; i < items.length; i++) {
+    if (items[i].type && items[i].type.indexOf('image') !== -1) {
+      const file = items[i].getAsFile();
+      if (file) files.push(file);
+    }
+  }
+  if (files.length > 0) {
+    e.preventDefault();
+    addImagesToMission(missionId, files);
+  }
+}
+
+function handleChatDrop(e, missionId) {
+  e.preventDefault();
+  const dt = e.dataTransfer;
+  if (!dt || !dt.files || !dt.files.length) return;
+  const files = Array.from(dt.files).filter((f) => f.type && f.type.startsWith('image/'));
+  if (files.length > 0) {
+    addImagesToMission(missionId, files);
+  }
+}
+
+function handleChatFileInput(e, missionId) {
+  const files = Array.from(e.target.files || []).filter((f) => f.type && f.type.startsWith('image/'));
+  if (files.length > 0) {
+    addImagesToMission(missionId, files);
+  }
+  e.target.value = '';
+}
+
+function addImagesToMission(missionId, files) {
+  if (!missionImages[missionId]) missionImages[missionId] = [];
+  let loaded = 0;
+  for (const file of files) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      missionImages[missionId].push({
+        name: file.name || `print-${Date.now()}.png`,
+        dataBase64: ev.target.result,
+        size: file.size
+      });
+      loaded++;
+      if (loaded === files.length) {
+        renderImagePreviews(missionId);
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function removeMissionImage(missionId, idx) {
+  if (missionImages[missionId]) {
+    missionImages[missionId].splice(idx, 1);
+    renderImagePreviews(missionId);
+  }
+}
+
+function clearMissionImages(missionId) {
+  delete missionImages[missionId];
+  renderImagePreviews(missionId);
+}
+
+function renderImagePreviewsHtml(missionId) {
+  const list = missionImages[missionId] || [];
+  if (!list.length) return '';
+  return `
+    <div class="cip-header" style="width:100%;font-size:11px;color:var(--gold-bright);font-weight:bold;margin-bottom:6px;display:flex;justify-content:space-between;">
+      <span>🖼️ ANEXOS VISUAIS (${list.length} imagem${list.length > 1 ? 'ns' : ''}):</span>
+      <span style="color:var(--muted);cursor:pointer;" onclick="clearMissionImages('${missionId}')">Limpar todas</span>
+    </div>
+    <div class="cip-list" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+      ${list.map((img, idx) => `
+        <div class="cip-thumb-wrap" style="position:relative;background:#09070c;border:1px solid #3a2e22;border-radius:4px;padding:4px;display:flex;flex-direction:column;align-items:center;width:100px;">
+          <img src="${img.dataBase64}" style="width:92px;height:64px;object-fit:cover;border-radius:2px;cursor:pointer;" onclick="openLightbox('${img.dataBase64}', '${esc(img.name)}')" title="Clique para expandir" />
+          <span style="font-size:10px;color:var(--fg);margin-top:4px;max-width:92px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(img.name)}">${esc(img.name)}</span>
+          <button class="ghost cip-del-btn" style="position:absolute;top:-6px;right:-6px;background:var(--ruby);color:#fff;border-radius:50%;width:18px;height:18px;padding:0;font-size:11px;line-height:16px;border:none;cursor:pointer;font-weight:bold;" onclick="removeMissionImage('${missionId}', ${idx})" title="Remover anexo">✕</button>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function renderImagePreviews(missionId) {
+  const container = document.getElementById(`chat-img-previews-${missionId}`);
+  if (!container) return;
+  const list = missionImages[missionId] || [];
+  if (!list.length) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+  } else {
+    container.style.display = 'flex';
+    container.innerHTML = renderImagePreviewsHtml(missionId);
+  }
+}
+
+if (typeof window !== 'undefined') {
+  window.renderImagePreviews = renderImagePreviews;
+  window.renderImagePreviewsHtml = renderImagePreviewsHtml;
+  window.addImagesToMission = addImagesToMission;
+  window.removeMissionImage = removeMissionImage;
+  window.clearMissionImages = clearMissionImages;
+}
+
 async function replyMission(id, approvePlan, explicitText) {
   const area = document.querySelector(`textarea[data-m="${id}"]`);
   const text = (explicitText !== undefined ? explicitText : (area ? area.value : '')).trim();
+  const images = (missionImages[id] || []).slice();
   const err = document.getElementById(`merr-${id}`);
   if (err) { err.textContent = ''; err.classList.remove('on'); }
 
-  if (!approvePlan && !text) {
-    if (err) { err.textContent = 'Escreva sua mensagem ou instrução antes de enviar.'; err.classList.add('on'); }
+  if (!approvePlan && !text && !images.length) {
+    if (err) { err.textContent = 'Escreva sua mensagem ou anexe imagens antes de enviar.'; err.classList.add('on'); }
     return;
   }
 
-  // 1. Limpa imediatamente o textarea e o rascunho
+  // 1. Limpa imediatamente o textarea, rascunho e fila de imagens
   if (area) {
     area.value = '';
     area.style.height = 'auto';
   }
   drafts[id] = '';
+  delete missionImages[id];
+  renderImagePreviews(id);
 
   // 2. Insere a bolha do usuário imediatamente na tela para feedback instantâneo
   const chatBox = document.getElementById(`chat-${id}`);
-  if (chatBox && text) {
+  if (chatBox && (text || images.length)) {
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble user';
     const nowStr = new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-    bubble.innerHTML = `<div class="chat-meta"><span class="chat-badge">👑 Você (Comandante)</span><span class="ts">⏱️ ${nowStr}</span></div><div class="chat-text">${esc(text)}</div>`;
+    let previewHtml = '';
+    if (images.length) {
+      previewHtml = `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">` +
+        images.map(img => `<img src="${img.dataBase64}" style="width:72px;height:52px;object-fit:cover;border-radius:3px;border:1px solid #7a4312;" />`).join('') +
+        `</div>`;
+    }
+    const userLabel = text || `Envio de ${images.length} imagem(ns) de referência / Figma`;
+    bubble.innerHTML = `<div class="chat-meta"><span class="chat-badge">👑 Você (Comandante)</span><span class="ts">⏱️ ${nowStr}</span></div><div class="chat-text">${esc(userLabel)}${previewHtml}</div>`;
     const thinking = chatBox.querySelector('.chat-bubble.agent.thinking');
     if (thinking) chatBox.insertBefore(bubble, thinking);
     else chatBox.appendChild(bubble);
@@ -2468,7 +2696,7 @@ async function replyMission(id, approvePlan, explicitText) {
 
   // 3. Dispara chamada à API
   try {
-    await api(`/api/missions/${id}/reply`, { text, approvePlan });
+    await api(`/api/missions/${id}/reply`, { text, approvePlan, images });
     missionSig = '';
     tickNow();
   } catch (e) {
@@ -2480,6 +2708,10 @@ async function replyMission(id, approvePlan, explicitText) {
     if (area && text && explicitText === undefined) {
       area.value = text;
       drafts[id] = text;
+    }
+    if (images.length) {
+      missionImages[id] = images;
+      renderImagePreviews(id);
     }
     if (document.body.classList.contains('focus')) {
       appendTermSystemLine(`[ERRO] ${e.message}`);
@@ -2572,7 +2804,7 @@ function renderTerminal() {
   }
 
   const currentMission = agentMissions.find((m) => m.id === selectedTermMissionId);
-  const targetName = currentMission ? currentMission.target : 'novo-qa';
+  const targetName = currentMission ? currentMission.target : 'sanctum';
 
   const prefixEl = document.getElementById('term-prompt-prefix');
   if (prefixEl) {
@@ -2613,7 +2845,7 @@ function renderTerminal() {
       <div class="term-meta"><span class="term-author">fortaleza:~$</span></div>
       <div class="term-text">Nenhuma expedição ativa para <b>${AGENT_TITLE[termAgent] || termAgent}</b> no momento.
 Para despachar o campeão diretamente pelo grimório, digite:
-  <b>qa CARD-123</b>  (exemplo: qa GURUJA-9039)
+  <b>qa CARD-123</b>  (exemplo: qa PROJ-123)
 Ou alterne de campeão acima. Digite <b>/ajuda</b> para mais ordens.</div>
     </div>`;
     feed.innerHTML = html;
@@ -2702,7 +2934,7 @@ async function submitTermInput() {
   /retest      - Inicia o ritual de expurgo de falhas da expedição
   /concluir    - Concede o selo de vitória e encerra a expedição com glória
   /limpar      - Purifica os registros visíveis do terminal (atalho: Ctrl + L)
-  qa CARD-123  - Despacha o campeão para uma nova masmorra (ex.: qa GURUJA-9039)
+  qa CARD-123  - Despacha o campeão para uma nova masmorra (ex.: qa PROJ-123)
   /ajuda       - Exibe este guia de éditos`);
     return;
   }
@@ -2883,11 +3115,20 @@ async function createSingleBugInJira(card, code, title) {
 }
 
 function focusChatInput(id) {
-  const el = document.querySelector(`textarea[data-m="${id}"]`);
-  if (el) {
-    el.focus();
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (missionViews[id] !== 'chat') {
+    missionViews[id] = 'chat';
+    missionSig = '';
+    renderMissions();
   }
+  setTimeout(() => {
+    const chat = document.getElementById(`chat-${id}`);
+    if (chat) chat.scrollTop = chat.scrollHeight;
+    const el = document.querySelector(`textarea[data-m="${id}"]`);
+    if (el) {
+      el.focus();
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, 60);
 }
 
 function quickAction(id, action) {
@@ -2899,6 +3140,13 @@ function quickAction(id, action) {
   } else if (action === 'retest') {
     area.value = 'Por favor, execute o reteste dos cenários que falharam.';
     replyMission(id, false);
+  } else if (action === 'expand') {
+    const m = S && S.missions && S.missions.find((x) => x.id === id);
+    const card = m ? m.target : 'o card';
+    const text = `Com base nos cenários já validados no card ${card} e no Execution Knowledge acumulado em knowledge/: reabra a investigação com foco exploratório. Aplique os tours de ataque (borda extrema, concorrência, injeção de falhas com network_simulate, permissões e responsividade mobile), crie os novos cenários complementares com scenario_add e execute as verificações.`;
+    setTab('ativas');
+    area.value = text;
+    replyMission(id, false, text);
   }
 }
 
@@ -2940,7 +3188,9 @@ function renderPlanModal(force = false) {
   const m = S.missions && S.missions.find((x) => x.id === openPlanMissionId);
   if (!m) return closePlanModal();
 
-  const r = m.run_id ? S.runs.find((x) => x.id === m.run_id) : (m.runId ? S.runs.find((x) => x.id === m.runId) : null);
+  const r = (m.run_id && S.runs.find((x) => x.id === m.run_id))
+    || (m.runId && S.runs.find((x) => x.id === m.runId))
+    || (m.target && S.runs.find((x) => x.card === m.target));
   
   let planText = '';
   const agentMsgs = (m.messages || []).filter((msg) => msg.role === 'agent');
@@ -2970,6 +3220,17 @@ function renderPlanModal(force = false) {
     </div>
 
     <div class="plan-modal-scroll">
+      ${(() => {
+        // Cobertura dos critérios do card: o que precisa ser visto antes de aprovar.
+        const cov = (S.pending || []).find((p) => p.kind === 'plan' && r && p.runId === r.id);
+        if (!cov || !cov.uncovered) return '';
+        return cov.uncovered.length
+          ? `<div style="margin-bottom:14px; padding:10px 12px; border:2px solid var(--red); border-radius:4px; background:rgba(255,83,112,.12);">
+              <b style="color:var(--red);">⚠️ ${cov.uncovered.length} critério(s) do card sem nenhum cenário</b>
+              <ul style="margin:6px 0 0 18px; padding:0; font-size:12.5px;">${cov.uncovered.map((u) => `<li>${esc(u)}</li>`).join('')}</ul>
+            </div>`
+          : `<div style="margin-bottom:14px; color:var(--lime); font-size:12.5px; font-weight:700;">✔ Todos os critérios do card têm ao menos um cenário</div>`;
+      })()}
       ${scenarios.length ? `
         <div style="margin-bottom: 16px;">
           <h4 style="margin: 0 0 10px; font-family: var(--title-font); font-size: 14px; color: var(--gold-bright);">🏰 Câmaras & Provacões Mapeadas (${scenarios.length})</h4>
@@ -3216,8 +3477,25 @@ function renderDialogueModal(force = false) {
 
 function checkAutoModals() {
   if (!S) return;
+
+  // Rastreia runs e missões ativos neste ciclo
+  for (const r of (S.runs || [])) {
+    if (['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status)) {
+      seenActiveRuns.add(r.id);
+      if (r.card) seenActiveRuns.add(r.card);
+    }
+  }
+  for (const m of (S.missions || [])) {
+    if (['RUNNING', 'WAITING'].includes(m.status)) {
+      seenActiveMissions.add(m.id);
+    }
+  }
+
   // 1. Prioridade máxima: Plano de testes para aprovar
-  const waitingPlan = (S.missions || []).find((m) => m.runStatus === 'AWAITING_APPROVAL' && m.status === 'WAITING');
+  const waitingPlan = (S.missions || []).find((m) => {
+    const r = (m.runId && S.runs?.find(x => x.id === m.runId)) || (m.run_id && S.runs?.find(x => x.id === m.run_id)) || (m.target && S.runs?.find(x => x.card === m.target));
+    return m.runStatus === 'AWAITING_APPROVAL' || r?.status === 'AWAITING_APPROVAL' || (S.pending || []).some(p => p.kind === 'plan' && (p.runId === m.runId || p.runId === m.run_id || p.card === m.target));
+  });
   if (waitingPlan && !autoOpenedPlans.has(waitingPlan.id)) {
     autoOpenedPlans.add(waitingPlan.id);
     setTimeout(() => openPlanModal(waitingPlan.id), 250);
@@ -3245,6 +3523,338 @@ function checkAutoModals() {
       return;
     }
   }
+
+  // 4. Conclusão de contrato:
+  // Dispara quando:
+  // (a) Um run que estava ativo (em execução) terminou em COMPLETED
+  // (b) Ou terminou há menos de 45 segundos (mesmo se o usuário recarregou com Ctrl+R)
+  // (c) Ou a missão passou para DONE e estava sendo monitorada ativa
+  if (!openDoneRunId) {
+    const now = Date.now();
+    for (const r of (S.runs || [])) {
+      if (r.status === 'COMPLETED' && !shownDoneRuns.has(r.id)) {
+        const endedMs = r.endedAt ? Date.parse(r.endedAt) : 0;
+        const isVeryFresh = endedMs > 0 && (now - endedMs < 45000);
+        const wasActive = seenActiveRuns.has(r.id) || (r.card && seenActiveRuns.has(r.card));
+
+        if (wasActive || isVeryFresh) {
+          shownDoneRuns.add(r.id);
+          seenActiveRuns.delete(r.id);
+          if (r.card) seenActiveRuns.delete(r.card);
+          closePlanModal(null);
+          closeDialogueModal(null);
+          const m = (S.missions || []).find((x) => x.runId === r.id || x.run_id === r.id || x.target === r.card || (r.card && r.card.includes(x.target)));
+          setTimeout(() => openDoneModal(r.id, m ? m.id : null), 250);
+          return;
+        }
+      }
+    }
+
+    for (const m of (S.missions || [])) {
+      if (m.status === 'DONE' && !shownDoneRuns.has(`m_${m.id}`)) {
+        if (seenActiveMissions.has(m.id)) {
+          shownDoneRuns.add(`m_${m.id}`);
+          seenActiveMissions.delete(m.id);
+          closePlanModal(null);
+          closeDialogueModal(null);
+          setTimeout(() => openDoneModal(m.runId || m.run_id || m.target, m.id), 250);
+          return;
+        }
+      }
+    }
+  }
+}
+
+function buildJiraCommentBdd(r) {
+  if (!r) return '';
+  const scenarios = r.scenarios || [];
+  const total = scenarios.length;
+  const passed = scenarios.filter((s) => s.status === 'PASSED').length;
+  const failed = scenarios.filter((s) => s.status === 'FAILED').length;
+  const isApproved = failed === 0 && total > 0;
+  const passPct = total > 0 ? Math.round((passed / total) * 100) : 0;
+  const card = r.card || 'DEMANDA';
+  const env = r.env || '—';
+
+  const header = isApproved
+    ? `QA APROVADO — ${card} (${env})`
+    : `QA REPROVADO — ${card} (${env})`;
+
+  const intro = isApproved
+    ? `Todos os cenários foram executados e aprovados (${passPct}% PASS — ${passed}/${total} no ciclo final de validação, totalizando aprovação de todos os comportamentos e regras da demanda).`
+    : `Foram identificadas inconsistências impeditivas durante a execução dos testes (${failed} falha(s) em ${total} cenários avaliados).`;
+
+  const bddBlocks = scenarios.map((s) => {
+    const statusLabel = s.status === 'PASSED' ? '[APROVADO]' : (s.status === 'FAILED' ? '[REPROVADO]' : `[${s.status}]`);
+    const lines = [`• ${s.code} — ${s.title} ${statusLabel}`];
+
+    if (s.preconditions && s.preconditions.trim()) {
+      const prec = s.preconditions.trim();
+      const dadoText = /^dado\b/i.test(prec) ? prec : `Dado ${prec}`;
+      lines.push(`  ${dadoText}`);
+    } else {
+      lines.push(`  Dado que o usuário acessa o fluxo da funcionalidade`);
+    }
+
+    if (Array.isArray(s.steps) && s.steps.length > 0) {
+      const stepStr = s.steps.join(', ');
+      const quandoText = /^quando\b/i.test(stepStr) ? stepStr : `Quando ${stepStr}`;
+      lines.push(`  ${quandoText}`);
+    } else {
+      lines.push(`  Quando a ação prevista no critério de aceite é executada`);
+    }
+
+    if (s.expected && s.expected.trim()) {
+      const exp = s.expected.trim();
+      const entaoText = /^ent(ã|a)o\b/i.test(exp) ? exp : `Então ${exp}`;
+      lines.push(`  ${entaoText}`);
+    }
+
+    if (s.status === 'FAILED') {
+      const obs = s.observed || (r.summaries && r.summaries.find((x) => x.code === s.code)?.text) || 'Comportamento divergente verificado';
+      lines.push(`  Comportamento observado: ${obs}`);
+    }
+
+    return lines.join('\n');
+  }).join('\n\n');
+
+  const lines = [
+    header,
+    '',
+    intro,
+    '',
+    'Casos de Teste Executados (BDD):',
+    '',
+    bddBlocks || '• Nenhum cenário registrado.',
+    '',
+    'Evidências:',
+    '• Vídeos, capturas de tela e logs de execução arquivados no repositório de testes.'
+  ];
+
+  return lines.join('\n');
+}
+
+function openDoneModal(runId, missionId) {
+  openDoneRunId = runId;
+  openDoneMissionId = missionId;
+  doneModalSig = '';
+  renderDoneModal(true);
+  const overlay = document.getElementById('done-overlay');
+  if (overlay) overlay.classList.add('on');
+}
+
+function closeDoneModal(e) {
+  if (e && e.target && e.target.id !== 'done-overlay' && !e.target.classList.contains('close-btn')) return;
+  openDoneRunId = null;
+  openDoneMissionId = null;
+  doneModalSig = '';
+  const overlay = document.getElementById('done-overlay');
+  if (overlay) overlay.classList.remove('on');
+}
+
+function renderDoneModal(force = false) {
+  if (!openDoneRunId && !openDoneMissionId) return;
+  if (!S) return;
+
+  const modal = document.getElementById('done-modal');
+  if (!modal) return;
+
+  let r = (S.runs || []).find((x) => x.id === openDoneRunId || x.card === openDoneRunId);
+  if (!r && openDoneMissionId) {
+    const m = (S.missions || []).find((x) => x.id === openDoneMissionId);
+    if (m && m.run_id) r = (S.runs || []).find((x) => x.id === m.run_id);
+    if (!r && m && m.target) r = (S.runs || []).find((x) => x.card === m.target || (m.target && m.target.includes(x.card)));
+  }
+  if (!r && openDoneRunId && cachedRuns[openDoneRunId]) {
+    r = cachedRuns[openDoneRunId];
+  }
+  if (!r && openDoneMissionId && cachedRuns[openDoneMissionId]) {
+    r = cachedRuns[openDoneMissionId];
+  }
+
+  if (!r) {
+    const fetchTarget = openDoneRunId || openDoneMissionId;
+    if (fetchTarget && !modal.dataset.fetching) {
+      modal.dataset.fetching = '1';
+      modal.className = 'report done-modal-box';
+      modal.innerHTML = `
+        <div style="padding: 40px 20px; text-align: center;">
+          <div style="font-family: var(--pixel-font, inherit); font-size: 16px; color: var(--gold, #f6bd41); margin-bottom: 8px;">⚔️ CONVOCANDO DESPACHO DA GUILDA...</div>
+          <div style="font-size: 12px; color: var(--muted, #8b7d6b);">Recuperando dados da incursão <code>${esc(fetchTarget)}</code>...</div>
+        </div>
+      `;
+      fetch(`/api/runs/${encodeURIComponent(fetchTarget)}`)
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          delete modal.dataset.fetching;
+          if (data) {
+            cachedRuns[fetchTarget] = data;
+            if (openDoneRunId === fetchTarget || openDoneMissionId === fetchTarget) {
+              renderDoneModal(true);
+            }
+          } else {
+            modal.innerHTML = `
+              <div class="plan-modal-head">
+                <h3 style="color:var(--ruby, #d9383a)">Incursão não localizada</h3>
+                <button class="ghost close-btn" onclick="closeDoneModal(null)">✖</button>
+              </div>
+              <div style="padding: 24px; text-align: center; color: var(--muted, #8b7d6b); font-size: 13px;">
+                Os dados desta incursão (<code>${esc(fetchTarget)}</code>) não foram encontrados no banco local.
+              </div>
+            `;
+          }
+        })
+        .catch(() => {
+          delete modal.dataset.fetching;
+        });
+    }
+    return;
+  }
+
+  const scenarios = r.scenarios || [];
+  const total = scenarios.length;
+  const passed = scenarios.filter((s) => s.status === 'PASSED').length;
+  const failed = scenarios.filter((s) => s.status === 'FAILED').length;
+  const isApproved = failed === 0 && total > 0;
+  const passPct = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+  const sig = `${r.id}_${r.status}_${total}_${passed}_${failed}`;
+  if (!force && sig === doneModalSig) return;
+  doneModalSig = sig;
+
+  modal.className = `report done-modal-box ${isApproved ? 'passed' : 'failed'}`;
+
+  const defaultMd = buildJiraCommentBdd(r);
+  const evidenceDir = r.evidenceDir || `runs/${r.card}/evidence`;
+
+  modal.innerHTML = `
+    <div class="plan-modal-head">
+      <div>
+        <h3 style="color:${isApproved ? 'var(--emerald-bright)' : 'var(--ruby)'}">📜 Despacho de Conclusão · QA</h3>
+        <div class="pm-sub" style="font-size:13px;color:var(--muted);margin-top:2px;">
+          Demanda: <b style="color:var(--gold-bright);font-size:14px;">${esc(r.card)}</b> · Ambiente: <b style="color:#fff;">${esc(r.env || '—')}</b>
+        </div>
+      </div>
+      <button class="ghost close-btn" onclick="closeDoneModal(null)">✖</button>
+    </div>
+
+    <div class="done-status-banner ${isApproved ? 'passed' : 'failed'}">
+      <span>${isApproved ? '✅ APROVADO' : '❌ REPROVADO'} (${passed}/${total} cenários aprovados — ${passPct}% PASS)</span>
+      <span style="font-size:12px;opacity:0.9;">Duração: ${dur(r.startedAt, r.endedAt)}</span>
+    </div>
+
+    <div class="done-sec">
+      <div class="done-sec-title">📂 PASTA DE EVIDÊNCIAS NO DISCO:</div>
+      <div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap;">
+        <input type="text" id="done-path-input" readonly value="${esc(evidenceDir)}" style="flex:1;min-width:240px;font-family:var(--mono-font);background:#09070c;border:1px solid #3a2e22;border-radius:3px;padding:8px 12px;color:var(--gold-bright);font-size:12px;outline:none;" />
+        <button class="chip-act gold" onclick="copyDoneEvidencePath(this)">📋 Copiar Caminho da Pasta</button>
+        ${r.report ? `<a href="/report/${encodeURIComponent(r.id)}" target="_blank" rel="noopener"><button class="chip-act green">📜 Abrir Relatório HTML</button></a>` : ''}
+      </div>
+    </div>
+
+    <div class="done-sec" style="margin-top:4px;flex:1;display:flex;flex-direction:column;min-height:0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div class="done-sec-title">💬 PARECER BDD PARA O JIRA (.md) — [EDITÁVEL]:</div>
+        <span style="font-size:11px;color:var(--muted)">Formato formal limpo · Sem menção a Run ID</span>
+      </div>
+      <textarea id="done-jira-textarea" style="margin-top:8px;width:100%;height:220px;min-height:160px;font-family:var(--mono-font);background:#09070c;border:2px solid #3a2e22;border-radius:4px;padding:12px 14px;color:#e8e4dc;font-size:12px;line-height:1.5;outline:none;resize:vertical;box-sizing:border-box;">${esc(defaultMd)}</textarea>
+    </div>
+
+    <div class="done-actions" style="margin-top:14px;display:flex;gap:10px;justify-content:flex-end;align-items:center;flex-wrap:wrap;">
+      <button class="chip-act purple" onclick="expandFromDoneModal('${esc(r.card)}', '${esc(openDoneMissionId || '')}')" title="Reabre a expedição para gerar novos cenários de borda e estresse baseado no conhecimento acumulado">🔮 Expandir Cenários</button>
+      <button class="chip-act gold" onclick="copyDoneJiraComment(this)">📋 Copiar Parecer BDD (.md)</button>
+      <button class="chip-act green" id="btn-pub-jira" onclick="publishDoneJiraComment('${esc(r.card)}', this)">🚀 Publicar no Jira</button>
+      ${failed > 0 ? `<button class="chip-act red" onclick="quickRetest('${esc(r.card)}')">🔁 Retestar Falhas</button>` : ''}
+      <button class="ghost close-btn" onclick="closeDoneModal(null)">✖ Fechar</button>
+    </div>
+  `;
+}
+
+async function copyDoneEvidencePath(btn) {
+  const inp = document.getElementById('done-path-input');
+  if (!inp || !inp.value) return;
+  try {
+    await navigator.clipboard.writeText(inp.value);
+    const old = btn.textContent;
+    btn.textContent = '✔ Caminho Copiado!';
+    setTimeout(() => { btn.textContent = old; }, 2500);
+  } catch {
+    btn.textContent = 'Erro ao copiar';
+  }
+}
+
+async function copyDoneJiraComment(btn) {
+  const txt = document.getElementById('done-jira-textarea');
+  if (!txt || !txt.value) return;
+  try {
+    await navigator.clipboard.writeText(txt.value);
+    const old = btn.textContent;
+    btn.textContent = '✔ Parecer Copiado!';
+    setTimeout(() => { btn.textContent = old; }, 2500);
+  } catch {
+    btn.textContent = 'Erro ao copiar';
+  }
+}
+
+async function publishDoneJiraComment(card, btn) {
+  const txt = document.getElementById('done-jira-textarea');
+  const comment = txt ? txt.value.trim() : '';
+  if (!comment) {
+    alert('Comentário em branco.');
+    return;
+  }
+  const oldText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Publicando...';
+
+  try { await navigator.clipboard.writeText(comment); } catch {}
+
+  try {
+    await api('/api/jira/comment', { card, text: comment });
+    btn.textContent = '✔ Publicado no Jira!';
+    btn.style.background = '#00e599';
+    btn.style.color = '#09070c';
+    setTimeout(() => { btn.disabled = false; btn.textContent = oldText; }, 4000);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = oldText;
+    alert(`Não foi possível publicar via integração: ${err.message}\n\nO parecer BDD foi copiado para sua área de transferência para colar diretamente no card.`);
+  }
+}
+
+async function quickRetest(card) {
+  closeDoneModal(null);
+  try {
+    await api('/api/missions', { agent: 'claude', target: card, kind: 'retest' });
+    setTab('ativas');
+    tickNow();
+  } catch (e) {
+    alert(e.message);
+  }
+}
+
+function expandFromDoneModal(card, missionId) {
+  closeDoneModal(null);
+  expandScenarios(card, missionId);
+}
+
+async function expandScenarios(card, missionId) {
+  const text = `Com base nos cenários já validados no card ${card} e no Execution Knowledge acumulado em knowledge/: reabra a investigação com foco exploratório. Aplique os tours de ataque (borda extrema, concorrência, injeção de falhas com network_simulate, permissões e responsividade mobile), crie os novos cenários complementares com scenario_add e execute as verificações.`;
+  if (missionId) {
+    missionViews[missionId] = 'chat';
+    setTab('ativas');
+    const area = document.querySelector(`textarea[data-m="${missionId}"]`);
+    if (area) area.value = text;
+    await replyMission(missionId, false, text);
+    return;
+  }
+  try {
+    await api('/api/missions', { agent: 'claude', target: card, kind: 'explore', objective: text });
+    setTab('ativas');
+    tickNow();
+  } catch (e) {
+    alert(e.message);
+  }
 }
 
 window.addEventListener('keydown', (e) => {
@@ -3252,6 +3862,7 @@ window.addEventListener('keydown', (e) => {
     closePlanModal(null);
     closePromptModal(null);
     closeDialogueModal(null);
+    closeDoneModal(null);
   }
 });
 
@@ -3436,7 +4047,7 @@ function chime(keys, details = '', meta = {}) {
   showHudToast(meta.title || 'O CAMPEÃO CONVOCA SUA DECISÃO', meta.desc || details || 'Clique para despachar ordens no Salão Tático.', icon, toastKind, openAction);
 
   // 4. Notificação Nativa do Windows no tema da Guilda
-  notifyDesktop(meta.title || '⚔️ Salão de Guerra da Guilda: Atenção!', details || 'O campeão aguarda seu aval soberano nas catacumbas.', 'novo-qa', openAction);
+  notifyDesktop(meta.title || '⚔️ Salão de Guerra da Guilda: Atenção!', details || 'O campeão aguarda seu aval soberano nas catacumbas.', 'sanctum', openAction);
 }
 
 // ── Nova missão ───────────────────────────────────────────────────────
@@ -3452,24 +4063,25 @@ function parseTarget(raw) {
   try { const u = new URL(text); if (u.protocol === 'http:' || u.protocol === 'https:') return { kind: 'url', url: u.href }; } catch {}
   return null;
 }
-const SKILL = { qa: 'qa', explore: 'qa', retest: 'retest', resume: 'qa-resume' };
+const SKILL = { qa: 'qa', explore: 'qa', retest: 'retest', resume: 'qa-resume', analyze: 'analisar' };
 function missionText(t, type) {
   if (t.kind === 'url') return `exploração sem card do sistema ${t.url} (/qa ${t.url} --explore)`;
   return { qa: `teste do card ${t.key} (/qa ${t.key})`, explore: `teste exploratório do card ${t.key} (/qa ${t.key} --explore)`,
-    retest: `reteste do card ${t.key} (/retest ${t.key})`, resume: `retomar o run do card ${t.key} (/qa-resume ${t.key})` }[type];
+    retest: `reteste do card ${t.key} (/retest ${t.key})`, resume: `retomar o run do card ${t.key} (/qa-resume ${t.key})`,
+    analyze: `análise da US ${t.key} antes do teste (/analisar ${t.key})` }[type];
 }
 function buildCommand(t, type, agent, obs) {
   if (agent === 'claude') {
-    const cmd = t.kind === 'url' ? `/qa ${t.url} --explore` : { qa: `/qa ${t.key}`, explore: `/qa ${t.key} --explore`, retest: `/retest ${t.key}`, resume: `/qa-resume ${t.key}` }[type];
+    const cmd = t.kind === 'url' ? `/qa ${t.url} --explore` : { qa: `/qa ${t.key}`, explore: `/qa ${t.key} --explore`, retest: `/retest ${t.key}`, resume: `/qa-resume ${t.key}`, analyze: `/analisar ${t.key}` }[type];
     return obs ? `${cmd} ${obs}` : cmd;
   }
   const skill = SKILL[t.kind === 'url' ? 'explore' : type];
   const path = agent === 'codex' ? `.agents/skills/${skill}/SKILL.md` : `.claude/skills/${skill}/SKILL.md`;
   return [
-    'Atue como QA usando o NOVO QA neste workspace, seguindo a ferramenta à risca:',
+    'Atue como QA usando o Sanctum neste workspace, seguindo a ferramenta à risca:',
     '1. Leia AGENTS.md e CLAUDE.md antes de qualquer ação.',
     `2. Siga o roteiro ${path} etapa por etapa, na ordem, lendo as referências de cada etapa.`,
-    '3. Opere o sistema só pelas ferramentas do MCP novo-qa e leia o Jira só pelo Atlassian MCP.',
+    '3. Opere o sistema só pelas ferramentas do MCP sanctum e leia o Jira só pelo Atlassian MCP.',
     '4. Mostre o plano e espere minha aprovação antes de plan_approve. Ação de risco (RED) só com minha autorização.',
     '5. Feche com limpeza, run_complete e report_build.',
     '',
@@ -3484,7 +4096,7 @@ document.getElementById('launch').onclick = async () => {
   const type = pick('m-type'), agent = pick('m-agent'), obs = document.getElementById('m-obs').value.trim().replace(/\s+/g, ' ');
   err.textContent = '';
   if (!t) { err.textContent = 'Informe a chave do card (ex.: PROJ-123), o link do card no Jira ou a URL do sistema.'; document.getElementById('m-card').focus(); return; }
-  if (t.kind === 'url' && (type === 'retest' || type === 'resume')) { err.textContent = 'Reteste e retomada são de um card ou run existente: informe a chave do card.'; return; }
+  if (t.kind === 'url' && (type === 'retest' || type === 'resume' || type === 'analyze')) { err.textContent = 'Reteste, retomada e análise da US são de um card: informe a chave do card.'; return; }
   if ((agent === 'claude' || agent === 'antigravity') && CAN_ACT) {
     const btn = document.getElementById('launch');
     btn.disabled = true;
@@ -3650,6 +4262,8 @@ function stateOf(r) {
   }
   if (r.status === 'ABORTED') return ['🛑', 'INCURSÃO ABORTADA', 'failed'];
   if (S.pending.some((p) => p.runId === r.id)) return ['🩸', 'EXIGE AVAL DO MESTRE', 'waiting'];
+  const loop = r.feed.slice(-15).find((f) => / andando em círculo/.test(f.text));
+  if (loop && ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status)) return ['🌀', 'ANDANDO EM CÍRCULO', 'failed'];
   if (isIdle(r)) return ['💤', `DESCANSO TÁTICO HÁ ${idleText(r.idleMinutes)}`, 'idle'];
   if (r.phase === 0) return ['🕯️', 'DECIFRANDO PERGAMINHO', 'running'];
   if (r.phase === 1) return ['🗺️', 'TRAÇANDO ROTA DE GUERRA', 'running'];
@@ -3663,7 +4277,7 @@ function stateOf(r) {
 
 function hunterHtml(r, label) {
   const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(r.card);
-  const jiraLink = isCard ? `<a href="https://guruja.atlassian.net/browse/${esc(r.card)}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
+  const jiraLink = isCard ? `<a href="${esc(jiraHref(r.card))}" target="_blank" rel="noopener" class="jira-link" title="Abrir no Jira">Jira ↗</a>` : '';
   const roleName = AGENT_TITLE[r.agent] || 'Guardião da Ordem';
   return `
   <article class="hunter" id="h-${esc(r.id)}">
@@ -3818,6 +4432,11 @@ function renderHunters() {
 
     if (!prev.first && prev.runStatus[r.id] && prev.runStatus[r.id] !== 'COMPLETED' && r.status === 'COMPLETED') {
       notifyDesktop(`👑 Incursão ${r.card} Purificada!`, `A comitiva de campeões concluiu a masmorra com recomendação soberana: ${r.recommendation || 'APROVADO'}.`);
+      if (!shownDoneRuns.has(r.id)) {
+        shownDoneRuns.add(r.id);
+        const m = (S.missions || []).find((x) => x.runId === r.id || x.run_id === r.id || x.target === r.card || (r.card && r.card.includes(x.target)));
+        setTimeout(() => openDoneModal(r.id, m ? m.id : null), 250);
+      }
     }
     for (const s of r.scenarios) prev.status[`${r.id}:${s.code}`] = s.status;
     prev.runStatus[r.id] = r.status;
@@ -3944,10 +4563,10 @@ function renderBugs() {
       const isJira = Boolean(b.jira && /^[A-Z][A-Z0-9]+-\d+$/.test(b.jira));
       const isCard = Boolean(b.card && /^[A-Z][A-Z0-9]+-\d+$/.test(b.card));
       const tagHtml = isJira
-        ? `<a href="https://guruja.atlassian.net/browse/${esc(b.jira)}" target="_blank" rel="noopener" class="bug-tag jira" title="Abrir bug no Jira">🐞 ${esc(b.jira)} ↗</a>`
+        ? `<a href="${esc(jiraHref(b.jira))}" target="_blank" rel="noopener" class="bug-tag jira" title="Abrir bug no Jira">🐞 ${esc(b.jira)} ↗</a>`
         : `<span class="bug-tag code">🐞 ${esc(b.code)}</span><button class="bug-tag-btn" onclick="createSingleBugInJira('${esc(b.card || '')}', '${esc(b.code)}', '${esc(b.title)}')" title="Pedir ao agente para abrir este bug no Jira">+ Criar no Jira</button>`;
       const cardHtml = isCard
-        ? `<a href="https://guruja.atlassian.net/browse/${esc(b.card)}" target="_blank" rel="noopener" class="bug-card-pill" title="Card de origem no Jira">${esc(b.card)} ↗</a>`
+        ? `<a href="${esc(jiraHref(b.card))}" target="_blank" rel="noopener" class="bug-card-pill" title="Card de origem no Jira">${esc(b.card)} ↗</a>`
         : (b.card ? `<span class="bug-card-pill">${esc(b.card)}</span>` : '');
       return `<div class="bug-card ${prev.first || prev.bugs.has(b.runId + b.code) ? '' : 'new'}">
         <div class="bc-head">
@@ -4037,7 +4656,7 @@ function openCardInspect(code, runId) {
       <span style="padding:4px 10px;background:#151724;border:1px solid #2d3246;border-radius:6px">🏰 Masmorra: <b>${esc(bug.card || 'N/A')}</b></span>
       <span style="padding:4px 10px;background:#151724;border:1px solid #2d3246;border-radius:6px">⚔️ Poder de Dano: <b>${dmg} XP</b></span>
       <span style="padding:4px 10px;background:#151724;border:1px solid #2d3246;border-radius:6px">⏱️ Aprisionado às: <b>${hhmm(bug.ts)}</b></span>
-      ${bug.jira ? `<a href="https://guruja.atlassian.net/browse/${esc(bug.jira)}" target="_blank" rel="noopener" class="bug-tag jira" style="margin:0">Jira: ${esc(bug.jira)} ↗</a>` : ''}
+      ${bug.jira ? `<a href="${esc(jiraHref(bug.jira))}" target="_blank" rel="noopener" class="bug-tag jira" style="margin:0">Jira: ${esc(bug.jira)} ↗</a>` : ''}
     </div>
   `;
   overlay.classList.add('on');
@@ -4074,7 +4693,7 @@ function renderLog() {
     const card = run ? run.card : '';
     const isCard = /^[A-Z][A-Z0-9]+-\d+$/.test(card);
     const cardHtml = isCard
-      ? `<a href="https://guruja.atlassian.net/browse/${esc(card)}" target="_blank" rel="noopener" class="tl-card-chip" title="Abrir no Jira">${esc(card)} ↗</a>`
+      ? `<a href="${esc(jiraHref(card))}" target="_blank" rel="noopener" class="tl-card-chip" title="Abrir no Jira">${esc(card)} ↗</a>`
       : (card ? `<span class="tl-card-chip">${esc(card)}</span>` : '');
 
     let nodeCls = 'info';
@@ -4135,21 +4754,13 @@ function renderReport(force) {
     </div>` : ''}
     <div class="ractions" style="margin-top:24px;display:flex;gap:10px">
       ${r.report ? `<a href="/report/${encodeURIComponent(r.id)}" target="_blank" rel="noopener"><button>📜 PERGAMINHO COMPLETO DE EXPEDIÇÃO</button></a>` : ''}
-      <button class="ghost" onclick="copySummary('${esc(r.id)}', this)">📋 COPIAR ÉDITO PARA O JIRA</button>
+      <button class="ghost" onclick="openDoneModal('${esc(r.id)}')">📜 DESPACHO BDD PARA O JIRA</button>
+      <button class="ghost" onclick="copySummary('${esc(r.id)}', this)">📋 COPIAR PARECER BDD</button>
     </div>`;
 }
 async function copySummary(id, btn) {
-  const r = S.runs.find((x) => x.id === id); if (!r) return;
-  const statusEmoji = r.recommendation === 'APROVADO' ? '👑' : r.recommendation === 'REPROVADO' ? '💀' : '🕯️';
-  const text = [
-    `*⚔️ SALÃO DE GUERRA DA GUILDA · NOVO QA*`,
-    `🏰 *Masmorra:* ${r.card} (${MODE[r.mode] || r.mode} em ${r.env})`,
-    `🏆 *Veredito Soberano:* ${statusEmoji} *${r.recommendation || r.status}*`,
-    `⚔️ *Câmaras Provadas:* ${r.scenarios.length} total | 🛡️ ${r.scenarios.filter(s => s.status === 'PASSED').length} purificadas | 💀 ${r.scenarios.filter(s => s.status === 'FAILED').length} falhas`,
-    '',
-    ...r.scenarios.map((s) => `${s.status === 'PASSED' ? '🛡️' : s.status === 'FAILED' ? '🕷️' : '🔒'} ${s.code}: ${s.title}`),
-    ...(r.bugs.length ? ['', '*🕷️ Bestas Aprisionadas no Covil:*', ...r.bugs.map((b) => `• ${b.jira || b.code}: ${b.title}`)] : [])
-  ].join('\n');
+  const r = S && S.runs && S.runs.find((x) => x.id === id); if (!r) return;
+  const text = buildJiraCommentBdd(r);
   try { await navigator.clipboard.writeText(text); btn.textContent = '✔ COPIADO!'; } catch { btn.textContent = 'erro ao copiar'; }
 }
 
@@ -4168,7 +4779,7 @@ async function tick() {
   if (state) {
     S = state;
     // Erro ao desenhar não é falta de conexão: mostra qual parte quebrou (e segue tentando).
-    const parts = { renderHeader, renderUsage, renderMissions, renderNeeds, renderHunters, renderBugs, renderLog, renderReport: () => renderReport(false), renderPlanModal, renderPromptModal, renderDialogueModal, checkAutoModals, renderTerminal };
+    const parts = { renderHeader, renderUsage, renderMissions, renderNeeds, renderHunters, renderBugs, renderLog, renderReport: () => renderReport(false), renderPlanModal, renderPromptModal, renderDialogueModal, renderDoneModal: () => renderDoneModal(false), checkAutoModals, renderTerminal };
     const broken = [];
     for (const [name, fn] of Object.entries(parts)) {
       try { fn(); } catch (e) { broken.push(`${name}: ${e.message}`); console.error(name, e); }

@@ -89,7 +89,7 @@ export const PolicyFile = z.strictObject({
     .strictObject({
       // always: grava a sessão do navegador inteira (capítulos por cenário); off: não grava.
       video: z.enum(['always', 'off']),
-      // Retenção de vídeo/trace (novo-qa storage). PNG, .txt e relatórios nunca saem;
+      // Retenção de vídeo/trace (sanctum storage). PNG, .txt e relatórios nunca saem;
       // runs/_* (pastas montadas à mão) nunca são tocadas.
       retention: z
         .strictObject({

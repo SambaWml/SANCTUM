@@ -18,7 +18,7 @@ function envTs(config: Config, project: string): string {
     return `  ${JSON.stringify(id)}: {\n    type: '${e.type}',\n    baseUrl: ${value(e.baseUrl)},\n    roles: {\n${roles}\n    },\n  },`;
   });
   const fallback = envs.find(([, e]) => e.type !== 'prod')?.[0] ?? '';
-  return `// GERADO pelo NOVO QA a partir de config/environments.yaml — não edite: rode automation_spec de novo.
+  return `// GERADO pelo Sanctum a partir de config/environments.yaml — não edite: rode automation_spec de novo.
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { config } from 'dotenv';
@@ -32,11 +32,11 @@ const ENVIRONMENTS: Record<string, Env> = {
 ${entries.join('\n')}
 };
 
-export const ENV_ID = process.env.NOVO_QA_ENV ?? ${JSON.stringify(fallback)};
+export const ENV_ID = process.env.SANCTUM_ENV ?? ${JSON.stringify(fallback)};
 const env = ENVIRONMENTS[ENV_ID];
-if (!env) throw new Error(\`NOVO_QA_ENV="\${ENV_ID}" não é um ambiente deste projeto (\${Object.keys(ENVIRONMENTS).join(', ')})\`);
-// A automação gerada não roda em produção (lá o NOVO QA só permite ações GREEN).
-if (env.type === 'prod') throw new Error(\`ambiente \${ENV_ID} é produção: automação do NOVO QA não roda em prod\`);
+if (!env) throw new Error(\`SANCTUM_ENV="\${ENV_ID}" não é um ambiente deste projeto (\${Object.keys(ENVIRONMENTS).join(', ')})\`);
+// A automação gerada não roda em produção (lá o Sanctum só permite ações GREEN).
+if (env.type === 'prod') throw new Error(\`ambiente \${ENV_ID} é produção: automação do Sanctum não roda em prod\`);
 
 function read(v: Value, what: string): string {
   if ('literal' in v) return v.literal;
@@ -46,7 +46,7 @@ function read(v: Value, what: string): string {
 }
 
 export function baseURL(): string {
-  return process.env.NOVO_QA_BASE_URL ?? read(env.baseUrl, 'baseUrl');
+  return process.env.SANCTUM_BASE_URL ?? read(env.baseUrl, 'baseUrl');
 }
 
 export function credentials(role: string): { username: string; password: string } {
@@ -103,7 +103,7 @@ export const test = base.extend<{ allowDelete: string[] }>({
       if (req.method() !== 'DELETE') return route.continue();
       const path = new URL(req.url()).pathname;
       if (allowDelete.some((p) => path.startsWith(p))) return route.continue();
-      testInfo.annotations.push({ type: 'novo-qa-blocked', description: \`DELETE \${path}\` });
+      testInfo.annotations.push({ type: 'sanctum-blocked', description: \`DELETE \${path}\` });
       return route.abort('blockedbyclient');
     });
     await use(page);

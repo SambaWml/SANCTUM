@@ -36,7 +36,7 @@ Parte do desperdício observado foi de condução: interpretar exemplos como pr�
 
 **Aceite:** aprovação de “modal abriu” não aprova cores, persistência ou compactação; erro de seletor não vira bug de produto; corrigir o seletor preserva histórico sem exigir repetição artificial de descrições.
 
-### 4. Medição visual no próprio NOVO QA
+### 4. Medição visual no próprio Sanctum
 
 **Evidência:** `src/browser/service.ts` permite verificar texto, estado e atributos, mas não altura renderizada, estilos computados ou truncamento geométrico. No GURUJA-9233, foi necessário analisar pixels da captura posteriormente.
 
@@ -90,7 +90,7 @@ Parte do desperdício observado foi de condução: interpretar exemplos como pr�
 
 ### 10. Atribuição confiável de uso, tempo e chamadas
 
-**Evidência:** `src/metrics/run-metrics.ts` associa uso por janela de tempo e sessões que chamaram novo-qa; o filtro de ferramentas contém um prefixo específico. Cache hit/miss também é contado pela janela, sem runId nessa consulta. `createRegistrar` associa a chamada ao run apenas quando `runId` está nos argumentos, deixando ações como `act`, `snapshot` e `verify` fora desse contador por run. A integração local declara que uso do Codex não é contabilizado; relatórios não devem apresentar tokens de outras sessões como custo do Codex.
+**Evidência:** `src/metrics/run-metrics.ts` associa uso por janela de tempo e sessões que chamaram sanctum; o filtro de ferramentas contém um prefixo específico. Cache hit/miss também é contado pela janela, sem runId nessa consulta. `createRegistrar` associa a chamada ao run apenas quando `runId` está nos argumentos, deixando ações como `act`, `snapshot` e `verify` fora desse contador por run. A integração local declara que uso do Codex não é contabilizado; relatórios não devem apresentar tokens de outras sessões como custo do Codex.
 
 **Proposta:** atribuição explícita por cliente, sessão, agente, run, cenário, tentativa e chamada. Resolver o run ativo no servidor para ferramentas de navegador. Normalizar nomes de ferramentas. Quando não houver uso disponível para o cliente, mostrar “não disponível”, não zero nem uma estimativa atribuída de outro cliente. Separar tempo ativo, aprovação humana, espera e pausa. Ingestão de transcripts deve ser incremental por arquivo/offset, em vez de reler todos os JSONL em cada relatório.
 

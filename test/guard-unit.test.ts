@@ -93,7 +93,7 @@ describe('hook guard-shell', async () => {
   });
 
   it('bloqueia script que importa driver de navegador', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'novo-qa-hook-'));
+    const dir = mkdtempSync(join(tmpdir(), 'sanctum-hook-'));
     try {
       writeFileSync(join(dir, 'bypass.mjs'), "import { chromium } from 'playwright';\n");
       writeFileSync(join(dir, 'ok.mjs'), "console.log('oi');\n");

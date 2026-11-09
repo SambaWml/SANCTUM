@@ -15,7 +15,7 @@ afterEach(() => {
 
 describe('sanitizeTraceZip', () => {
   it('redige texto em todas as entradas e preserva binários', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'novo-qa-trace-'));
+    const dir = mkdtempSync(join(tmpdir(), 'sanctum-trace-'));
     dirs.push(dir);
     const path = join(dir, 'trace.zip');
     const binary = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0xff, 0xfe, 0x00, 0x01]);

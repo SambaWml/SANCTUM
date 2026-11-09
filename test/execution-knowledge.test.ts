@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { executionHints, mergeExecutionKnowledge, playwrightLine, type ExecutionEntry } from '../src/knowledge/execution.ts';
 
-const root = mkdtempSync(join(tmpdir(), 'novo-qa-ek-'));
+const root = mkdtempSync(join(tmpdir(), 'sanctum-ek-'));
 afterAll(() => rmSync(root, { recursive: true, force: true }));
 
 const entry = (route: string, name: string, lastSeen: string, over: Partial<ExecutionEntry> = {}): ExecutionEntry => {

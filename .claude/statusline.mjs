@@ -32,7 +32,7 @@ process.stdin.on('end', () => {
   const hhmm = (s) => new Date(s * 1000).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
   const day = (s) => new Date(s * 1000).toLocaleDateString('pt-BR', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
   const free = (w) => `${Math.max(0, Math.round(100 - w.used_percentage))}% livre`;
-  const parts = ['NOVO QA'];
+  const parts = ['Sanctum'];
   if (five) parts.push(`5h: ${free(five)}${five.resets_at ? ` (renova ${hhmm(five.resets_at)})` : ''}`);
   if (week) parts.push(`semana: ${free(week)}${week.resets_at ? ` (renova ${day(week.resets_at)})` : ''}`);
   process.stdout.write(parts.join(' · '));

@@ -31,16 +31,32 @@ export class TargetError extends Error {
   }
 }
 
+/**
+ * Erro comum dos agentes (auditoria de fluxo 09/11): `role` + `text` querendo dizer `role` + `name`.
+ * É inequívoco, então vira role+name em vez de recusar e gastar uma tentativa.
+ */
+export function normalizeTarget<T extends TargetLike>(t: T): T {
+  if (t.role !== undefined && t.text !== undefined && t.name === undefined) {
+    const { text, ...rest } = t;
+    return { ...rest, name: text } as T;
+  }
+  return t;
+}
+
 function strategyOf(t: TargetLike): (typeof STRATEGIES)[number] {
   const used = STRATEGIES.filter((s) => t[s] !== undefined);
   if (used.length !== 1) {
-    throw new TargetError(`alvo precisa de exatamente uma estratégia (${STRATEGIES.join(', ')}); recebido: ${used.join(', ') || 'nenhuma'}`);
+    const hint = used.length === 0
+      ? 'informe o elemento, ex.: { role: "button", name: "Salvar" } ou { label: "E-mail" } — veja os nomes com snapshot'
+      : `use só uma; para um papel com nome: { role: "${t.role ?? 'button'}", name: "…" }`;
+    throw new TargetError(`alvo precisa de exatamente uma estratégia (${STRATEGIES.join(', ')}); recebido: ${used.join(', ') || 'nenhuma'} — ${hint}`);
   }
   if (t.name !== undefined && used[0] !== 'role') throw new TargetError('"name" só se aplica a "role"');
   return used[0]!;
 }
 
-function locate(root: Page | Locator, t: TargetLike): Locator {
+function locate(root: Page | Locator, target: TargetLike): Locator {
+  const t = normalizeTarget(target);
   const exact = t.exact ?? false;
   switch (strategyOf(t)) {
     case 'role':
@@ -98,7 +114,11 @@ export async function resolveOne(page: Page, target: Target, timeoutMs = 5000): 
   try {
     await locator.first().waitFor({ state: 'attached', timeout: timeoutMs });
   } catch {
-    throw new TargetError(`nenhum elemento para ${describeTarget(target)} — confira com snapshot`);
+    try {
+      await locator.first().waitFor({ state: 'visible', timeout: timeoutMs });
+    } catch {
+      throw new TargetError(`nenhum elemento para ${describeTarget(target)} — confira com snapshot`);
+    }
   }
   const count = await locator.count();
   if (count === 1) return locator;

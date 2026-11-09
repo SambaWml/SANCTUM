@@ -4,7 +4,7 @@ import type { Db } from '../state/db.ts';
 
 /**
  * Retenção de evidências pesadas (vídeo .webm e trace .zip) em runs/.
- * Só planeja: apagar é applyPrune, chamado explicitamente (novo-qa storage --apply).
+ * Só planeja: apagar é applyPrune, chamado explicitamente (sanctum storage --apply).
  * Nunca toca: PNG/.txt/relatórios, pastas runs/_* (montadas à mão), runs ativos.
  * Evidência de bug fica mais tempo: vídeo de run com PRODUCT_BUG e trace do cenário com bug.
  */
@@ -42,7 +42,7 @@ function walk(dir: string, out: { path: string; bytes: number; mtime: number }[]
   }
 }
 
-/** Uso de disco de runs/ por extensão (doctor e novo-qa storage). */
+/** Uso de disco de runs/ por extensão (doctor e sanctum storage). */
 export function runsUsage(rootDir: string, maxStorageGB: number) {
   const files: { path: string; bytes: number; mtime: number }[] = [];
   walk(join(rootDir, 'runs'), files);

@@ -1,5 +1,5 @@
 // PreToolUse (Bash/PowerShell): impede operar o navegador ou fazer DELETE HTTP por fora
-// das ferramentas do MCP novo-qa, o que contornaria o Action Guard.
+// das ferramentas do MCP sanctum, o que contornaria o Action Guard.
 // Saída 2 bloqueia a chamada; a mensagem vai para o Claude.
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join } from 'node:path';
@@ -54,14 +54,14 @@ export function check(command, cwd = process.cwd()) {
   }
 
   if (BROWSER.test(residual)) {
-    return 'Operar o navegador por script contorna o Action Guard e a sanitização. Use as ferramentas do MCP novo-qa (navigate, act, verify…). Para automação gerada: npx playwright test.';
+    return 'Operar o navegador por script contorna o Action Guard e a sanitização. Use as ferramentas do MCP sanctum (navigate, act, verify…). Para automação gerada: npx playwright test.';
   }
   for (const file of executedScripts(residual)) {
     const path = isAbsolute(file) ? file : join(cwd, file);
     if (!existsSync(path)) continue;
     const source = readFileSync(path, 'utf8');
     if (/(require\(|from\s+|import\()\s*['"](playwright|@playwright\/test|puppeteer|playwright-core)['"]/.test(source)) {
-      return `${file} importa um driver de navegador: execute-o como teste (npx playwright test) ou use as ferramentas do MCP novo-qa.`;
+      return `${file} importa um driver de navegador: execute-o como teste (npx playwright test) ou use as ferramentas do MCP sanctum.`;
     }
   }
   return null;
@@ -75,7 +75,7 @@ async function main() {
   if (typeof command !== 'string') return;
   const reason = check(command, input.cwd ?? process.cwd());
   if (reason) {
-    process.stderr.write(`NOVO QA guard: ${reason}\n`);
+    process.stderr.write(`Sanctum guard: ${reason}\n`);
     process.exit(2);
   }
 }

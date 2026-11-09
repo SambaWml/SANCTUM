@@ -47,7 +47,7 @@ let cache: DigestCache;
 let config: Config;
 
 beforeEach(() => {
-  root = mkdtempSync(join(tmpdir(), 'novo-qa-context-'));
+  root = mkdtempSync(join(tmpdir(), 'sanctum-context-'));
   db = openDb(':memory:');
   cache = new DigestCache(db, root);
   config = loadConfig(join(import.meta.dirname, '..'));

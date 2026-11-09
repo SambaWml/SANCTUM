@@ -1,4 +1,4 @@
-# Ambientes onde o NOVO QA pode operar o navegador.
+# Ambientes onde o Sanctum pode operar o navegador.
 #
 # type: local | dev | staging | prod   (prod = somente ações GREEN)
 # Valores podem ser literais ou { env: NOME_DA_VARIAVEL } (lido do .env).
@@ -7,117 +7,6 @@
 # Ambientes reais são adicionados quando o /qa pedir os dados (URL, papéis,
 # usuários, MFA/captcha, se pode criar dados).
 environments:
-  guruja-dev:
-    project: guruja
-    type: dev
-    baseUrl: https://portal-guruja-dev.azurewebsites.net
-    # Liberado pelo usuário em 26/10 para o GURUJA-8968 (preferências do aluno; originais restauradas no fim do run).
-    allowDataCreation: true
-    mfa: false
-    captcha: false
-    # Leitura via POST (não altera dados): vista em todos os runs de 10/2026.
-    mutationIgnore: [/v2/FeatureFlag]
-    roles:
-      admin:
-        username: frambachadmin
-        password: { env: GURUJA_DEV_ADMIN_PASSWORD }
-      aluno:
-        username: AbnerNasser
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Alunos extras informados pelo usuário em 26/10 (massa alternativa, ex.: saldo/flag diferentes); mesma senha do aluno.
-      aluno-belmiro:
-        username: Belmiro
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Em 29/10 a senha da Celular foi trocada no teste do GURUJA-8968 e não pôde voltar à padrão
-      # (a regra nova recusa caracteres da senha padrão); agora usa a senha temporária.
-      # 01/11: usuário informou que a Celular voltou para a senha padrão.
-      aluno-celular:
-        username: Celular
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Mesma conta da aluno-celular com a senha temporária do teste de troca de senha (GURUJA-8968, 29/10).
-      aluno-celular-nova:
-        username: Celular
-        password: { env: GURUJA_DEV_CELULAR_NEW_PASSWORD }
-      # Aluno possivelmente com várias faturas (paginação), informado pelo usuário em 29/10 para o GURUJA-8968; senha padrão.
-      aluno-faturas:
-        username: AbraaoGR11
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Usuário com role User (sem assinatura), informado pelo usuário em 29/10 para o GURUJA-8968.
-      usuario-sem-assinatura:
-        username: AARAO81
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Usuários bloqueados / acesso suspeito, informados pelo usuário em 31/10 para o GURUJA-9200; senha padrão.
-      # Só logar com a senha certa (não somar tentativas erradas).
-      bloqueado-adalto:
-        username: AdaltoAraujo
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      bloqueado-almison:
-        username: Almison
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      bloqueado-guilherme:
-        username: Guilherme.
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Aluno novo criado pelo checkout, informado pelo usuário em 30/10 para o GURUJA-9211 (comprovante de aceite); senha padrão.
-      aluno-novo-checkout:
-        username: guruja951357
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Professores (senha padrão), liberados pelo usuário em 31/10 para o GURUJA-9224 (texto do Perfil de trabalho).
-      # bcastilho = professor do aluno-novo-checkout; ayrtonbconcursos = professor do aluno-belmiro.
-      professor-bruno:
-        username: bcastilho
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      professor-ayrton:
-        username: ayrtonbconcursos
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Aluno informado pelo usuário em 31/10 para o GURUJA-9224 (professor com texto do Perfil de trabalho populado); senha padrão.
-      aluno-afenner:
-        username: afenner
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Aluno informado pelo usuário em 01/11 para o GURUJA-8624 (Arquivo); senha padrão presumida.
-      aluno-docampo:
-        username: docampoaofisco
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Aluno sem onboarding concluído, informado pelo usuário em 01/11 para o EXP-021 do GURUJA-8823; senha padrão.
-      aluno-adeiza:
-        username: Adeiza
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Conta de teste informada pelo usuário em 01/11 para o reteste dos bugs de onboarding (GURUJA-9243/9244); senha padrão.
-      aluno-amandagoes:
-        username: amandagoes
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-  # Checkout (portal de pagamento) do Guruja em DEV, cadastrado em 30/10 para o GURUJA-8964.
-  # Sem criação de dados: compra só com liberação explícita do usuário (cartão de teste no .env).
-  guruja-checkout-dev:
-    project: guruja
-    type: dev
-    baseUrl: https://portal-guruja-payment-dev.azurewebsites.net
-    allowDataCreation: false
-    mfa: false
-    captcha: false
-    # Leitura via POST (chave pública do gateway), não altera dados.
-    mutationIgnore: [/payment-gateways/public-key]
-    roles:
-      # BF2025 vigente com oferta BF2026 (downgrade), usado no teste de 23/10; senha padrão.
-      aluno-downgrade:
-        username: AbelardoLapenda
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Mensal 2026 ativo (sem BF2025): aluno sem downgrade.
-      aluno-novo-checkout:
-        username: guruja951357
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Role User, sem plano vigente.
-      usuario-sem-assinatura:
-        username: AARAO81
-        password: { env: GURUJA_DEV_ALUNO_PASSWORD }
-      # Não são logins: cartão de teste do .env exposto como papel porque valueRef secret:NOME
-      # é mascarado antes de resolver. role:cartao-teste.username = número, .password = CVV;
-      # role:cartao-teste-validade.username = validade (MM/AAAA).
-      cartao-teste:
-        username: { env: GURUJA_DEV_TEST_CARD_NUMBER }
-        password: { env: GURUJA_DEV_TEST_CARD_CVV }
-      cartao-teste-validade:
-        username: { env: GURUJA_DEV_TEST_CARD_EXPIRY }
-        password: { env: GURUJA_DEV_TEST_CARD_CVV }
   fixture-local:
     project: fixture
     type: local
@@ -129,7 +18,7 @@ environments:
       admin:
         username: admin
         password: { env: FIXTURE_ADMIN_PASSWORD }
-  # Painel ao vivo do próprio NOVO QA, cadastrado em 03/11 para a missão exploratória EXPLORA-202611030945.
+  # Painel ao vivo do próprio Sanctum, cadastrado em 03/11 para a missão exploratória EXPLORA-202611030945.
   # GET público (sem login); POST exige o token gerado a cada start do painel (embutido só na página, não é usuário/senha).
   # allowDataCreation: true só para o fluxo "lançar missão" (cria linha em missions/prompts do próprio painel);
   # alvo da missão de teste deve ser o ambiente fixture-local, nunca um card ou URL de sistema real.
@@ -141,14 +30,3 @@ environments:
     mfa: false
     captcha: false
     roles: {}
-  duco-hml:
-    project: duco
-    type: staging
-    baseUrl: https://pava2-hml.ducotravelsummit.com
-    allowDataCreation: true
-    mfa: false
-    captcha: false
-    roles:
-      user:
-        username: wesley.leocadio@luby.com.br
-        password: { env: DUCO_HML_USER_PASSWORD }

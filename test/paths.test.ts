@@ -4,12 +4,12 @@ import { join } from 'node:path';
 import { afterAll, describe, expect, it } from 'vitest';
 import { containedPath, UPLOAD_DIR } from '../src/security/paths.ts';
 
-const root = mkdtempSync(join(tmpdir(), 'novo-qa-paths-'));
+const root = mkdtempSync(join(tmpdir(), 'sanctum-paths-'));
 const base = join(root, UPLOAD_DIR);
 mkdirSync(join(base, 'docs'), { recursive: true });
 writeFileSync(join(base, 'docs', 'contrato.pdf'), 'pdf');
 writeFileSync(join(root, '.env'), 'SECRET=1');
-const outside = mkdtempSync(join(tmpdir(), 'novo-qa-outside-'));
+const outside = mkdtempSync(join(tmpdir(), 'sanctum-outside-'));
 writeFileSync(join(outside, 'secret.txt'), 'x');
 // Junction (Windows) / symlink de diretório dentro da pasta de upload apontando para fora.
 symlinkSync(outside, join(base, 'fuga'), 'junction');

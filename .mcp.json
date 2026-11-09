@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "novo-qa": {
+    "sanctum": {
       "command": "node",
       "args": ["--import", "tsx", "src/mcp/launcher.ts"]
     },

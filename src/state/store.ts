@@ -58,7 +58,7 @@ export interface AgentInfo {
   client?: string;
   version?: string;
   model?: string;
-  /** Missão do painel ao vivo que lançou este agente (NOVO_QA_MISSION). */
+  /** Missão do painel ao vivo que lançou este agente (SANCTUM_MISSION). */
   mission?: string;
 }
 
@@ -109,6 +109,9 @@ export interface ValidatedActionRow {
 export type ExploratoryInput = Omit<ScenarioInput, 'code'> & { parentCode?: string };
 
 const ACTIVE_RUN: RunStatus[] = ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'];
+
+/** Volume de uma tentativa de cenário: aviso e trava (auditoria de fluxo 09/11: 243 ações em 2 cenários). */
+export const LOOP_LIMITS = { warn: { actions: 60, verifications: 40 }, stop: { actions: 150, verifications: 100 } } as const;
 const PLAN_CODE = /^CT-\d{2,4}$/;
 
 export interface StoreOptions {
@@ -117,7 +120,7 @@ export interface StoreOptions {
 
 export class StateStore {
   private readonly now: () => Date;
-  /** Agente da sessão MCP (clientInfo + NOVO_QA_MODEL), gravado no run e nas aprovações. */
+  /** Agente da sessão MCP (clientInfo + SANCTUM_MODEL), gravado no run e nas aprovações. */
   agent: AgentInfo | null = null;
 
   constructor(
@@ -237,7 +240,7 @@ export class StateStore {
 
   private recommendationFacts(runId: string): RecommendationFact[] {
     return this.db
-      .prepare('SELECT code, priority, status, classification FROM scenarios WHERE run_id = ? ORDER BY seq')
+      .prepare('SELECT code, priority, status, classification, confidence FROM scenarios WHERE run_id = ? ORDER BY seq')
       .all(runId) as unknown as RecommendationFact[];
   }
 
@@ -332,6 +335,26 @@ export class StateStore {
   }
 
   /** O que já foi feito num cenário (para retomar sem refazer): últimas verificações e nº de ações. */
+  /**
+   * Volume da tentativa atual do cenário (ações + verificações). Acima de LOOP_LIMITS.warn o agente
+   * é avisado (e o evento scenario.loop marca o run no painel); acima de LOOP_LIMITS.stop o navegador
+   * recusa novas ações até o cenário ser concluído ou reaberto — evita andar em círculo por horas.
+   */
+  scenarioLoad(scenarioId: number): { actions: number; verifications: number; level: 'ok' | 'warn' | 'stop' } {
+    const since = this.attemptStart(scenarioId);
+    const count = (table: string) => (this.db.prepare(`SELECT COUNT(*) AS n FROM ${table} WHERE scenario_id = ? AND ts >= ?`).get(scenarioId, since) as { n: number }).n;
+    const actions = count('actions');
+    const verifications = count('verifications');
+    const level = actions >= LOOP_LIMITS.stop.actions || verifications >= LOOP_LIMITS.stop.verifications ? 'stop'
+      : actions >= LOOP_LIMITS.warn.actions || verifications >= LOOP_LIMITS.warn.verifications ? 'warn' : 'ok';
+    if (level !== 'ok') {
+      const marked = this.db.prepare(`SELECT 1 FROM events WHERE scenario_id = ? AND type = 'scenario.loop' AND ts >= ? AND json_extract(payload, '$.level') = ?`).get(scenarioId, since, level);
+      const runId = (this.db.prepare('SELECT run_id FROM scenarios WHERE id = ?').get(scenarioId) as { run_id: string }).run_id;
+      if (!marked) this.logEvent(runId, scenarioId, 'scenario.loop', { level, actions, verifications });
+    }
+    return { actions, verifications, level };
+  }
+
   scenarioProgress(scenarioId: number): { verified: string[]; actions: number } {
     const since = this.attemptStart(scenarioId);
     const rows = this.db
@@ -354,6 +377,9 @@ export class StateStore {
   private requireExecuting(runId: string): RunRow {
     const run = this.getRun(runId);
     if (run.status === 'AWAITING_APPROVAL') throw new StateError('plano aguardando aprovação humana (plan_approve)');
+    if (run.status === 'COMPLETED') {
+      throw new StateError('run está COMPLETED: o run já foi fechado. Para mudar o resultado de um cenário use scenario_reclassify; para testar de novo, /retest');
+    }
     if (run.status !== 'EXECUTING') throw new StateError(`run está ${run.status}`);
     return run;
   }

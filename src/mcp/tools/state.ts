@@ -2,7 +2,9 @@ import { z } from 'zod';
 import type { BrowserService } from '../../browser/service.ts';
 import { writeExecutionKnowledge } from '../../knowledge/execution.ts';
 import { CLASSIFICATIONS, CONFIDENCE_LEVELS, FINAL_STATUSES } from '../../state/rules.ts';
-import type { StateStore } from '../../state/store.ts';
+import { planCoverage } from '../../state/coverage.ts';
+import { checkPlanQuality, MIN_EXPLORATORY } from '../../state/plan-quality.ts';
+import { StateError, type StateStore } from '../../state/store.ts';
 import type { RegisterTool } from '../tooling.ts';
 
 const priority = z.enum(['P0', 'P1', 'P2', 'P3']);
@@ -17,7 +19,7 @@ const scenarioFields = {
   expected: z.string().min(3),
 };
 
-export function registerStateTools(tool: RegisterTool, deps: { store: StateStore; rootDir: string; browser?: BrowserService }): void {
+export function registerStateTools(tool: RegisterTool, deps: { store: StateStore; rootDir: string; browser?: BrowserService; cardOf?: (issueKey: string) => { criteria: string[]; linkedBugs: string[] } }): void {
   const { store, rootDir, browser } = deps;
 
   tool(
@@ -49,8 +51,19 @@ export function registerStateTools(tool: RegisterTool, deps: { store: StateStore
       runId: z.string(),
       recommendation: z.enum(['APROVADO', 'REPROVADO', 'INCONCLUSIVO']),
       summary: z.string().min(3),
+      noExplorationReason: z.string().min(10).optional()
+        .describe('só se não deu para explorar (padrão: teste normal ≥1 EXP, exploratório ≥3 EXP, via scenario_add durante a execução)'),
     },
     async (a) => {
+      // Padrão Sanctum: exploração em volta do risco maior, registrada como EXP (scenario_add).
+      const current = store.getRun(a.runId);
+      const min = MIN_EXPLORATORY[current.mode] ?? 0;
+      const explored = store.listScenarios(a.runId).filter((s) => s.code.startsWith('EXP-') && s.status !== 'NOT_EXECUTED' && s.status !== 'PENDING').length;
+      if (explored < min && !a.noExplorationReason) {
+        throw new StateError(`padrão Sanctum: ${current.mode === 'explore' ? 'exploratório' : 'teste'} pede ao menos ${min} cenário(s) EXP executado(s) — há ${explored}. ` +
+          'Crie com scenario_add em volta do risco maior (o que o card não cobre, bordas, telas vizinhas) e execute; ou informe noExplorationReason.');
+      }
+      if (explored < min) store.logEvent(a.runId, null, 'run.exploration_waived', { reason: a.noExplorationReason, explored, min });
       const run = store.completeRun(a.runId, a.recommendation, a.summary);
       const knowledge = writeExecutionKnowledge(rootDir, store, run);
       await browser?.close();
@@ -72,13 +85,31 @@ export function registerStateTools(tool: RegisterTool, deps: { store: StateStore
   tool(
     'plan_save',
     'Salva/substitui o plano (cenários CT-NNN, em ordem de execução). Deixa o run aguardando aprovação humana. ' +
-      'modules: módulos de conhecimento do card (o primeiro recebe o execution knowledge do run).',
+      'modules: módulos de conhecimento do card (o primeiro recebe o execution knowledge do run). ' +
+      'Padrão Sanctum (recusado se faltar): pré-condição em todo cenário; esperado verificável; todo CA com cenário (cite o CA no título); ' +
+      'com risco HIGH, ao menos um negative/permission/validation; cada bug ligado ao card com cenário de regressão citando a chave. ' +
+      'Exceção só com waivers [{ item: "CA03" | "negative" | "PROJ-123", reason }], mostrados ao usuário. Modelo: references/plan-example.md.',
     {
       runId: z.string(),
       scenarios: z.array(z.object({ code: z.string(), ...scenarioFields })).min(1),
       modules: z.array(z.string().regex(/^[a-z0-9][a-z0-9-]*$/)).optional(),
+      waivers: z.array(z.object({ item: z.string().min(2), reason: z.string().min(5) })).optional(),
     },
-    (a) => store.savePlan(a.runId, a.scenarios, a.modules),
+    (a) => {
+      const run = store.getRun(a.runId);
+      const card = deps.cardOf?.(run.issue_key) ?? { criteria: [], linkedBugs: [] };
+      const quality = checkPlanQuality(a.scenarios, { mode: run.mode, ...card, waivers: a.waivers ?? [] });
+      if (quality.problems.length) {
+        throw new StateError(`plano fora do padrão Sanctum (nada foi salvo):\n- ${quality.problems.join('\n- ')}`);
+      }
+      const saved = store.savePlan(a.runId, a.scenarios, a.modules);
+      // Cobertura dos critérios do card: mostre ao usuário, com os CA sem cenário em destaque, antes de pedir aprovação.
+      return {
+        ...saved,
+        ...(card.criteria.length ? { coverage: planCoverage(card.criteria, a.scenarios) } : {}),
+        ...(quality.notes.length ? { notes: quality.notes } : {}),
+      };
+    },
   );
 
   tool(

@@ -9,7 +9,7 @@ const dirs: string[] = [];
 
 /** Copia config/ real para um diretório temporário e aplica uma alteração em um arquivo. */
 function withConfig(file?: string, transform?: (yaml: string) => string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'novo-qa-config-'));
+  const dir = mkdtempSync(join(tmpdir(), 'sanctum-config-'));
   dirs.push(dir);
   cpSync(join(REPO_ROOT, 'config'), join(dir, 'config'), { recursive: true });
   if (file && transform) {

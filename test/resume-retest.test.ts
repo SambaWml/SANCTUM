@@ -89,10 +89,11 @@ describe('reteste', () => {
     await h.ok('scenario_complete', { runId: parent, code: 'CT-001', status: 'PASSED' });
     await h.ok('scenario_start', { runId: parent, code: 'CT-002' });
     await h.ok('verify', { kind: 'ui', description: 'link de relatórios no menu', target: { role: 'link', name: 'Exportar' }, timeoutMs: 300 });
+    await h.ok('verify', { kind: 'ui', description: 'link de relatórios no menu', target: { role: 'link', name: 'Exportar' }, timeoutMs: 300 });
     await h.ok('console', {});
     await h.ok('scenario_complete', { runId: parent, code: 'CT-002', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'link Exportar não existe' });
     await h.ok('scenario_complete', { runId: parent, code: 'CT-003', status: 'BLOCKED', classification: 'TEST_DATA_FAILURE', reason: 'sem aluno inativo' });
-    await h.ok('run_complete', { runId: parent, recommendation: 'REPROVADO', summary: 'falta o link Exportar' });
+    await h.ok('run_complete', { runId: parent, recommendation: 'REPROVADO', summary: 'falta o link Exportar', noExplorationReason: 'teste da ferramenta, sem exploração' });
 
     const notRetest = await h.call('retest_seed', { runId: parent });
     expect(notRetest.text).toMatch(/modo retest/);
@@ -106,10 +107,10 @@ describe('reteste', () => {
     expect(seed.nextCode).toBe('CT-004');
 
     // Plano do reteste: os que não passaram + um vizinho, com os mesmos códigos.
-    const keep = (s: Record<string, unknown>) => ({ code: s.code, title: s.title, priority: s.priority, risk: s.risk, types: s.types, steps: s.steps, expected: s.expected });
+    const keep = (s: Record<string, unknown>) => ({ code: s.code, title: s.title, priority: s.priority, risk: s.risk, types: s.types, preconditions: s.preconditions ?? 'admin logado no app de teste', steps: s.steps, expected: s.expected });
     await h.ok('plan_save', {
       runId,
-      scenarios: [...seed.retest.map(keep), { code: 'CT-001', title: 'Cenário CT-001', priority: 'P2', risk: 'MEDIUM', types: ['regression'], steps: ['ver lista'], expected: 'lista visível' }],
+      scenarios: [...seed.retest.map(keep), { code: 'CT-001', title: 'Cenário CT-001', priority: 'P2', risk: 'MEDIUM', types: ['regression'], preconditions: 'admin logado no app de teste', steps: ['ver lista'], expected: 'lista de alunos visível' }],
     });
     await h.ok('plan_approve', { runId });
     expect((await h.ok('browser_open', { runId, role: 'admin' })).authReused).toBe(true);
@@ -122,9 +123,10 @@ describe('reteste', () => {
     await h.ok('scenario_complete', { runId, code: 'CT-003', status: 'BLOCKED', classification: 'TEST_DATA_FAILURE', reason: 'ainda sem massa' });
     await h.ok('scenario_start', { runId, code: 'CT-001' });
     await h.ok('verify', { kind: 'ui', description: 'título antigo', target: { role: 'heading', name: 'Estudantes' }, timeoutMs: 300 });
+    await h.ok('verify', { kind: 'ui', description: 'título antigo', target: { role: 'heading', name: 'Estudantes' }, timeoutMs: 300 });
     await h.ok('network', {});
     await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'título mudou' });
-    await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'regressão no título' });
+    await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'regressão no título', noExplorationReason: 'teste da ferramenta, sem exploração' });
 
     const report = await h.ok('report_build', { runId });
     expect(report.summary).toContain(`Retest de ${parent}: corrigidos 1 · ainda falham 0 · regressões 1`);

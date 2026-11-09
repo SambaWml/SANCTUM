@@ -7,9 +7,11 @@ import { DigestCache } from '../sources/digest.ts';
 import type { Db } from '../state/db.ts';
 import type { StateStore } from '../state/store.ts';
 import { createRegistrar } from './tooling.ts';
+import { registerAnalysisTools } from './tools/analysis.ts';
 import { registerAutomationTools } from './tools/automation.ts';
 import { registerBrowserTools } from './tools/browser.ts';
 import { registerContextTools } from './tools/context.ts';
+import { registerEnvTools } from './tools/env.ts';
 import { registerJiraTools } from './tools/jira.ts';
 import { registerQaTools } from './tools/qa.ts';
 import { registerPermissionPrompt } from './tools/permission.ts';
@@ -35,7 +37,7 @@ export interface ServerDeps {
 }
 
 export function createServer(deps: ServerDeps): McpServer {
-  const server = new McpServer({ name: 'novo-qa', version: '0.1.0' });
+  const server = new McpServer({ name: 'sanctum', version: '0.1.0' });
   const tool = createRegistrar(server, {
     ...deps,
     currentRun: () => {
@@ -43,12 +45,24 @@ export function createServer(deps: ServerDeps): McpServer {
       return status?.open ? status.runId : null;
     },
   });
-  registerStateTools(tool, deps);
-  if (deps.config && deps.db) {
-    const full = { ...deps, config: deps.config, db: deps.db, cache: new DigestCache(deps.db, deps.rootDir) };
+  const cache = deps.db ? new DigestCache(deps.db, deps.rootDir) : undefined;
+  // Critérios de aceite e bugs ligados ao card (digest em cache), para o padrão de plano no plan_save.
+  const cardOf = (issueKey: string): { criteria: string[]; linkedBugs: string[] } => {
+    const hit = cache?.get('jira', issueKey, undefined, { internal: true });
+    if (!hit?.hit) return { criteria: [], linkedBugs: [] };
+    const d = hit.digest as { acceptanceCriteria?: string[]; links?: { key: string; relation: string; status?: string }[] };
+    // Bug ligado (sub-bug, "is caused by bug"…) ainda aberto pede regressão; o já fechado também, se não houver status.
+    const linkedBugs = (d.links ?? []).filter((l) => /bug|defeito/i.test(l.relation)).map((l) => l.key);
+    return { criteria: d.acceptanceCriteria ?? [], linkedBugs: [...new Set(linkedBugs)] };
+  };
+  registerStateTools(tool, { ...deps, cardOf });
+  if (deps.config && deps.db && cache) {
+    const full = { ...deps, config: deps.config, db: deps.db, cache };
     registerContextTools(tool, full);
     registerQaTools(tool, full);
     registerJiraTools(tool, { db: deps.db, rootDir: deps.rootDir });
+    registerEnvTools(tool, { rootDir: deps.rootDir });
+    registerAnalysisTools(tool, { db: deps.db, rootDir: deps.rootDir, cardOf, agent: () => server.server.getClientVersion()?.name ?? null });
     registerAutomationTools(tool, full);
   }
   if (deps.browser) registerBrowserTools(tool, deps.browser, deps.store);

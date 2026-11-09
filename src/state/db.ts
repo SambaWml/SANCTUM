@@ -1,5 +1,5 @@
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { existsSync, mkdirSync, renameSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { loadSqlite } from './sqlite.ts';
 
@@ -267,7 +267,7 @@ const MIGRATIONS: string[] = [
   `,
   // 7: saída do turno em arquivo (o agente não morre se o painel for reiniciado).
   `ALTER TABLE missions ADD COLUMN log_path TEXT;`,
-  // 8: run aberto pela missão (Antigravity não herda NOVO_QA_MISSION: o MCP dele é do processo do app).
+  // 8: run aberto pela missão (Antigravity não herda SANCTUM_MISSION: o MCP dele é do processo do app).
   `ALTER TABLE missions ADD COLUMN run_id TEXT;`,
   // 9: o que o usuário tirou do painel (missão excluída, run ocultado). Só some da tela: histórico e evidências ficam.
   `
@@ -285,7 +285,41 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX mission_messages_mid ON mission_messages(mission_id, id);
   `,
+  // 11: análise da US antes do teste (/analisar): lacunas, perguntas ao PO, riscos, melhorias e
+  //     rascunho de cenários; o /qa parte dela (context_build).
+  `
+  CREATE TABLE us_analyses (
+    id           INTEGER PRIMARY KEY,
+    issue_key    TEXT NOT NULL,
+    card_version TEXT,
+    agent        TEXT,
+    payload      TEXT NOT NULL,
+    report_path  TEXT,
+    created_at   TEXT NOT NULL
+  );
+  CREATE INDEX us_analyses_issue ON us_analyses(issue_key, created_at);
+  `,
 ];
+
+/**
+ * Banco padrão: data/sanctum.db. Instalação de antes da troca de nome (data/novo-qa.db) é
+ * renomeada na primeira abertura; se o arquivo antigo estiver em uso (outro processo aberto),
+ * continua nele até a próxima vez.
+ */
+export function defaultDbPath(root: string): string {
+  if (process.env.SANCTUM_DB) return process.env.SANCTUM_DB;
+  const path = join(root, 'data', 'sanctum.db');
+  const legacy = join(root, 'data', 'novo-qa.db');
+  if (existsSync(path) || !existsSync(legacy)) return path;
+  try {
+    renameSync(legacy, path);
+    for (const ext of ['-wal', '-shm']) if (existsSync(legacy + ext)) renameSync(legacy + ext, path + ext);
+    return path;
+  } catch {
+    if (existsSync(path) && !existsSync(legacy)) return path;
+    return legacy;
+  }
+}
 
 export function openDb(path: string): Db {
   const { DatabaseSync } = loadSqlite();

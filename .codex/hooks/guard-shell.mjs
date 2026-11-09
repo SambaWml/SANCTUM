@@ -21,13 +21,13 @@ async function main() {
     const reason = checkInput(JSON.parse(raw || '{}'));
     if (reason) {
       process.stdout.write(JSON.stringify({ hookSpecificOutput: {
-        hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `NOVO QA guard: ${reason}`,
+        hookEventName: 'PreToolUse', permissionDecision: 'deny', permissionDecisionReason: `Sanctum guard: ${reason}`,
       } }));
-      process.stderr.write(`NOVO QA guard: ${reason}\n`);
+      process.stderr.write(`Sanctum guard: ${reason}\n`);
       process.exitCode = 2;
     }
   } catch {
-    process.stderr.write('NOVO QA guard: entrada inválida; comando bloqueado.\n');
+    process.stderr.write('Sanctum guard: entrada inválida; comando bloqueado.\n');
     process.exitCode = 2;
   }
 }

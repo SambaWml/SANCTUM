@@ -1,6 +1,6 @@
 ---
 name: automate
-description: Gera e valida automação Playwright dos cenários aprovados no teste manual de um card (NOVO QA), a partir do que foi executado e verificado — não da user story. Uso: /automate CARD-123
+description: Gera e valida automação Playwright dos cenários aprovados no teste manual de um card (Sanctum), a partir do que foi executado e verificado — não da user story. Uso: /automate CARD-123
 argument-hint: CARD-123
 ---
 

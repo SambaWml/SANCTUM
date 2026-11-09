@@ -15,10 +15,10 @@ import { fileURLToPath } from 'node:url';
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
-const WATCH_DIR = process.env.NOVO_QA_WATCH_DIR ?? join(ROOT, 'src');
-const LOCK = process.env.NOVO_QA_BROWSER_LOCK ?? join(ROOT, 'data', 'browser-session.lock');
-const CHILD = process.env.NOVO_QA_CHILD ? [process.env.NOVO_QA_CHILD] : ['--import', 'tsx', join(ROOT, 'src', 'mcp', 'main.ts')];
-const RELOAD_ID_PREFIX = 'novo-qa-reload-';
+const WATCH_DIR = process.env.SANCTUM_WATCH_DIR ?? join(ROOT, 'src');
+const LOCK = process.env.SANCTUM_BROWSER_LOCK ?? join(ROOT, 'data', 'browser-session.lock');
+const CHILD = process.env.SANCTUM_CHILD ? [process.env.SANCTUM_CHILD] : ['--import', 'tsx', join(ROOT, 'src', 'mcp', 'main.ts')];
+const RELOAD_ID_PREFIX = 'sanctum-reload-';
 
 type Message = { id?: string | number; method?: string; [k: string]: unknown };
 
@@ -51,7 +51,7 @@ function failInflight(reason: string): void {
   inflight.clear();
 }
 
-const log = (msg: string) => process.stderr.write(`[novo-qa launcher] ${msg}\n`);
+const log = (msg: string) => process.stderr.write(`[sanctum launcher] ${msg}\n`);
 const toClient = (m: Message) => process.stdout.write(`${JSON.stringify(m)}\n`);
 const toClientRaw = (m: object) => process.stdout.write(`${JSON.stringify(m)}\n`);
 
@@ -83,7 +83,7 @@ function start(replay: boolean): void {
     if (closing || restarting || current !== child) return;
     // Saída inesperada: sobe de novo e refaz o handshake, se o cliente já tinha feito.
     log(`servidor saiu (código ${code}); reiniciando`);
-    failInflight('servidor novo-qa reiniciou; repita a chamada');
+    failInflight('servidor sanctum reiniciou; repita a chamada');
     start(initializeMsg !== undefined);
   });
   if (replay && initializeMsg) {
@@ -121,7 +121,7 @@ function tryRestart(): void {
   ready = false; // daqui até o handshake do filho novo, o que o cliente mandar fica na fila
   const old = child;
   // Só sobram chamadas perdidas (safeToRestart): respondem com erro em vez de ficar penduradas.
-  failInflight('servidor novo-qa recarregou o código; repita a chamada');
+  failInflight('servidor sanctum recarregou o código; repita a chamada');
   const timer = setTimeout(() => old.kill(), SHUTDOWN_MS);
   old.once('exit', () => {
     clearTimeout(timer);

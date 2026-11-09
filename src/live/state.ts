@@ -1,5 +1,7 @@
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { DigestCache } from '../sources/digest.ts';
+import { planCoverage } from '../state/coverage.ts';
 import type { Db } from '../state/db.ts';
 
 /**
@@ -12,12 +14,19 @@ export type AgentKind = 'claude' | 'antigravity' | 'codex' | 'other';
 export type FeedClass = '' | 'ok' | 'bad' | 'warn' | 'ask' | 'info' | 'muted';
 
 export interface FeedLine { ts: string; text: string; cls: FeedClass; runId: string; agent: AgentKind }
-export interface LiveScenario { code: string; title: string; priority: string; status: string; classification: string | null }
+export interface LiveScenario {
+  code: string; title: string; priority: string; status: string; classification: string | null;
+  preconditions?: string | null; steps?: string[]; expected?: string; observed?: string | null;
+}
 export interface LiveBug {
   code: string; title: string; jira?: string; runId: string; card: string; ts: string;
   screenshot?: string | null; priority?: string | null; rarity?: 'common' | 'rare' | 'epic' | 'legendary';
 }
-export interface Pending { runId: string; card: string; agent: AgentKind; kind: 'plan' | 'red'; title: string; detail: string; ts: string; scenarios?: LiveScenario[] }
+export interface Pending {
+  runId: string; card: string; agent: AgentKind; kind: 'plan' | 'red'; title: string; detail: string; ts: string; scenarios?: LiveScenario[];
+  /** Plano: critérios do card sem nenhum cenário (para o usuário ver antes de aprovar). */
+  uncovered?: string[];
+}
 
 export interface LiveRun {
   id: string; card: string; mode: string; env: string; status: string; agent: AgentKind; agentLabel: string;
@@ -34,6 +43,7 @@ export interface LiveRun {
   video: { id: number; chapters: { code: string; atSec: number }[] } | null;
   shots: { id: number; code: string | null; name: string }[];
   lastShot: number | null; report: boolean;
+  evidenceDir: string; reportPath: string;
 }
 
 export interface AgentScore { agent: AgentKind; label: string; xp: number; level: number; title: string; next: number; base: number }
@@ -91,6 +101,15 @@ export function buildLiveState(db: Db, opts: BuildOptions): LiveState {
 
   const runs = runRows.map((r) => buildRun(r, all, get, opts));
   const pending = runs.flatMap((r) => pendingOf(r, runRows.find((x) => x.id === r.id)!, get));
+  const cache = new DigestCache(db, opts.rootDir);
+  for (const p of pending.filter((x) => x.kind === 'plan')) {
+    const hit = cache.get('jira', p.card, undefined, { internal: true });
+    const criteria = hit.hit ? ((hit.digest as { acceptanceCriteria?: string[] }).acceptanceCriteria ?? []) : [];
+    if (criteria.length) {
+      const scenarios = all('SELECT code, title, expected FROM scenarios WHERE run_id = ?', p.runId).map((s) => ({ code: str(s.code), title: str(s.title), expected: str(s.expected) }));
+      p.uncovered = planCoverage(criteria, scenarios).uncovered;
+    }
+  }
 
   const today = now.toISOString().slice(0, 10);
   const bugsAll = explainedBugs(all, `ts >= ?`, new Date(now.getTime() - 7 * 86400_000).toISOString());
@@ -122,10 +141,10 @@ export function buildLiveState(db: Db, opts: BuildOptions): LiveState {
   };
 }
 
-function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[], get: (sql: string, ...a: (string | number)[]) => Row | undefined, opts: BuildOptions): LiveRun {
+export function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[], get: (sql: string, ...a: (string | number)[]) => Row | undefined, opts: BuildOptions): LiveRun {
   const id = str(r.id);
   const agent = agentKind(r.agent);
-  const scenarios = all(`SELECT id, code, title, priority, status, classification FROM scenarios WHERE run_id = ? ORDER BY seq`, id);
+  const scenarios = all(`SELECT id, code, title, priority, status, classification, preconditions, steps, expected, observed FROM scenarios WHERE run_id = ? ORDER BY seq`, id);
   const codeOf = new Map(scenarios.map((s) => [Number(s.id), str(s.code)]));
   const sc = (sid: unknown) => (sid === null || sid === undefined ? '' : `${codeOf.get(Number(sid)) ?? ''} `);
 
@@ -158,6 +177,7 @@ function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[]
         break;
       }
       case 'scenario.reopen': push(e.ts, `${code} reaberto: ${str(p.reason).slice(0, 100)}`, 'warn'); break;
+      case 'scenario.loop': push(e.ts, `${code} andando em círculo: ${str(p.actions)} ações e ${str(p.verifications)} verificações${p.level === 'stop' ? ' — travado pelo Sanctum' : ''}`, 'bad'); break;
       case 'scenario.reclassify': push(e.ts, `${code} reclassificado ${str(p.from)} → ${str(p.to)}`, 'warn'); break;
       case 'scenario.add': push(e.ts, `achou caminho novo: ${str(p.code)}`, 'info'); break;
       case 'guard.block': push(e.ts, `${code ? `${code} ` : ''}guard ${str(p.level)}: ${str(p.reason)}${p.needsApproval ? ' — precisa de você' : ''}`, 'ask'); break;
@@ -224,7 +244,13 @@ function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[]
       ? Math.max(0, Math.floor(((opts.now ?? new Date()).getTime() - Date.parse(last?.ts || str(r.started_at))) / 60_000)) : null,
     recommendation: r.recommendation ? str(r.recommendation) : null,
     ceilingReasons: parse<{ reasons?: string[] }>(complete?.payload, {}).reasons ?? [],
-    scenarios: scenarios.map((s) => ({ code: str(s.code), title: str(s.title), priority: str(s.priority), status: str(s.status), classification: s.classification ? str(s.classification) : null })),
+    scenarios: scenarios.map((s) => ({
+      code: str(s.code), title: str(s.title), priority: str(s.priority), status: str(s.status), classification: s.classification ? str(s.classification) : null,
+      preconditions: s.preconditions ? str(s.preconditions) : null,
+      steps: parse<string[]>(s.steps, []),
+      expected: str(s.expected),
+      observed: s.observed ? str(s.observed) : null,
+    })),
     current: current ? str(current.code) : null,
     nowLine: ACTIVE.includes(status) ? (last?.text ?? 'preparando…') : status === 'ABORTED' ? 'missão abortada' : 'missão encerrada',
     feed, bugs, summaries: [...summaries.values()],
@@ -240,6 +266,8 @@ function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[]
       .map((p) => ({ id: Number(p.id), code: codeOf.get(Number(p.scenario_id)) ?? null, name: str(p.path).split(/[\\/]/).pop() ?? '' })),
     lastShot: pngs.length ? Number(pngs[pngs.length - 1]!.id) : null,
     report: existsSync(join(opts.rootDir, 'reports', str(r.issue_key), `${id}.html`)),
+    evidenceDir: join(opts.rootDir, 'runs', str(r.issue_key), id, 'evidence'),
+    reportPath: join(opts.rootDir, 'reports', str(r.issue_key), `${id}.html`),
   };
 }
 

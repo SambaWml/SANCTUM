@@ -1,4 +1,4 @@
-# NOVO QA
+# Sanctum
 
 Agente local de QA. Você (Claude) é o QA; o código em `src/` fornece ferramentas, estado, segurança e evidência. Arquitetura e decisões: `docs/ARCHITECTURE.md` (leia a seção relevante, não o arquivo todo).
 
@@ -9,8 +9,8 @@ Agente local de QA. Você (Claude) é o QA; o código em `src/` fornece ferramen
 - Comportamento observado não vira regra de negócio sem fonte (proveniência).
 
 ## Uso
-- `/qa CARD [--explore] [--automate]` ou `/qa <URL> --explore` (missão sem card, qualquer sistema), `/qa-resume CARD`, `/retest CARD`, `/automate CARD` — skills em `.claude/skills/`; executa em lotes pelo subagente `test-executor` (`.claude/agents/`).
-- Ambiente novo: cadastrar em `config/environments.yaml`, senha no `.env` (com aspas se tiver `#`), `config_reload`.
+- `/qa CARD [--explore] [--automate]` ou `/qa <URL> --explore` (missão sem card, qualquer sistema), `/qa-resume CARD`, `/retest CARD`, `/automate CARD`, `/analisar CARD` (análise da US antes do teste: lacunas, perguntas ao PO, melhorias, rascunho de cenários) — skills em `.claude/skills/`; executa em lotes pelo subagente `test-executor` (`.claude/agents/`).
+- Ambiente novo: `env_register` (só acrescenta; criação de dados desligada até o usuário liberar), senha no `.env` (com aspas se tiver `#`), `config_reload`.
 - Saídas: `runs/` (evidências), `reports/` (relatórios), `knowledge/<projeto>/` (execution knowledge e `_staging/` para revisão).
 
 ## Desenvolvimento

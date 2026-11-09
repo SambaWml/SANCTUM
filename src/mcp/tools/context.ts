@@ -40,7 +40,7 @@ export function registerContextTools(tool: RegisterTool, deps: ContextDeps & { s
     'getJiraIssue',
     'Consulta dados de um card do Jira (via integração Atlassian / TWG do ambiente). Devolve issue com summary, description, status, etc.',
     {
-      issueIdOrKey: z.string().describe('chave do card, ex.: GURUJA-9038'),
+      issueIdOrKey: z.string().describe('chave do card, ex.: PROJ-123'),
       fields: z.array(z.string()).optional(),
     },
     (a) => {

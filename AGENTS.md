@@ -1,6 +1,6 @@
-# NOVO QA no Codex
+# Sanctum no Codex
 
-Agente local de QA em português. O servidor MCP `novo-qa` fornece navegador,
+Agente local de QA em português. O servidor MCP `sanctum` fornece navegador,
 estado, evidências e regras; o agente planeja e investiga. Leia `CLAUDE.md` para
 as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 
@@ -8,7 +8,7 @@ as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 
 - Configuração do Codex: `.codex/config.toml`; skills: `.agents/skills/`.
   Preserve `.claude/`, `CLAUDE.md` e `.mcp.json`: continuam atendendo o Claude.
-- Antes de QA, confirme que as ferramentas `novo-qa` estão disponíveis (o `novo-qa` integra
+- Antes de QA, confirme que as ferramentas `sanctum` estão disponíveis (o `sanctum` integra
   leitura do Jira via `digest_get`, `getJiraIssue` e TWG local, ou Atlassian MCP).
   Se faltarem, explique a conexão necessária; não simule resultados nem opere
   o app por shell, browser externo, CUA, scripts ad-hoc ou outro MCP.
@@ -20,10 +20,10 @@ as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 - As duas ferramentas sensíveis têm `approval_mode = "prompt"` no Codex.
   Não afrouxe essas configurações nem use uma chamada alternativa para evitá-las.
   O servidor também exige confirmação humana por MCP elicitation form quando
-  iniciado com `NOVO_QA_CLIENT=codex`; falta de suporte ou recusa bloqueia a ação.
+  iniciado com `SANCTUM_CLIENT=codex`; falta de suporte ou recusa bloqueia a ação.
 - O hook `.codex/hooks/guard-shell.mjs` reutiliza o bloqueio de shell do Claude.
   Não presuma que hooks locais estejam ativos em clientes com orquestração cloud.
-  A obrigação de operar o app só pelo `novo-qa` vale em todos os clientes.
+  A obrigação de operar o app só pelo `sanctum` vale em todos os clientes.
 - Siga o roteiro da skill etapa por etapa. Não crie scripts nem arquivos avulsos
   (na raiz ou fora dela) para consultar o banco, o Jira ou montar relatórios: use
   `run_status`, `report_build`, `digest_*` e o Atlassian MCP.
@@ -37,7 +37,7 @@ as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
 
 Use as skills locais `qa`, `qa-resume`, `retest` e `automate` para pedidos de QA,
 retomada, reteste e automação. Elas referenciam os roteiros existentes e adaptam
-a execução ao Codex. Em linguagem natural: "teste o card GURUJA-123".
+a execução ao Codex. Em linguagem natural: "teste o card PROJ-123".
 
 Um agente opera este workspace por vez. Antes de trocar entre Claude e Codex,
 feche o navegador/servidor anterior e consulte `run_status`; retome o estado
@@ -51,6 +51,6 @@ TypeScript ESM com imports `.ts`, execução por `tsx`. SQLite só por
 Valide mudanças de código com `npm run typecheck` e os testes pertinentes;
 `npm test` executa a suíte completa com app fixture local.
 
-No MCP iniciado pelo Codex, `NOVO_QA_CLIENT=codex` desabilita a ingestão de
+No MCP iniciado pelo Codex, `SANCTUM_CLIENT=codex` desabilita a ingestão de
 transcripts do Claude. Tempo, chamadas de ferramentas e resultados continuam
 disponíveis; tokens/custos do Codex ainda não são contabilizados.

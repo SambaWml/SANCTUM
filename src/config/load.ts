@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parse } from 'yaml';
 import type { z } from 'zod';
@@ -36,12 +36,28 @@ function readYaml<S extends z.ZodType>(path: string, schema: S, problems: string
   return result.data;
 }
 
-/** Carrega e valida config/*.yaml. Lança ConfigError com todos os problemas encontrados. */
+/**
+ * Projetos e ambientes reais de cada instalação ficam em `*.local.yaml` (fora do git: URLs e
+ * usuários de cliente); os arquivos base trazem só o que é da ferramenta (fixture, painel).
+ * O local acrescenta ao base; mesmo id no local substitui o do base.
+ */
+export const LOCAL_FILES = { projects: 'projects.local.yaml', environments: 'environments.local.yaml' } as const;
+
+function readMerged<S extends z.ZodType>(dir: string, base: string, local: string, schema: S, problems: string[]): z.infer<S> | undefined {
+  const a = readYaml(join(dir, base), schema, problems) as Record<string, Record<string, unknown>> | undefined;
+  if (!existsSync(join(dir, local))) return a as z.infer<S> | undefined;
+  const b = readYaml(join(dir, local), schema, problems) as Record<string, Record<string, unknown>> | undefined;
+  if (!a || !b) return undefined;
+  const key = Object.keys(a)[0]!;
+  return { ...a, [key]: { ...a[key], ...b[key] } } as z.infer<S>;
+}
+
+/** Carrega e valida config/*.yaml (+ *.local.yaml). Lança ConfigError com todos os problemas encontrados. */
 export function loadConfig(rootDir: string): Config {
   const dir = join(rootDir, 'config');
   const problems: string[] = [];
-  const projects = readYaml(join(dir, 'projects.yaml'), ProjectsFile, problems);
-  const environments = readYaml(join(dir, 'environments.yaml'), EnvironmentsFile, problems);
+  const projects = readMerged(dir, 'projects.yaml', LOCAL_FILES.projects, ProjectsFile, problems);
+  const environments = readMerged(dir, 'environments.yaml', LOCAL_FILES.environments, EnvironmentsFile, problems);
   const policy = readYaml(join(dir, 'qa-policy.yaml'), PolicyFile, problems);
 
   if (projects && environments) {

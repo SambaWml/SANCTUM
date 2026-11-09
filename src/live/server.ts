@@ -4,10 +4,11 @@ import { createServer as createHttpServer, type IncomingMessage, type Server, ty
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Redactor } from '../security/redact.ts';
+import { getTwgBin, runTwgJson } from '../sources/jira.ts';
 import type { Db } from '../state/db.ts';
 import { MissionError, type MissionKind, type MissionManager, type MissionTarget } from './missions.ts';
 import { answerPrompt, pendingPrompts } from './prompts.ts';
-import { buildLiveState } from './state.ts';
+import { buildLiveState, buildRun } from './state.ts';
 import type { UsageMeter } from './usage.ts';
 
 /**
@@ -27,7 +28,7 @@ export interface LiveServerDeps {
 
 const PAGE = join(dirname(fileURLToPath(import.meta.url)), 'page.html');
 const MEDIA: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webm': 'video/webm' };
-const KINDS: MissionKind[] = ['qa', 'explore', 'retest', 'resume'];
+const KINDS: MissionKind[] = ['qa', 'explore', 'retest', 'resume', 'analyze'];
 
 /** Arquivo (relativo à raiz do projeto) dentro de `base`, seguindo links; null se sair da pasta ou não existir. */
 export function insideDir(rootDir: string, base: string, file: string): string | null {
@@ -63,7 +64,7 @@ export function createLiveServer(deps: LiveServerDeps): Server {
     try {
       const missions = deps.missions;
       if (!missions || !deps.token) return json(res, 405, { error: 'painel só de leitura' });
-      const given = String(req.headers['x-novo-qa-token'] ?? '');
+      const given = String(req.headers['x-sanctum-token'] ?? '');
       if (given.length !== deps.token.length || !timingSafeEqual(Buffer.from(given), Buffer.from(deps.token))) {
         return json(res, 403, { error: 'chave do painel inválida — recarregue a página' });
       }
@@ -76,7 +77,10 @@ export function createLiveServer(deps: LiveServerDeps): Server {
         const kind = KINDS.includes(body.kind as MissionKind) ? (body.kind as MissionKind) : 'qa';
         const objective = typeof body.objective === 'string' ? body.objective.slice(0, 2000) : undefined;
         const agent = body.agent === 'antigravity' ? 'antigravity' : 'claude';
-        return json(res, 200, missions.launch({ agent, target, kind, objective }));
+        const images = Array.isArray(body.images)
+          ? (body.images as { name?: string; dataBase64?: string }[]).filter(x => typeof x?.dataBase64 === 'string').map(x => ({ name: String(x.name || 'image.png'), dataBase64: String(x.dataBase64) }))
+          : [];
+        return json(res, 200, missions.launch({ agent, target, kind, objective, images }));
       }
       const m = /^\/api\/missions\/(M-[0-9T-]+)\/(reply|stop|resume|archive|done)$/.exec(path);
       if (m) {
@@ -85,7 +89,10 @@ export function createLiveServer(deps: LiveServerDeps): Server {
         if (m[2] === 'resume') return json(res, 200, missions.resumeMission(m[1]!));
         if (m[2] === 'archive') return json(res, 200, missions.archive(m[1]!));
         const text = typeof body.text === 'string' ? body.text.slice(0, 4000) : '';
-        return json(res, 200, missions.reply(m[1]!, text, { approvePlan: body.approvePlan === true }));
+        const images = Array.isArray(body.images)
+          ? (body.images as { name?: string; dataBase64?: string }[]).filter(x => typeof x?.dataBase64 === 'string').map(x => ({ name: String(x.name || 'image.png'), dataBase64: String(x.dataBase64) }))
+          : [];
+        return json(res, 200, missions.reply(m[1]!, text, { approvePlan: body.approvePlan === true, images }));
       }
       const hide = /^\/api\/runs\/([A-Z][A-Z0-9]*-\d+-\d{8}T\d{6}(?:-\d+)?)\/hide$/.exec(path);
       if (hide) {
@@ -95,6 +102,23 @@ export function createLiveServer(deps: LiveServerDeps): Server {
       if (path === '/api/runs/hide-inactive') {
         const count = missions.hideAllInactive();
         return json(res, 200, { ok: true, count });
+      }
+      if (path === '/api/jira/comment') {
+        const card = typeof body.card === 'string' ? body.card.trim() : '';
+        const text = typeof body.text === 'string' ? body.text.trim() : '';
+        if (!card || !text) return json(res, 400, { error: 'card e texto obrigatórios' });
+        if (/playwright|trace\.zip|\.trace\b/i.test(text)) {
+          return json(res, 400, { error: 'comentário não pode citar Playwright nem trace' });
+        }
+        const bin = getTwgBin();
+        if (!bin) return json(res, 400, { error: 'CLI twg do Atlassian não encontrada no ambiente' });
+        try {
+          const raw = runTwgJson(['jira', 'workitem', 'comment', 'create', '--issue-id', card, '--body', text, '--body-format', 'markdown']);
+          return json(res, 200, { ok: true, raw });
+        } catch (err) {
+          const e = err as { stderr?: string; stdout?: string; message: string };
+          return json(res, 500, { error: (e.stderr || e.stdout || e.message).trim().slice(0, 400) });
+        }
       }
       const p = /^\/api\/prompts\/(\d+)$/.exec(path);
       if (p) {
@@ -119,7 +143,8 @@ export function createLiveServer(deps: LiveServerDeps): Server {
       if (req.method !== 'GET') return send(res, 405, 'text/plain; charset=utf-8', 'método não permitido');
 
       if (url.pathname === '/') {
-        const page = readFileSync(PAGE, 'utf8').replace('__NOVO_QA_TOKEN__', deps.token && deps.missions ? deps.token : '');
+        const page = readFileSync(PAGE, 'utf8').replace('__SANCTUM_TOKEN__', deps.token && deps.missions ? deps.token : '')
+          .replace('__SANCTUM_JIRA__', /^https:\/\/[\w.-]+$/.test(process.env.SANCTUM_JIRA_URL ?? '') ? process.env.SANCTUM_JIRA_URL! : '');
         return send(res, 200, 'text/html; charset=utf-8', page);
       }
       if (url.pathname === '/sanctum-logo.png') {
@@ -137,6 +162,15 @@ export function createLiveServer(deps: LiveServerDeps): Server {
           missions: deps.missions?.list() ?? [],
           prompts: deps.missions ? pendingPrompts(db) : [],
         });
+      }
+
+      const runMatch = /^\/api\/runs\/([^/]+)$/.exec(url.pathname);
+      if (runMatch) {
+        const runId = decodeURIComponent(runMatch[1]!);
+        const row = db.prepare('SELECT * FROM runs WHERE id = ? OR issue_key = ? ORDER BY started_at DESC LIMIT 1').get(runId, runId) as Record<string, unknown> | undefined;
+        if (!row) return json(res, 404, { error: 'run não encontrado' });
+        const run = buildRun(row, (sql, ...a) => db.prepare(sql).all(...a) as Record<string, unknown>[], (sql, ...a) => db.prepare(sql).get(...a) as Record<string, unknown> | undefined, { rootDir, now: deps.now?.() });
+        return json(res, 200, run);
       }
 
       const evidence = /^\/evidence\/(\d+)$/.exec(url.pathname);
@@ -179,7 +213,7 @@ function readJson(req: IncomingMessage): Promise<Record<string, unknown>> {
     const chunks: Buffer[] = [];
     req.on('data', (c: Buffer) => {
       size += c.length;
-      if (size > 64 * 1024) { reject(new SyntaxError('corpo grande demais')); req.destroy(); return; }
+      if (size > 30 * 1024 * 1024) { reject(new SyntaxError('corpo grande demais')); req.destroy(); return; }
       chunks.push(c);
     });
     req.on('end', () => {

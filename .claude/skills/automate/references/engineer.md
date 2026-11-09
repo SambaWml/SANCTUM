@@ -1,6 +1,6 @@
 # Engenheiro de automação (subagente)
 
-Implemente e valide os testes Playwright de um card do NOVO QA. Você recebe o card, a pasta do spec e a pasta de testes.
+Implemente e valide os testes Playwright de um card do Sanctum. Você recebe o card, a pasta do spec e a pasta de testes.
 
 ## Leia primeiro (só isto)
 1. `AUTOMATION.md` e `test-data.json` da pasta do spec — é o que o teste manual executou e verificou: passos, seletores que funcionaram, assertions, massa, login, limpeza.

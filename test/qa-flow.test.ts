@@ -13,7 +13,7 @@ import { StateStore, type ScenarioInput } from '../src/state/store.ts';
 import { createHarness, PASSWORD, type Harness } from './harness.ts';
 
 const sc = (code: string, risk: ScenarioInput['risk']): ScenarioInput => ({
-  code, title: `Cenário ${code}`, priority: 'P2', risk, types: ['functional'], steps: ['passo'], expected: 'resultado',
+  code, title: `Cenário ${code}`, priority: 'P2', risk, types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['passo'], expected: 'resultado visível na tela',
 });
 
 describe('lotes por risco (D4)', () => {
@@ -42,7 +42,7 @@ describe('lotes por risco (D4)', () => {
 
 describe('proposta de conhecimento', () => {
   let root: string;
-  beforeAll(() => { root = mkdtempSync(join(tmpdir(), 'novo-qa-know-')); });
+  beforeAll(() => { root = mkdtempSync(join(tmpdir(), 'sanctum-know-')); });
   afterAll(() => rmSync(root, { recursive: true, force: true }));
 
   it('aceita observação com fonte no run, recusa regra vinda do teste e deduplica', () => {
@@ -69,7 +69,7 @@ describe('proposta de conhecimento', () => {
 
 describe('config_reload', () => {
   it('ambiente novo e senha nova passam a valer sem reiniciar, e a senha passa a ser redigida', () => {
-    const root = mkdtempSync(join(tmpdir(), 'novo-qa-reload-'));
+    const root = mkdtempSync(join(tmpdir(), 'sanctum-reload-'));
     try {
       cpSync(join(import.meta.dirname, '..', 'config'), join(root, 'config'), { recursive: true });
       const config = loadConfig(root);
@@ -137,8 +137,8 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     await h.ok('plan_save', {
       runId, modules: ['alunos'],
       scenarios: [
-        { code: 'CT-001', title: 'Cadastrar aluno (CA01)', priority: 'P0', risk: 'HIGH', types: ['functional'], steps: ['Novo aluno', 'Nome', 'Salvar'], expected: 'aluno na lista após recarregar' },
-        { code: 'CT-002', title: 'Erro ao salvar (CA02)', priority: 'P1', risk: 'MEDIUM', types: ['negative'], steps: ['salvar "erro"'], expected: 'mensagem de erro' },
+        { code: 'CT-001', title: 'Cadastrar aluno (CA01)', priority: 'P0', risk: 'HIGH', types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['Novo aluno', 'Nome', 'Salvar'], expected: 'aluno na lista após recarregar' },
+        { code: 'CT-002', title: 'Erro ao salvar (CA02)', priority: 'P1', risk: 'MEDIUM', types: ['negative'], preconditions: 'admin logado no app de teste', steps: ['salvar "erro"'], expected: 'mensagem de erro ao salvar' },
       ],
     });
     await h.ok('plan_approve', { runId });
@@ -178,6 +178,7 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     await h.ok('act', { action: 'fill', target: { label: 'Nome' }, value: 'erro' });
     await h.ok('act', { action: 'click', target: { role: 'button', name: 'Salvar' } });
     await h.ok('verify', { kind: 'ui', description: 'mensagem amigável de erro', target: { role: 'status' }, condition: 'containsText', text: 'Não foi possível salvar', timeoutMs: 500 });
+    await h.ok('verify', { kind: 'ui', description: 'mensagem amigável de erro', target: { role: 'status' }, condition: 'containsText', text: 'Não foi possível salvar', timeoutMs: 500 });
     await h.ok('network', { urlContains: '/api/students', method: 'POST' });
     await h.ok('scenario_complete', { runId, code: 'CT-002', status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'API devolve 500 e a tela mostra só "Erro ao salvar", sem orientação' });
 
@@ -189,7 +190,7 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
       runId, module: 'alunos',
       statements: [{ statement: 'POST /api/students devolve 500 para o nome "erro"', kind: 'regression', status: 'OBSERVED', confidence: 'HIGH', source: { type: 'run', reference: runId } }],
     });
-    const done = await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'CA02 violado: erro ao salvar sem mensagem útil.' });
+    const done = await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'CA02 violado: erro ao salvar sem mensagem útil.', noExplorationReason: 'teste da ferramenta, sem exploração' });
     expect(done.executionKnowledge.merged).toMatchObject({ file: 'knowledge/fixture/execution/alunos.json' });
 
     const report = await h.ok('report_build', { runId });

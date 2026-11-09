@@ -47,7 +47,7 @@ describe('relatório do Playwright', () => {
       tests: statuses.map((status) => ({ status, annotations, results: [{ status: status === 'expected' ? 'passed' : 'failed', duration: 10, ...(status === 'unexpected' ? { error: { message: '\u001b[31mTimeout 5000ms\u001b[39m\n  at x' } } : {}) }] })),
     });
     const parsed = parseReport({
-      suites: [{ suites: [{ specs: [spec('CT-001 — ok', ['expected', 'expected']), spec('CT-002 — instável', ['expected', 'unexpected']), spec('CT-003 — quebra', ['unexpected', 'unexpected'], [{ type: 'novo-qa-blocked', description: 'DELETE /api/students/1' }]), spec('sem código', ['skipped'])] }] }],
+      suites: [{ suites: [{ specs: [spec('CT-001 — ok', ['expected', 'expected']), spec('CT-002 — instável', ['expected', 'unexpected']), spec('CT-003 — quebra', ['unexpected', 'unexpected'], [{ type: 'sanctum-blocked', description: 'DELETE /api/students/1' }]), spec('sem código', ['skipped'])] }] }],
     });
     expect(parsed.tests.map((t) => [t.scenario, t.status, t.attempts])).toEqual([
       ['CT-001', 'passed', 2], ['CT-002', 'flaky', 2], ['CT-003', 'failed', 2], [null, 'skipped', 1],
@@ -121,7 +121,7 @@ describe('automação ponta a ponta: manual → assess → AUTOMATION.md → spe
     await h.ok('cleanup_run', { runId });
 
     expect((await h.call('automation_assess', { runId, assessments: [{ code: 'CT-001', factors: good }] })).text).toMatch(/run está EXECUTING/);
-    await h.ok('run_complete', { runId, recommendation: 'APROVADO', summary: 'cadastro ok' });
+    await h.ok('run_complete', { runId, recommendation: 'APROVADO', summary: 'cadastro ok', noExplorationReason: 'teste da ferramenta, sem exploração' });
   }, 60_000);
 
   it('assess + spec geram AUTOMATION.md a partir do que foi executado e verificado', async () => {

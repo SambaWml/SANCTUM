@@ -1,6 +1,6 @@
 ---
 name: automate
-description: Gera e valida automação Playwright a partir de uma execução manual concluída do NOVO QA, usando os passos e verificações registrados.
+description: Gera e valida automação Playwright a partir de uma execução manual concluída do Sanctum, usando os passos e verificações registrados.
 ---
 
 # Automação pelo Codex

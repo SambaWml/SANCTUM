@@ -1,7 +1,7 @@
 ---
 name: test-executor
-description: Executa um lote de cenários de um run do NOVO QA no navegador (operar, verificar, investigar, classificar, registrar) e devolve um resumo curto. Use a partir do /qa, /qa-resume ou /retest, passando runId e os códigos do lote.
-tools: mcp__novo-qa__batch_brief, mcp__novo-qa__run_status, mcp__novo-qa__browser_close, mcp__novo-qa__scenario_start, mcp__novo-qa__scenario_complete, mcp__novo-qa__scenario_add, mcp__novo-qa__browser_open, mcp__novo-qa__browser_save_auth, mcp__novo-qa__navigate, mcp__novo-qa__snapshot, mcp__novo-qa__act, mcp__novo-qa__act_approved, mcp__novo-qa__verify, mcp__novo-qa__network, mcp__novo-qa__console, mcp__novo-qa__screenshot, mcp__novo-qa__data_register, mcp__novo-qa__browser_viewport, mcp__novo-qa__network_simulate, mcp__novo-qa__network_simulate_clear, Read
+description: Executa um lote de cenários de um run do Sanctum no navegador (operar, verificar, investigar, classificar, registrar) e devolve um resumo curto. Use a partir do /qa, /qa-resume ou /retest, passando runId e os códigos do lote.
+tools: mcp__sanctum__batch_brief, mcp__sanctum__run_status, mcp__sanctum__browser_close, mcp__sanctum__scenario_start, mcp__sanctum__scenario_complete, mcp__sanctum__scenario_add, mcp__sanctum__browser_open, mcp__sanctum__browser_save_auth, mcp__sanctum__navigate, mcp__sanctum__snapshot, mcp__sanctum__act, mcp__sanctum__act_approved, mcp__sanctum__verify, mcp__sanctum__network, mcp__sanctum__console, mcp__sanctum__screenshot, mcp__sanctum__data_register, mcp__sanctum__browser_viewport, mcp__sanctum__network_simulate, mcp__sanctum__network_simulate_clear, Read
 model: sonnet
 ---
 
@@ -21,7 +21,7 @@ Fechado ou em outro run → `browser_open(runId, role)`. Sem sessão salva: logi
 Não declare bug de primeira. Investigue com custo proporcional à dúvida: diff/snapshot → `network` (status, corpo) → `console` → `verify` api → screenshot → reproduza (repita a verificação com a mesma descrição).
 
 Classifique:
-- PRODUCT_BUG — o produto contraria o card/regra, reproduzido ou com causa vista em network/console.
+- PRODUCT_BUG — o produto contraria o card/regra **e se reproduz**: repita os mesmos passos e a mesma verificação (mesma `description`) e veja falhar de novo. Visto uma vez só não é bug: NEEDS_REVIEW com o que viu; intermitente → NEEDS_REVIEW com "intermitente X de Y tentativas" no `reason`. Ação que não se repete igual (remover, comprar): recrie o dado e repita. O Sanctum recusa PRODUCT_BUG sem reprodução.
 - ENVIRONMENT_FAILURE — ambiente fora, deploy antigo, serviço de terceiros, 5xx sem relação com a ação. Se a mudança apareceu logo depois de o navegador cair/reabrir, confirme antes com `browser_open` **sem papel** e login do zero, e de novo após alguns minutos: sessão/cache velho e redeploy em andamento passam sozinhos.
 - Resultado esperado escrito no plano que contraria uma regra do card (ex.: botão oculto por preferência do professor) → EXPECTED_BEHAVIOR, citando a regra; não é falha.
 - TEST_DATA_FAILURE — falta massa ou a massa está em estado errado.

@@ -8,7 +8,7 @@ import { checkAtlassianMcp, checkEnvironments, checkNode, checkSqlite, runDoctor
 const REPO_ROOT = join(import.meta.dirname, '..');
 const dirs: string[] = [];
 function tempDir(): string {
-  const d = mkdtempSync(join(tmpdir(), 'novo-qa-doctor-'));
+  const d = mkdtempSync(join(tmpdir(), 'sanctum-doctor-'));
   dirs.push(d);
   return d;
 }
@@ -65,10 +65,10 @@ describe('doctor: configuração do Codex', () => {
     const d = tempDir();
     expect(checkCodexPaths(d).status).toBe('ok'); // sem .codex: nada a conferir
     mkdirSync(join(d, '.codex'));
-    writeFileSync(join(d, '.codex', 'config.toml'), `[mcp_servers.novo-qa]\ncwd = '${d}'\n`);
+    writeFileSync(join(d, '.codex', 'config.toml'), `[mcp_servers.sanctum]\ncwd = '${d}'\n`);
     writeFileSync(join(d, '.codex', 'hooks.json'), JSON.stringify({ hooks: { PreToolUse: [{ hooks: [{ command: `node "${d.replace(/\\/g, '/')}/.codex/hooks/guard-shell.mjs"` }] }] } }));
     expect(checkCodexPaths(d).status).toBe('ok');
-    writeFileSync(join(d, '.codex', 'config.toml'), "[mcp_servers.novo-qa]\ncwd = 'C:\\\\outra\\\\pasta'\n");
+    writeFileSync(join(d, '.codex', 'config.toml'), "[mcp_servers.sanctum]\ncwd = 'C:\\\\outra\\\\pasta'\n");
     expect(checkCodexPaths(d)).toMatchObject({ status: 'warn', detail: expect.stringContaining('config.toml') });
   });
 

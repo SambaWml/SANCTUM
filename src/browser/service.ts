@@ -156,7 +156,7 @@ export class BrowserService {
 
   /**
    * Requisição para o próprio app: mesma origem do ambiente ou com o token do app (API em outro
-   * host, como api-guruja-dev). Tráfego de terceiros (player do YouTube, analytics) não é dado do teste.
+   * host, como api-sistema-dev). Tráfego de terceiros (player do YouTube, analytics) não é dado do teste.
    */
   private appRequest(session: Session, url: URL, headers?: Record<string, string>): boolean {
     if (url.origin === new URL(session.baseUrl).origin) return true;
@@ -237,7 +237,7 @@ export class BrowserService {
         if (sim.delayMs) await new Promise((r) => setTimeout(r, sim.delayMs));
         if (sim.abort) return route.abort('failed');
         if (sim.status !== undefined) {
-          return route.fulfill({ status: sim.status, contentType: 'application/json', body: sim.body ?? JSON.stringify({ error: `simulado pelo NOVO QA (${sim.status})` }) });
+          return route.fulfill({ status: sim.status, contentType: 'application/json', body: sim.body ?? JSON.stringify({ error: `simulado pelo Sanctum (${sim.status})` }) });
         }
         // Só atraso: segue para o servidor (ainda sob o guard de DELETE abaixo).
       }
@@ -414,7 +414,7 @@ export class BrowserService {
       throw new BrowserError(`URL recusada (${url.protocol}): só http(s) ou caminho relativo ao ambiente`);
     }
     if (isLivePanel(url, this.deps.rootDir)) {
-      throw new BrowserError('URL recusada: é a Central de Caça do próprio NOVO QA, onde o usuário aprova os pedidos do agente — não pode ser testada pelo agente');
+      throw new BrowserError('URL recusada: é a Central de Caça do próprio Sanctum, onde o usuário aprova os pedidos do agente — não pode ser testada pelo agente');
     }
     return url;
   }
@@ -475,7 +475,7 @@ export class BrowserService {
     const name = `${code ?? 'run'}-${Date.now()}-${(input.label ?? 'screenshot').replace(/[^\w-]+/g, '_')}.png`;
     const path = evidencePath(this.deps.rootDir, issueKey, runId, name);
     // O cursor desenhado é para o vídeo: no print ele esconderia conteúdo.
-    const style = '[data-novo-qa-cursor]{display:none!important}';
+    const style = '[data-sanctum-cursor]{display:none!important}';
     const shot = input.target
       ? await (await resolveOne(page, input.target)).screenshot({ mask, style })
       : await page.screenshot({ fullPage: input.fullPage ?? false, mask, style });
@@ -539,6 +539,7 @@ export class BrowserService {
     const session = this.s;
     const { page, net } = session;
     const code = this.currentScenario();
+    this.loopGuard(code);
     const started = Date.now();
     const urlBefore = page.url();
 
@@ -635,6 +636,7 @@ export class BrowserService {
       requests: requests.map(summarize),
       blockedRequests: blocked.length ? blocked.map((b) => `${b.method} ${b.path} (bloqueado pelo guard)`) : undefined,
       unexpectedMutation: unexpected.length ? unexpected : undefined,
+      loopWarning: this.loopWarning(code),
       mutationWarning: unexpected.length
         ? 'ação classificada GREEN alterou dados no servidor: não repita sem aprovação; registre o dado com data_register e trate como achado'
         : undefined,
@@ -732,9 +734,27 @@ export class BrowserService {
 
   // ── Verificação ─────────────────────────────────────────────────────
 
+  /** Cenário que passou do limite de volume (ver StateStore.scenarioLoad): para de operar. */
+  private loopGuard(code: string | null): void {
+    if (!code) return;
+    const load = this.deps.store.scenarioLoad(this.scenarioId(code)!);
+    if (load.level === 'stop') {
+      throw new BrowserError(`${code} passou do limite (${load.actions} ações, ${load.verifications} verificações nesta tentativa): ` +
+        'pare de repetir. Conclua com o que tem (NEEDS_REVIEW ou BLOCKED com o motivo) ou peça orientação ao usuário; para tentar de outro jeito, scenario_reopen.');
+    }
+  }
+
+  private loopWarning(code: string | null): string | undefined {
+    if (!code) return undefined;
+    const load = this.deps.store.scenarioLoad(this.scenarioId(code)!);
+    return load.level === 'ok' ? undefined
+      : `${code} já tem ${load.actions} ações e ${load.verifications} verificações nesta tentativa — se está repetindo a mesma coisa, conclua (NEEDS_REVIEW/BLOCKED) ou peça orientação`;
+  }
+
   async verify(input: VerifyInput) {
     const session = this.s;
     const code = this.requireScenario();
+    this.loopGuard(code);
     const timeout = input.timeoutMs ?? 5000;
     let outcome: { passed: boolean; expected: string; actual: string };
 
@@ -789,7 +809,7 @@ export class BrowserService {
       kind: input.kind, description: input.description, expected, actual, passed: outcome.passed, evidenceId: evidence?.evidenceId,
       spec: input,
     });
-    return { passed: outcome.passed, kind: input.kind, expected, actual, evidence: evidence?.path };
+    return { passed: outcome.passed, kind: input.kind, expected, actual, evidence: evidence?.path, loopWarning: this.loopWarning(code) };
   }
 
   private async poll(timeoutMs: number, check: () => Promise<{ passed: boolean; expected: string; actual: string }>) {

@@ -6,7 +6,7 @@ import type { Db } from '../../state/db.ts';
 import type { RegisterTool } from '../tooling.ts';
 
 /**
- * Escrita no Jira pelo NOVO QA (criar card/sub-bug, comentar, mudar status), pela CLI `twg` já
+ * Escrita no Jira pelo Sanctum (criar card/sub-bug, comentar, mudar status), pela CLI `twg` já
  * autenticada na conta do usuário — funciona com qualquer agente, inclusive o Antigravity, que não
  * completa o login do Atlassian MCP fora do editor. As três são sensíveis: o usuário aprova cada
  * chamada (Claude Code: "ask"; painel: pedido no "Precisa de você"; Codex: approval prompt).
@@ -43,7 +43,7 @@ export function registerJiraTools(tool: RegisterTool, deps: { db: Db; rootDir: s
     'Cria card no Jira (ex.: Sub-bug com parent). Só com pedido explícito do usuário; o usuário aprova cada chamada. ' +
       'Descrição em markdown: como reproduzir, o que acontece, o esperado (critério do card). Nunca cite Playwright nem anexe trace.',
     {
-      project: z.string().regex(/^[A-Z][A-Z0-9]+$/).describe('chave do projeto, ex.: GURUJA'),
+      project: z.string().regex(/^[A-Z][A-Z0-9]+$/).describe('chave do projeto, ex.: PROJ'),
       type: z.string().min(2).describe('tipo, ex.: "Sub-bug", "Bug", "Task"'),
       summary: z.string().min(5).max(255),
       description: z.string().min(10).max(20_000),
@@ -70,7 +70,7 @@ export function registerJiraTools(tool: RegisterTool, deps: { db: Db; rootDir: s
       'aparece (offsetSec a partir do início do cenário no vídeo) com nome que diga o que mostra, ex.: "aba Aprofundamentos 0 com 1 linha".',
     {
       runId: z.string(),
-      issueKey: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).describe('o bug criado, ex.: GURUJA-9300'),
+      issueKey: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).describe('o bug criado, ex.: PROJ-456'),
       title: z.string().min(3).max(120).describe('título curto da pasta'),
       codes: z.array(z.string()).min(1).describe('cenários que mostram o bug'),
       frames: z.array(z.object({ code: z.string(), offsetSec: z.number().min(0), name: z.string().min(3) })).optional(),

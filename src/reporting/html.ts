@@ -108,7 +108,7 @@ ${groups.includes('nao-bug') ? '<label><input id="esconder-naobug" type="checkbo
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${esc(m.issueKey)} — relatório NOVO QA</title>
+<title>${esc(m.issueKey)} — relatório Sanctum</title>
 <style>
 :root { --bg:#f6f7f9; --fg:#1d2330; --muted:#667085; --card:#fff; --line:#e4e7ec; --ok:#12805c; --bad:#c0362c; --warn:#b54708; --info:#175cd3; --soft:#eef2f6; }
 @media (prefers-color-scheme: dark) { :root { --bg:#0f1218; --fg:#e6e9ef; --muted:#98a2b3; --card:#171b23; --line:#2a303b; --soft:#1e2430; } }

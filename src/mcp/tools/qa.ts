@@ -12,6 +12,7 @@ import type { Redactor } from '../../security/redact.ts';
 import type { SecretStore } from '../../security/secrets.ts';
 import type { DigestCache, JiraDigest } from '../../sources/digest.ts';
 import type { Db } from '../../state/db.ts';
+import { planCoverage } from '../../state/coverage.ts';
 import { StateError, type StateStore } from '../../state/store.ts';
 import { ToolContent, type RegisterTool } from '../tooling.ts';
 
@@ -30,6 +31,12 @@ export interface QaDeps {
 
 export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
   const { rootDir, config, store, cache } = deps;
+  /** Cobertura dos critérios do card pelo plano (vazio se o card não tem digest ou critérios). */
+  const coverageOf = (issueKey: string, scenarios: { code: string; title: string; expected: string }[]) => {
+    const hit = cache.get('jira', issueKey, undefined, { internal: true });
+    const criteria = hit.hit ? (hit.digest as JiraDigest).acceptanceCriteria : [];
+    return criteria.length ? { coverage: planCoverage(criteria, scenarios) } : {};
+  };
 
   tool(
     'batch_brief',
@@ -85,6 +92,7 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
         modules: JSON.parse(run.modules) as string[],
         scenarios: store.scenarioDetails(run.id).map((s) =>
           `${s.code} [${s.priority}/${s.risk}] ${s.title} — ${s.status}${s.classification ? ` (${s.classification})` : ''}`),
+        ...coverageOf(run.issue_key, store.scenarioDetails(run.id)),
       };
       return new ToolContent([{ type: 'text', text: stringify(view, { lineWidth: 0 }) }]);
     },
@@ -137,7 +145,7 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
         expected: z.string().min(3),
         note: z.string().optional(),
         severity: z.enum(SEVERITIES).optional(),
-        jira: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).optional().describe('card de bug criado, ex.: GURUJA-9239'),
+        jira: z.string().regex(/^[A-Z][A-Z0-9]+-\d+$/).optional().describe('card de bug criado, ex.: PROJ-456'),
       })).optional()),
       summaries: z.preprocess((v) => (typeof v === 'string' ? JSON.parse(v) : v), z.array(z.object({
         code: z.string(),

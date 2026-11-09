@@ -1,6 +1,6 @@
 ---
 name: qa
-description: Testa um card do Jira no NOVO QA, planejando por risco, aguardando aprovação, verificando no navegador e gerando evidências e relatório. Aceita explore e automate.
+description: Testa um card do Jira no Sanctum, planejando por risco, aguardando aprovação, verificando no navegador e gerando evidências e relatório. Aceita explore e automate.
 ---
 
 # QA pelo Codex

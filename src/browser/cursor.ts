@@ -6,11 +6,11 @@
  * shadow DOM fechado) e não aparece em snapshots — não muda o que o teste vê nem onde ele clica.
  */
 export const CURSOR_SCRIPT = `(() => {
-  if (window.__novoQaCursor || window.top !== window) return;
-  window.__novoQaCursor = true;
+  if (window.__sanctumCursor || window.top !== window) return;
+  window.__sanctumCursor = true;
   const init = () => {
     const host = document.createElement('div');
-    host.setAttribute('data-novo-qa-cursor', '');
+    host.setAttribute('data-sanctum-cursor', '');
     host.setAttribute('aria-hidden', 'true');
     host.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:2147483647';
     const root = host.attachShadow({ mode: 'closed' });

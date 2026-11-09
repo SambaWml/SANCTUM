@@ -4,7 +4,7 @@ import type { StateStore } from '../state/store.ts';
 /**
  * Métricas de um run (ARCHITECTURE.md §6). Atribuição por janela de tempo:
  * - run: da descoberta do card (context_build/digest) até o fim do run;
- * - sessões: só as que chamaram ferramentas novo-qa dentro da janela (exclui sessões paralelas);
+ * - sessões: só as que chamaram ferramentas sanctum dentro da janela (exclui sessões paralelas);
  * - cenário: de scenario_start a scenario_complete.
  * "fresh" = entrada nova + escrita de cache + saída; leitura de cache é reportada à parte.
  */
@@ -46,7 +46,7 @@ export function computeRunMetrics(db: Db, store: StateStore, runId: string, now:
   const end = run.ended_at ?? lastEvent.ts ?? now().toISOString();
 
   const sessions = (db
-    .prepare(`SELECT DISTINCT session_id FROM model_usage WHERE ts BETWEEN ? AND ? AND tools LIKE '%mcp__novo-qa__%'`)
+    .prepare(`SELECT DISTINCT session_id FROM model_usage WHERE ts BETWEEN ? AND ? AND tools LIKE '%mcp__sanctum__%'`)
     .all(start, end) as { session_id: string }[]).map((r) => r.session_id);
   const usage = sessions.length
     ? (db

@@ -11,7 +11,7 @@ const config = loadConfig(join(import.meta.dirname, '..'));
 
 describe('pasta de evidência do bug', () => {
   it('um bug por pasta: prints sem repetição, resposta da API, LEIA-ME; nunca trace', () => {
-    const root = mkdtempSync(join(tmpdir(), 'novo-qa-bp-'));
+    const root = mkdtempSync(join(tmpdir(), 'sanctum-bp-'));
     const db = openDb(':memory:');
     const store = new StateStore(db, config, { now: () => new Date('2026-11-04T15:00:00Z') });
     const run = store.startRun({ issueKey: 'FIX-1', env: 'fixture-local', mode: 'manual' });

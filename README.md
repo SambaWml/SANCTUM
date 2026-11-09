@@ -35,7 +35,7 @@ Ele transforma a garantia de qualidade de software em uma **incursão tática de
 1. **Nenhum PASSED Sem Prova:** Um cenário de teste só pode ser marcado como `PASSED` se uma asserção for fisicamente executada e registrada pela ferramenta `verify`. Sem verificação, a aprovação é rejeitada pelo núcleo.
 2. **Action Guard & Proteção de Produção:** Ações de risco (*RED*, como pagamentos, exclusões e mutações de banco) são retidas pelo guardião até a autorização explícita do usuário. Em ambientes do tipo `prod`, mutações de escrita são permanentemente bloqueadas.
 3. **Segredos Nunca Vazados:** Senhas e tokens residem exclusivamente no `.env` local e são referenciados apenas por alias (`secret:NOME` ou `role:usuario.password`). Toda e qualquer saída (terminal, prints, logs e relatórios) passa pelo sanitizador de redação.
-4. **Isolamento Total:** Todo o banco SQLite (`data/novo-qa.db`), vídeos, capturas de tela e relatórios gerados permanecem 100% locais na sua máquina, fora do git.
+4. **Isolamento Total:** Todo o banco SQLite (`data/sanctum.db`), vídeos, capturas de tela e relatórios gerados permanecem 100% locais na sua máquina, fora do git.
 
 ---
 
@@ -58,8 +58,8 @@ Antes de iniciar, certifique-se de possuir em sua máquina:
 
 ### 1. Clonar o Repositório e Instalar Dependências
 ```bash
-git clone <url-do-repositorio>
-cd "NEW QA"
+git clone https://github.com/SambaWml/SANCTUM.git
+cd SANCTUM
 npm install
 ```
 
@@ -75,16 +75,13 @@ cp .env.example .env
 ```
 Abra o `.env` no seu editor e configure as chaves necessárias:
 ```ini
-# Configuração do Jira (Atlassian)
-JIRA_HOST=https://seu-dominio.atlassian.net
-JIRA_EMAIL=seu-email@dominio.com
-JIRA_API_TOKEN=seu_token_api_atlassian
+# Site do Jira (links do painel). O card é lido pelo Atlassian MCP do seu agente.
+SANCTUM_JIRA_URL=https://seu-dominio.atlassian.net
 
 # Senhas dos Ambientes de Teste (NUNCA coloque no YAML nem no chat)
 # Dica: Use aspas simples caso a senha contenha '#' ou caracteres especiais
-GURUJA_DEV_ADMIN_PASSWORD='senha_do_admin'
-GURUJA_DEV_ALUNO_PASSWORD='senha_do_aluno'
-DUCO_DEV_PASSWORD='senha_do_ambiente_duco'
+LOJA_HML_ADMIN_PASSWORD='senha_do_admin'
+LOJA_HML_CLIENTE_PASSWORD='senha_do_cliente'
 ```
 
 ### 4. Diagnosticar a Saúde do Santuário
@@ -127,6 +124,7 @@ Dentro do seu agente de IA (Claude Code, Antigravity ou Codex), no diretório do
 | `/qa CARD-123 --automate` | **Incursão com Automação:** ao final da execução manual bem-sucedida, gera e valida testes automatizados Playwright. |
 | `/qa-resume CARD-123` | **Retomada de Expedição:** retoma um teste pausado ou interrompido exatamente da câmara onde parou. |
 | `/retest CARD-123` | **Ritual de Expurgo:** retesta apenas os cenários que falharam no ciclo anterior e compara os resultados. |
+| `/analisar CARD-123` | **Leitura do Pergaminho:** analisa a US antes do teste — lacunas por critério, perguntas ao PO, riscos, melhorias na funcionalidade e rascunho de cenários. Não testa nem publica no Jira. |
 | `/automate CARD-123` | **Forja de Automação:** transforma passos e evidências de um teste manual anterior em suite Playwright. |
 
 ---
@@ -135,20 +133,29 @@ Dentro do seu agente de IA (Claude Code, Antigravity ou Codex), no diretório do
 
 Os arquivos de configuração ficam na pasta `config/`:
 
-* **`config/environments.yaml`**: Mapeamento de URLs, tipo de ambiente (`dev`, `staging`, `prod`), perfis de acesso e papéis de usuário. Senhas **sempre** referenciam variáveis do `.env`:
+* **`config/environments.yaml`** / **`config/projects.yaml`**: versionados, só com o que é da própria ferramenta (app fixture e painel).
+* **`config/environments.local.yaml`** / **`config/projects.local.yaml`**: os sistemas que **você** testa — fora do git (URLs e usuários de cliente não vão para o repositório). O Sanctum lê o local por cima do base. O jeito mais fácil de cadastrar é pedir ao agente (`env_register`: só acrescenta e deixa a criação de dados desligada). Senhas **sempre** referenciam variáveis do `.env`:
   ```yaml
+  # config/environments.local.yaml
   environments:
-    duco-hml:
-      project: duco
+    loja-hml:
+      project: loja
       type: staging
-      baseUrl: https://pava2-duco-frontend.azurewebsites.net
-      allowDataCreation: true
+      baseUrl: https://hml.loja.exemplo.com
+      allowDataCreation: false   # liberar criação de dados é decisão sua
       roles:
         admin:
-          username: admin_duco
-          password: { env: DUCO_DEV_PASSWORD }
+          username: qa.admin
+          password: { env: LOJA_HML_ADMIN_PASSWORD }
   ```
-* **`config/projects.yaml`**: Mapeamento dos projetos atendidos e suas chaves do Jira (`GURUJA`, `DCTS`, etc.).
+  ```yaml
+  # config/projects.local.yaml
+  projects:
+    loja:
+      name: Loja Online
+      jiraKeys: [LOJA]
+      language: pt
+  ```
 * **`config/qa-policy.yaml`**: Definição de regras de risco (ações GREEN vs RED), exigências de evidência e tolerância de anomalias.
 
 ---
@@ -168,8 +175,6 @@ npm run doctor
 # Sobe aplicação fixture local (porta 4400) para testes de ferramentas
 npm run fixture
 
-# Executa bateria completa de auditoria E2E e performance
-npx tsx scratch/test-full-audit.ts
 ```
 
 ---
@@ -179,12 +184,12 @@ npx tsx scratch/test-full-audit.ts
 ```text
 SANCTUM/
 ├── config/                  # Ambientes, projetos e política de segurança de QA
-│   ├── environments.yaml    # URLs e mapeamento de perfis
-│   ├── projects.yaml        # Chaves de projetos do Jira
+│   ├── environments.yaml    # Ambientes da ferramenta (+ environments.local.yaml, seus, gitignored)
+│   ├── projects.yaml        # Projetos da ferramenta (+ projects.local.yaml, seus, gitignored)
 │   └── qa-policy.yaml       # Classificação de ações de risco (RED vs GREEN)
-├── data/                    # Banco SQLite compartilhado (data/novo-qa.db, gitignored)
+├── data/                    # Banco SQLite compartilhado (data/sanctum.db, gitignored)
 ├── docs/                    # Arquitetura, guias do Codex e decisões técnicas
-├── knowledge/               # Base de conhecimento de execuções reutilizáveis por projeto
+├── knowledge/               # Conhecimento por projeto (gerado ao testar; o dos seus sistemas fica fora do git)
 ├── reports/                 # Relatórios HTML e Markdown gerados por card (gitignored)
 ├── runs/                    # Evidências: vídeos, screenshots, traces de rede (gitignored)
 ├── src/

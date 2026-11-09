@@ -1,27 +1,27 @@
 # Apenas o Codex lê esta camada. Atualize cwd se mover o projeto.
-[mcp_servers.novo-qa]
+[mcp_servers.sanctum]
 command = "node"
 args = ["--import", "tsx", "src/mcp/launcher.ts"]
 cwd = 'C:\Users\wesml\NEW QA'
 startup_timeout_sec = 30
 tool_timeout_sec = 180
 
-[mcp_servers.novo-qa.env]
-NOVO_QA_CLIENT = "codex"
+[mcp_servers.sanctum.env]
+SANCTUM_CLIENT = "codex"
 
-[mcp_servers.novo-qa.tools.plan_approve]
+[mcp_servers.sanctum.tools.plan_approve]
 approval_mode = "prompt"
 
-[mcp_servers.novo-qa.tools.act_approved]
+[mcp_servers.sanctum.tools.act_approved]
 approval_mode = "prompt"
 
-[mcp_servers.novo-qa.tools.jira_create_issue]
+[mcp_servers.sanctum.tools.jira_create_issue]
 approval_mode = "prompt"
 
-[mcp_servers.novo-qa.tools.jira_comment]
+[mcp_servers.sanctum.tools.jira_comment]
 approval_mode = "prompt"
 
-[mcp_servers.novo-qa.tools.jira_transition]
+[mcp_servers.sanctum.tools.jira_transition]
 approval_mode = "prompt"
 
 # Autenticação OAuth própria do Codex; não copia credenciais do Claude.

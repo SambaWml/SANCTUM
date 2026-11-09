@@ -29,7 +29,7 @@ beforeEach(() => {
   clock = new Date('2026-11-03T10:00:00Z');
   store = new StateStore(db, config, { now: () => clock });
   store.agent = { client: 'claude-code', version: '2' };
-  root = mkdtempSync(join(tmpdir(), 'novo-qa-live-'));
+  root = mkdtempSync(join(tmpdir(), 'sanctum-live-'));
 });
 
 const tick = (s = 5) => { clock = new Date(clock.getTime() + s * 1000); };
@@ -61,6 +61,7 @@ describe('estado do painel ao vivo', () => {
     const runId = executingRun();
     tick(); store.startScenario(runId, 'CT-001');
     tick(); store.recordAction(runId, 'CT-001', { action: 'fill', target: { role: 'textbox', name: 'Busca' }, guardLevel: 'GREEN', ok: true, valueSample: 'outros' });
+    tick(); store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'lista filtrada', passed: false });
     tick(); store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'lista filtrada', passed: false });
     tick(); store.recordEvidence(runId, 'CT-001', { kind: 'screenshot', path: 'x.png' });
     store.logEvent(runId, store.getScenario(runId, 'CT-001').id, 'inspect.network', null);
@@ -152,6 +153,10 @@ describe('servidor do painel', () => {
     expect(state.status).toBe(200);
     expect(state.body).toContain('FIX-1');
     expect(state.body).not.toContain(SECRET);
+
+    const runData = await call(`/api/runs/${encodeURIComponent(runId)}`);
+    expect(runData.status).toBe(200);
+    expect(runData.body).toContain('FIX-1');
   });
 
   it('recusa Host de fora (DNS rebinding) e qualquer método além de GET', async () => {

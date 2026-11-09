@@ -19,7 +19,7 @@ export function registerPermissionPrompt(server: McpServer, deps: { db: Db; reda
       inputSchema: { tool_name: z.string(), input: z.record(z.string(), z.unknown()), tool_use_id: z.string().optional() },
     },
     async (args) => {
-      const missionId = process.env.NOVO_QA_MISSION || undefined;
+      const missionId = process.env.SANCTUM_MISSION || undefined;
       const result = await decidePermission({ db: deps.db, redactor: deps.redactor, missionId }, args.tool_name, args.input);
       deps.store.logEvent(null, null, 'panel.permission', { mission: missionId ?? null, tool: args.tool_name, behavior: result.behavior });
       return { content: [{ type: 'text', text: JSON.stringify(result) }] };

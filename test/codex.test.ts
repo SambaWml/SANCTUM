@@ -59,12 +59,12 @@ describe('hook Codex', () => {
 
 describe('aprovação humana Codex via MCP', () => {
   it('inicializa pelo launcher real em stdio e bloqueia aprovação sem confirmação no cliente', async () => {
-    const dir = mkdtempSync(join(tmpdir(), 'novo-qa-codex-stdio-'));
+    const dir = mkdtempSync(join(tmpdir(), 'sanctum-codex-stdio-'));
     const env = Object.fromEntries(Object.entries(process.env).filter((pair): pair is [string, string] => typeof pair[1] === 'string'));
     const client = new Client({ name: 'codex-stdio-test', version: '0' });
     const transport = new StdioClientTransport({
       command: process.execPath, args: ['--import', 'tsx', 'src/mcp/launcher.ts'], cwd: root, stderr: 'pipe',
-      env: { ...env, NOVO_QA_CLIENT: 'codex', NOVO_QA_DB: join(dir, 'state.db'), NOVO_QA_WATCH_DIR: dir, NOVO_QA_BROWSER_LOCK: join(dir, 'browser.lock') },
+      env: { ...env, SANCTUM_CLIENT: 'codex', SANCTUM_DB: join(dir, 'state.db'), SANCTUM_WATCH_DIR: dir, SANCTUM_BROWSER_LOCK: join(dir, 'browser.lock') },
     });
     try {
       await client.connect(transport);

@@ -31,10 +31,10 @@ export interface Harness {
   close(): Promise<void>;
 }
 
-/** Cliente MCP real → servidor novo-qa → Chromium headless → app fixture local. */
+/** Cliente MCP real → servidor sanctum → Chromium headless → app fixture local. */
 export async function createHarness(env: Partial<Environment> = {}): Promise<Harness> {
   const fixture = await startFixtureServer({ password: PASSWORD });
-  const root = mkdtempSync(join(tmpdir(), 'novo-qa-e2e-'));
+  const root = mkdtempSync(join(tmpdir(), 'sanctum-e2e-'));
   const config = loadConfig(join(import.meta.dirname, '..'));
   Object.assign(config.environments['fixture-local']!, { baseUrl: fixture.url, ...env });
   config.projects.fixture!.jiraKeys = ['FIX'];
@@ -116,7 +116,7 @@ export async function loggedInRun(h: Harness, issueKey: string, codes: string[])
   const runId = (await h.ok('run_start', { issueKey, env: 'fixture-local', mode: 'manual' })).runId as string;
   await h.ok('plan_save', {
     runId,
-    scenarios: codes.map((code) => ({ code, title: `Cenário ${code}`, priority: 'P2', risk: 'MEDIUM', types: ['functional'], steps: ['executar'], expected: 'resultado esperado' })),
+    scenarios: codes.map((code) => ({ code, title: `Cenário ${code}`, priority: 'P2', risk: 'MEDIUM', types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['executar'], expected: 'resultado do cenário visível na tela do app' })),
   });
   await h.ok('plan_approve', { runId });
   await h.ok('browser_open', { runId, role: 'admin' });

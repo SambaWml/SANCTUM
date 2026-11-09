@@ -92,10 +92,11 @@ describe('execução', () => {
 
     store.startScenario(runId, 'CT-002');
     store.recordVerification(runId, 'CT-002', { kind: 'ui', description: 'filtro aplicado', passed: false });
+    store.recordVerification(runId, 'CT-002', { kind: 'ui', description: 'filtro aplicado', passed: false });
     store.recordEvidence(runId, 'CT-002', { kind: 'screenshot', path: 'x.png' });
     store.logEvent(runId, store.getScenario(runId, 'CT-002').id, 'inspect.network', null);
     const fail = store.completeScenario(runId, 'CT-002', { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'lista não filtrou' });
-    expect(fail).toMatchObject({ status: 'FAILED', confidence: 'MEDIUM' });
+    expect(fail).toMatchObject({ status: 'FAILED', confidence: 'HIGH' });
 
     expect(() => store.completeRun(runId, 'REPROVADO', 'x')).toThrow(/CT-003/);
     store.completeScenario(runId, 'CT-003', { status: 'BLOCKED', reason: 'massa ausente', classification: 'TEST_DATA_FAILURE' });
@@ -139,6 +140,7 @@ describe('execução', () => {
     const runId = approvedRun([scenario('CT-001')]);
     store.startScenario(runId, 'CT-001');
     store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'contagem zerada', passed: false });
+    store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'contagem zerada', passed: false });
     store.recordEvidence(runId, 'CT-001', { kind: 'screenshot', path: 'x.png' });
     store.logEvent(runId, store.getScenario(runId, 'CT-001').id, 'inspect.network', null);
     store.completeScenario(runId, 'CT-001', { status: 'FAILED', classification: 'PRODUCT_BUG', observed: 'contagem continua' });
@@ -172,6 +174,7 @@ describe('execução', () => {
     store.recordVerification(runId, 'CT-001', { kind: 'ui', description: 'ok', passed: true });
     store.completeScenario(runId, 'CT-001', { status: 'PASSED' });
     store.startScenario(runId, 'CT-002');
+    store.recordVerification(runId, 'CT-002', { kind: 'ui', description: 'contador', passed: false });
     store.recordVerification(runId, 'CT-002', { kind: 'ui', description: 'contador', passed: false });
     store.recordEvidence(runId, 'CT-002', { kind: 'screenshot', path: 'x.png' });
     store.completeScenario(runId, 'CT-002', { status: 'FAILED', classification: 'UNKNOWN', observed: 'contador zerado' });
@@ -258,7 +261,7 @@ describe('execução', () => {
   it('estado sobrevive a reabrir o banco (checkpoint em disco)', async () => {
     const { mkdtempSync, rmSync } = await import('node:fs');
     const { tmpdir } = await import('node:os');
-    const dir = mkdtempSync(join(tmpdir(), 'novo-qa-db-'));
+    const dir = mkdtempSync(join(tmpdir(), 'sanctum-db-'));
     const path = join(dir, 'state.db');
     const db1 = openDb(path);
     try {

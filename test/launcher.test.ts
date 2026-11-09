@@ -18,11 +18,11 @@ afterEach(() => {
 });
 
 function launch() {
-  dir = mkdtempSync(join(tmpdir(), 'novo-qa-launcher-'));
+  dir = mkdtempSync(join(tmpdir(), 'sanctum-launcher-'));
   const lock = join(dir, 'browser-session.lock');
   proc = spawn(process.execPath, ['--import', 'tsx', join(REPO, 'src', 'mcp', 'launcher.ts')], {
     cwd: REPO,
-    env: { ...process.env, NOVO_QA_CHILD: join(REPO, 'test', 'fixture-app', 'fake-mcp-child.cjs'), NOVO_QA_WATCH_DIR: dir, NOVO_QA_BROWSER_LOCK: lock },
+    env: { ...process.env, SANCTUM_CHILD: join(REPO, 'test', 'fixture-app', 'fake-mcp-child.cjs'), SANCTUM_WATCH_DIR: dir, SANCTUM_BROWSER_LOCK: lock },
   });
   const received: Msg[] = [];
   createInterface({ input: proc.stdout }).on('line', (l) => received.push(JSON.parse(l) as Msg));

@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { stringify } from 'yaml';
 import { isEnvRef } from '../config/load.ts';
 import type { Config } from '../config/schema.ts';
+import { latestUsAnalysis } from '../analysis/us-analysis.ts';
 import { loadModules, matchModules, projectDir, projectSummary } from '../knowledge/modules.ts';
 import { type DigestCache, type JiraDigest } from '../sources/digest.ts';
 import type { Db } from '../state/db.ts';
@@ -93,6 +94,8 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string, options
       return { ...r, ...(failed.length ? { notPassed: failed } : {}) };
     });
 
+  const analysis = analysisOf(db, issueKey, lookup.version);
+
   return {
     issue: {
       key: issue.key, title: issue.title, type: issue.type, status: issue.status,
@@ -123,6 +126,23 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string, options
       attachments: issue.attachments.map((a) => `${a.name} (${a.kind})`),
     },
     history,
+    ...(analysis ? { analysis } : {}),
+  };
+}
+
+/** Última análise da US (/analisar), compacta: o /qa parte das lacunas e do rascunho dela. */
+function analysisOf(db: Db, issueKey: string, digestVersion: string | undefined) {
+  const a = latestUsAnalysis(db, issueKey);
+  if (!a) return null;
+  return {
+    createdAt: a.createdAt,
+    report: a.report,
+    // Card mudou depois da análise: lacunas podem já ter sido respondidas.
+    ...(a.cardVersion && digestVersion && a.cardVersion !== digestVersion ? { stale: `análise feita na versão ${a.cardVersion} do card; o digest atual é ${digestVersion}` } : {}),
+    gaps: a.gaps.map((g) => `${g.criterion ? `${g.criterion} ` : ''}[${g.kind}] ${g.text}`),
+    questions: a.questions.map((q) => q.text),
+    risks: a.risks.map((r) => `${r.area}: ${r.text}${r.regressionOf ? ` (regressão de ${r.regressionOf})` : ''}`),
+    draftScenarios: a.draftScenarios.map((s) => `${s.code} ${s.priority}/${s.risk} ${s.title}`),
   };
 }
 

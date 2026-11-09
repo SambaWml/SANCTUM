@@ -8,7 +8,7 @@
             "type": "command",
             "command": "node \"C:/Users/wesml/NEW QA/.codex/hooks/guard-shell.mjs\"",
             "timeout": 10,
-            "statusMessage": "Verificando o Action Guard do NOVO QA"
+            "statusMessage": "Verificando o Action Guard do Sanctum"
           }
         ]
       }

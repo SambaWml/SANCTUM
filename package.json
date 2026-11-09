@@ -1,5 +1,5 @@
 {
-  "name": "novo-qa",
+  "name": "sanctum",
   "version": "0.1.0",
   "private": true,
   "description": "Agente local de QA com Claude Code",

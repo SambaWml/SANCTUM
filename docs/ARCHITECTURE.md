@@ -1,9 +1,9 @@
-# NOVO QA — Arquitetura V1
+# Sanctum — Arquitetura V1
 
 Agente local de QA. Claude Code é o QA; o código fornece ferramentas, estado, segurança e evidência.
 
 ```text
-TypeScript (MCP novo-qa) = ferramentas e infraestrutura
+TypeScript (MCP sanctum) = ferramentas e infraestrutura
 Claude Code              = raciocínio de QA (entender, planejar, decidir, investigar, classificar)
 Playwright               = mãos e olhos no navegador
 SQLite                   = memória operacional (runs, cenários, ações, evidências)
@@ -134,15 +134,16 @@ compacted_at: 2026-10-23
 ┌──────────────────── Claude Code ─────────────────────────────────────┐
 │ Sessão principal = QA Orchestrator  (skills /qa /qa-resume /retest /automate)
 │   ├─ subagente test-executor   (lotes de cenários, contexto limpo)    │
+│   ├─ subagente test-explorer   (charters exploratórios, heurísticas)  │
 │   └─ subagente bug-investigator (SHOULD — só em anomalia complexa)    │
 └───────────────┬───────────────────────────────┬──────────────────────┘
                 │ MCP stdio                     │ MCP (global, já conectado)
 ┌───────────────▼────────────────────┐   ┌──────▼─────────────┐
-│ novo-qa MCP server (TypeScript)    │   │ Atlassian MCP      │
+│ sanctum MCP server (TypeScript)    │   │ Atlassian MCP      │
 │  browser/   Playwright persistente │   │ fallback / JQL ad-hoc
 │  guard/     Action Guard           │   └────────────────────┘
 │  security/  segredos + redação     │
-│  state/     SQLite (node:sqlite)   │──► data/novo-qa.db
+│  state/     SQLite (node:sqlite)   │──► data/sanctum.db
 │  sources/   cache de digests       │──► .cache/
 │  context/   Context Package        │
 │  knowledge/ validação/proveniência │──► knowledge/
@@ -152,7 +153,7 @@ compacted_at: 2026-10-23
 └────────────────────────────────────┘
 ```
 
-Jira e Confluence são lidos **pelo Atlassian MCP** (o servidor novo-qa não fala com a Atlassian). Figma é aberto **pelo navegador** (sessão Playwright do novo-qa).
+Jira e Confluence são lidos **pelo Atlassian MCP** (o servidor sanctum não fala com a Atlassian). Figma é aberto **pelo navegador** (sessão Playwright do sanctum).
 
 Por que MCP próprio em vez do Playwright MCP oficial: Action Guard, redação, gravação de estado/execution knowledge e saídas compactas exigem controle da camada de ferramenta; e o navegador precisa ficar vivo entre chamadas (um servidor stdio resolve sem daemon).
 
@@ -269,7 +270,7 @@ Progressive disclosure: `CLAUDE.md → knowledge/<projeto>/project.md → módul
 
 ### Medição (M7)
 - Fonte de tokens: transcripts JSONL do Claude Code (`~/.claude/projects/<projeto>/`, incluindo `subagents/`), lidos por `src/metrics/transcripts.ts` — formato não é API pública, por isso fica isolado ali. Uma chamada ao modelo aparece em várias linhas com o mesmo `message.id`: deduplicar é obrigatório (sessão de desenvolvimento: 570 linhas = 149 chamadas).
-- Atribuição por janela: run = da descoberta (`context_build`/digest do card) ao fim; só sessões que usaram ferramentas `novo-qa` na janela; cenário = `scenario_start` → `scenario_complete`.
+- Atribuição por janela: run = da descoberta (`context_build`/digest do card) ao fim; só sessões que usaram ferramentas `sanctum` na janela; cenário = `scenario_start` → `scenario_complete`.
 - "Tokens novos" = entrada + escrita de cache + saída; leitura de cache à parte. Na sessão de desenvolvimento deste projeto: ~1,25M novos contra ~45,5M lidos do cache — o crescimento de contexto domina o volume, o que justifica D4.
 - `report_build` e `metrics_run` (ou `npm run metrics -- <card>`): tokens por run/cenário/bug/decisão útil, tempo, cache de contexto, chamadas, ações, screenshots. `npm run metrics -- --schema`: custo fixo por ferramenta (hoje ~5,7k tokens para 32 ferramentas; `act`/`act_approved` repetem o schema de alvo — candidato a enxugar quando houver uso real medido).
 - Automação (sucesso, flaky) entra no M8.
@@ -281,7 +282,7 @@ Progressive disclosure: `CLAUDE.md → knowledge/<projeto>/project.md → módul
 - Comandos como skills: `.claude/skills/{qa,qa-resume,retest,automate}/SKILL.md` (`/regression` é FUTURE). `/resume` nativo do Claude Code retoma conversas, por isso a retomada de run é `/qa-resume`. Etapas comuns (lotes, limpeza, aprendizado, fechamento) ficam em `qa/references/execute-and-close.md`.
 - Subagentes: `test-executor` (MUST), `bug-investigator` (SHOULD). Modelo do executor: herda o da sessão (comparar com Sonnet nas métricas do M7).
 - `.claude/settings.json`:
-  - `mcp__novo-qa__act_approved` sempre em **ask** — a aprovação de ação RED é o prompt de permissão do Claude Code; o Claude não se autoaprova.
+  - `mcp__sanctum__act_approved` sempre em **ask** — a aprovação de ação RED é o prompt de permissão do Claude Code; o Claude não se autoaprova.
   - hook `PreToolUse` (Bash/PowerShell, `.claude/hooks/guard-shell.mjs`) bloqueia interpretador executando driver de navegador (inline ou script que o importa) e DELETE HTTP direto; permite `npx playwright test`, `npx vitest`, instalação e leitura de código.
   - hooks `Stop`/`SubagentStop` leem o transcript JSONL e gravam `model_usage`.
 
@@ -289,7 +290,7 @@ Progressive disclosure: `CLAUDE.md → knowledge/<projeto>/project.md → módul
 
 ## 8. Integração com Playwright
 
-Execução manual (MCP): contexto persistente por run (`channel: chrome` opcional via `NOVO_QA_BROWSER_CHANNEL`), alvos semânticos (D1), `locator.ariaSnapshot()` para observação, trace por cenário mantido só em falha, screenshot com `mask` em campos sensíveis.
+Execução manual (MCP): contexto persistente por run (`channel: chrome` opcional via `SANCTUM_BROWSER_CHANNEL`), alvos semânticos (D1), `locator.ariaSnapshot()` para observação, trace por cenário mantido só em falha, screenshot com `mask` em campos sensíveis.
 
 Detalhes que importam:
 - Alvo que casa com 0 ou vários elementos vira erro com candidatos e contexto (linha/seção), nunca `nth()` silencioso.
@@ -363,7 +364,7 @@ NEW QA/
 ├── .claude/
 │   ├── settings.json
 │   ├── skills/{qa,qa-resume,retest,automate}/SKILL.md (+ references/)
-│   └── agents/{test-executor,bug-investigator}.md
+│   └── agents/{test-executor,test-explorer,bug-investigator}.md
 ├── config/{projects.yaml, environments.yaml, qa-policy.yaml}
 ├── docs/ARCHITECTURE.md
 ├── knowledge/<projeto>/
@@ -373,7 +374,7 @@ NEW QA/
 │   ├── tests/<m>.yaml        riscos, cenários-chave, regressões, bugs históricos
 │   └── _staging/
 ├── src/{mcp,browser,guard,security,state,sources,context,knowledge,evidence,automation,reporting,metrics}/
-├── src/cli.ts                novo-qa doctor | report | metrics | cleanup
+├── src/cli.ts                sanctum doctor | report | metrics | cleanup
 ├── test/                     vitest + test/fixture-app/
 ├── automation/<projeto>/
 │   ├── playwright.config.ts
@@ -403,7 +404,7 @@ Credenciais e dados do ambiente (URL, papéis, usuários, MFA/captcha, se pode c
 | M4 | Digests (Jira/Confluence via MCP) + cache + Context Package | card real → pacote ≤ ~2k tokens; card não alterado = digest hit sem leitura completa; D6 com teste |
 | M5 | `/qa` ponta a ponta (+ `--explore`) | card real em dev: plano aprovado, lotes (D4), evidência em falha, relatório, staging de knowledge; toda PASS com verificação |
 | M6 | `/qa-resume`, `/retest` | sessão interrompida → retoma no próximo pendente sem repetir; retest só FAILED/BLOCKED + vizinhos |
-| M7 | Métricas | `novo-qa metrics <runId>`: tokens por run/cenário/bug, tempo, cache hit, screenshots, chamadas, ações |
+| M7 | Métricas | `sanctum metrics <runId>`: tokens por run/cenário/bug, tempo, cache hit, screenshots, chamadas, ações |
 | M8 | Automação (D5) | fixture app + card real: spec no padrão do destino, executado e verde; falha de produto não mascarada; `spec_gap` medido |
 | M9 | Figma pelo navegador | card com link → frame aberto e capturado → comparação visual no relatório |
 
@@ -433,7 +434,7 @@ Cada milestone: IMPLEMENT → TEST → VALIDATE → commit-ready → aprovação
 | PUT de preferência: conferir o que foi **enviado** | `verify network` com `requestBodyContains` |
 | Supervisor perdia mensagens durante a troca de processo e travava a recarga | fila durante a troca + chamada sem resposta há > 2 min não bloqueia (vale a partir da próxima sessão do Claude Code, que inicia o supervisor novo) |
 
-Achados do produto/ambiente (fora do código do NOVO QA): o host dev serviu dois builds intermitentes (antigo e facelift); o Guruja aceita uma sessão por usuário (logins paralelos do usuário de teste derrubam a execução); sessão derrubada fica em tela de erro com dados do aluno.
+Achados do produto/ambiente (fora do código do Sanctum): o host dev serviu dois builds intermitentes (antigo e facelift); o Guruja aceita uma sessão por usuário (logins paralelos do usuário de teste derrubam a execução); sessão derrubada fica em tela de erro com dados do aluno.
 
 ## 13. Riscos conhecidos
 
@@ -464,7 +465,7 @@ Achados do produto/ambiente (fora do código do NOVO QA): o host dev serviu dois
 | 10 | (2026-11-02) Upload só de `fixtures/uploads/` (caminho real contido, sem `..`, absoluto, UNC nem junction). Limpeza via API só para dado detectado e no caminho do próprio id; verificação que devolve HTML não prova remoção |
 | 11 | (2026-11-02) Entrega da automação (`qualify`): exit 0, sem erro global, todos passaram (skip, flaky e `test.fail` não contam), sem grep e todo cenário aprovado coberto |
 | 12 | (2026-11-02, P1) Integridade no banco por gatilhos (status/classificação de cenário, status de limpeza); mudança de estado e evento na mesma transação; reclassificar para FAILED exige tentativa iniciada; abortar registra dados pendentes; `keep` após limpeza que falhou exige motivo e gera `data.keep_after_failure` |
-| 13 | (2026-11-02) Run e aprovações guardam o agente (`clientInfo` do MCP + `NOVO_QA_MODEL`) como metadado; o relatório mostra o agente e o teto da recomendação com o motivo |
+| 13 | (2026-11-02) Run e aprovações guardam o agente (`clientInfo` do MCP + `SANCTUM_MODEL`) como metadado; o relatório mostra o agente e o teto da recomendação com o motivo |
 | 14 | (2026-11-02) Explicações do relatório somam por código (`removeExplanations` tira); `batch_brief(compact)` para o executor que segue no mesmo run; execution knowledge com contador normalizado (regex), sem nomes gigantes, sem repetição entre módulos e ordenado por recência |
 | 15 | (2026-11-02) Retenção de evidências: `npm run storage` (simulação) e `--apply`; vídeo/trace saem após `videoDays`/`traceDays`, evidência de bug após `bugDays`; `runs/_*`, PNG e runs ativos nunca. Doctor avisa acima de `maxStorageGB` e scripts de navegador na raiz. Recarga do servidor não descarta chamadas recentes e dá 20 s para fechar navegador/vídeo |
 | 16 | (2026-11-02, P2) `navigate`/`verify api` só http(s); `secret:` resolve só variáveis referenciadas pela config (as demais com nome de segredo continuam redigidas); hook de shell fecha contornos óbvios (node.exe/caminho/aspas, `$()`/crase/nova linha após comando permitido, DELETE/PUT/PATCH por curl/Invoke-*, escrita HTTP inline, `playwright test --config` fora de automation/) — proteção de boa-fé, não fronteira |
@@ -472,9 +473,12 @@ Achados do produto/ambiente (fora do código do NOVO QA): o host dev serviu dois
 | 18 | (2026-11-02) HTML: filtro por código/intervalo (`EXP-017..EXP-024`) e "esconder não é bug". Conhecimento de produto: agente não alega fonte `manual`; `npm run knowledge <projeto>` lista propostas e `<projeto>/<módulo> "<resumo>"` promove staging com `reviewed: true` para `modules/` |
 | 19 | (2026-11-02) Vídeo com cursor: com gravação ligada, cada página recebe uma camada (`src/browser/cursor.ts`) que desenha o ponteiro, o pulso do clique e o contorno do campo em foco; sem eventos de ponteiro, fora da acessibilidade e escondida nos prints |
 | 20 | (2026-11-03) Painel ao vivo "Central de Caça" (`npm run live`, etapa 1): servidor em 127.0.0.1 só GET, confere Host (DNS rebinding), lê o banco em modo somente leitura e redige o JSON; evidência só de `runs/` e relatório só de `reports/` (caminho real contido). Mostra fases, mapa de cenários, atividade (ações, verificações, eventos de negócio; `tool.*`/`inspect.*` ficam fora), pendências (plano aguardando, RED bloqueado sem resposta), pote de bugs (`report.explain`), XP/conquistas calculados do banco e o relatório final; modo foco em estilo terminal. Aprovar pelo painel (etapa 2) ainda não: decisões seguem no terminal. Consumo do plano: o Claude Code só expõe % usada e reset (5 h e 7 dias) na entrada da linha de status, sem limite em tokens; `.claude/statusline.mjs` grava só esses números em `data/usage-limits.json`. Tokens gastos vêm dos transcripts de `~/.claude/projects`. Codex: `~/.codex/sessions` (eventos `token_count` com uso e `rate_limits` primary=5 h/secondary=semana; reset vencido = janela zerada, porque o Codex grava a % a cada uso). Antigravity não guarda limite nem uso legível no computador: aparece "sem leitura". Leitura incremental em blocos de 16 MB (rollout passa de 500 MB) |
-| 21 | (2026-11-03) NOVO QA é geral, não só Jira/Guruja: missão sem card (`/qa <URL> --explore`) com chave `EXPLORA-AAAAMMDDHHmm`, aceita em qualquer projeto; o objetivo da missão vira o digest e `context_build` recebe `project`. Ambiente achado pela origem da URL ou cadastrado na hora. O painel gera o comando por agente: Claude usa a skill; Antigravity/Codex recebem um roteiro que amarra cada etapa às ferramentas (AGENTS.md proíbe scripts avulsos) |
-| 22 | (2026-11-03, etapa 2 do painel) Missão lançada pela tela: o painel roda o Claude Code em modo print (`claude -p`, um processo por turno, `--resume` na resposta seguinte) com `NOVO_QA_MISSION`, regras do painel no system prompt e lista fechada de ferramentas liberadas (leitura e fluxo novo-qa; `plan_approve`/`act_approved` nunca). O resto passa pelo `--permission-prompt-tool mcp__novo-qa__permission_prompt`, que grava o pedido (redigido) em `prompts` e espera o clique no painel (30 min, depois nega). A aprovação do plano pelo botão vale uma vez para o `plan_approve` seguinte. Sem terminal, a aprovação humana é só pelo painel (decisão do usuário): POST só com a chave gerada a cada início, Host local e corpo JSON. Run ligado à missão por `runs.agent.mission`. O `rate_limit_event` do stream atualiza o medidor do Claude. Antigravity/Codex: por enquanto o painel gera o comando para colar |
+| 21 | (2026-11-03) Sanctum é geral, não só Jira/Guruja: missão sem card (`/qa <URL> --explore`) com chave `EXPLORA-AAAAMMDDHHmm`, aceita em qualquer projeto; o objetivo da missão vira o digest e `context_build` recebe `project`. Ambiente achado pela origem da URL ou cadastrado na hora. O painel gera o comando por agente: Claude usa a skill; Antigravity/Codex recebem um roteiro que amarra cada etapa às ferramentas (AGENTS.md proíbe scripts avulsos) |
+| 22 | (2026-11-03, etapa 2 do painel) Missão lançada pela tela: o painel roda o Claude Code em modo print (`claude -p`, um processo por turno, `--resume` na resposta seguinte) com `SANCTUM_MISSION`, regras do painel no system prompt e lista fechada de ferramentas liberadas (leitura e fluxo sanctum; `plan_approve`/`act_approved` nunca). O resto passa pelo `--permission-prompt-tool mcp__sanctum__permission_prompt`, que grava o pedido (redigido) em `prompts` e espera o clique no painel (30 min, depois nega). A aprovação do plano pelo botão vale uma vez para o `plan_approve` seguinte. Sem terminal, a aprovação humana é só pelo painel (decisão do usuário): POST só com a chave gerada a cada início, Host local e corpo JSON. Run ligado à missão por `runs.agent.mission`. O `rate_limit_event` do stream atualiza o medidor do Claude. Antigravity/Codex: por enquanto o painel gera o comando para colar |
 | 23 | (2026-11-03) Missão desacoplada do painel: o turno roda como processo destacado com saída em `data/missions/<missão>-<ts>.jsonl` (e `.err`); o painel acompanha o arquivo e, reiniciado, relê e segue (migração 7: `missions.log_path`). O navegador do teste nunca abre a Central de Caça (porta padrão e a gravada em `data/live-port.txt`, recusada em `navigate` e abortada na rota do contexto): no painel o agente poderia aprovar os próprios pedidos. Run ativo sem atividade há 15 min aparece como "parado há …" |
-| 24 | (2026-11-03) Antigravity pela tela (`agy -p`, stream-json, `--conversation` na resposta): o modo sem terminal não pergunta — o que não está liberado é negado e o turno termina com a regra exata. Cada turno recebe `--settings` com as ferramentas do novo-qa liberadas (menos `plan_approve`/`act_approved`) e proíbe terminal e navegador próprio do agente (nunca liberados, nem pelo painel; a missão segue com o aviso e, se insistir, chama o usuário). Regra negada vira pedido no painel; permitida, a conversa continua com aquela regra só no turno seguinte. `plan_approve`/`act_approved` do cliente Antigravity num run de missão exigem concessão única gravada pelo painel (conferida no registrador do MCP). O MCP do Antigravity é do processo do app (não herda `NOVO_QA_MISSION`): o run é ligado pela chave/cliente/horário (migração 8: `missions.run_id`). Drivers por agente em `src/live/agents.ts` |
-| 25 | (2026-11-04) Escrita no Jira pelo novo-qa: `jira_create_issue`, `jira_comment`, `jira_transition`, pela CLI `twg` já autenticada (o Antigravity em linha de comando não completa o login OAuth do Atlassian MCP). Sensíveis como plano e ação de risco: "ask" no Claude Code, pedido no painel (Claude: permission_prompt; Antigravity: regra negada → permitir → concessão única conferida no registrador), approval prompt no Codex. Texto que cita a ferramenta de automação ou trace é recusado. No painel, o Atlassian MCP só tem ferramentas de leitura liberadas (antes `mcp(atlassian/*)`, que liberava escrita sem pedir) |
+| 24 | (2026-11-03) Antigravity pela tela (`agy -p`, stream-json, `--conversation` na resposta): o modo sem terminal não pergunta — o que não está liberado é negado e o turno termina com a regra exata. Cada turno recebe `--settings` com as ferramentas do sanctum liberadas (menos `plan_approve`/`act_approved`) e proíbe terminal e navegador próprio do agente (nunca liberados, nem pelo painel; a missão segue com o aviso e, se insistir, chama o usuário). Regra negada vira pedido no painel; permitida, a conversa continua com aquela regra só no turno seguinte. `plan_approve`/`act_approved` do cliente Antigravity num run de missão exigem concessão única gravada pelo painel (conferida no registrador do MCP). O MCP do Antigravity é do processo do app (não herda `SANCTUM_MISSION`): o run é ligado pela chave/cliente/horário (migração 8: `missions.run_id`). Drivers por agente em `src/live/agents.ts` |
+| 25 | (2026-11-04) Escrita no Jira pelo sanctum: `jira_create_issue`, `jira_comment`, `jira_transition`, pela CLI `twg` já autenticada (o Antigravity em linha de comando não completa o login OAuth do Atlassian MCP). Sensíveis como plano e ação de risco: "ask" no Claude Code, pedido no painel (Claude: permission_prompt; Antigravity: regra negada → permitir → concessão única conferida no registrador), approval prompt no Codex. Texto que cita a ferramenta de automação ou trace é recusado. No painel, o Atlassian MCP só tem ferramentas de leitura liberadas (antes `mcp(atlassian/*)`, que liberava escrita sem pedir) |
 | 26 | (2026-11-04) Pasta de evidência por bug é regra, não pedido avulso: depois de `jira_create_issue`, `bug_evidence` monta `runs/_evidencias/<card>-sub-bugs/<BUG> <título>/` (prints sem repetição, quadros do vídeo no momento do defeito com nome descritivo, trecho de vídeo com cursor por cenário, respostas HTTP, LEIA-ME; nunca trace; chamar de novo recria a pasta). Roteiro em execute-and-close ("Bug no Jira"), que também manda conferir no vídeo quando o print não mostra o defeito |
+| 27 | (2026-11-09, auditoria) Só é bug o que reproduz: PRODUCT_BUG exige a mesma verificação reprovada de novo (investigar network/console sem reproduzir não basta); visto uma vez ou intermitente → NEEDS_REVIEW com "intermitente X de Y". Erro de console sozinho é observação. Aprovações do painel restauradas: um "Permitir" = uma concessão (havia virado 10 para Jira); concessão não usada expira no fim do turno e ao parar (110 sobravam, expiradas); resposta em texto nunca aprova pedido pendente (expira); terminal ("shell"/"command"/Bash) e escrita nos arquivos do Sanctum (`src/`, `test/`, `.claude/`, `.codex/`, `.agents/`, `.mcp.json`, AGENTS/CLAUDE.md, package, tsconfig, vitest, `config/qa-policy.yaml`) proibidos sempre — nem viram pedido (Claude: negado no permission_prompt; Antigravity: aviso e segue). Negação genérica do resultado do turno ("mcp", "write_file") é descartada quando a específica veio junto |
+| 28 | (2026-11-09, auditoria de fluxo) "Parar"/"Concluir" missão com run aberto → `abortRun` do core com motivo e dados pendentes registrados; nunca COMPLETED por fora do `run_complete`. Limite por tentativa de cenário (`LOOP_LIMITS`: aviso em 60 ações/40 verificações, trava em 150/100; evento `scenario.loop`, painel "🌀 andando em círculo"). P0/P1 PASSED com confiança LOW segura o teto em INCONCLUSIVO; reconhecimento não é cenário (vai para o conhecimento). `env_register`: cadastra ambiente/papel/projeto só acrescentando, criação de dados desligada, senha como nome de variável; liberado sem pedido junto com `bug_evidence`. `plan_save`/`plan_view` e o painel mostram a cobertura dos critérios (CA sem cenário). Evento de ferramenta recusada guarda o motivo inteiro (500 caracteres). `role`+`text` vira `role`+`name`; mensagens de alvo e de run fechado dizem o que fazer |
+| 29 | (2026-11-09) Padrão de plano no core, para todos os agentes: `plan_save` recusa plano sem pré-condição, com esperado vago, CA sem cenário, risco HIGH sem negativo/permissão/validação ou bug ligado sem regressão (dispensa só com `waivers` e motivo); reteste cobra só pré-condição e esperado. `run_complete` exige EXP executado (1; 3 no exploratório) ou `noExplorationReason`. Modelo em `qa/references/plan-example.md`. Análise da US antes do teste (`/analisar`, também pelo painel "Analisar US"): lacunas por critério, perguntas ao PO, riscos/regressões, melhorias na funcionalidade (sugestão, nunca regra nem bug) e rascunho de cenários conferido pelo mesmo padrão (aviso). `us_analysis_save` grava em `us_analyses` (migração 11) e gera `reports/<card>/analise-*.html|md`; o `context_build` traz a última análise (com aviso se o card mudou depois). Nada vai ao Jira |

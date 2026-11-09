@@ -134,7 +134,7 @@ describe('limpeza de dados criados', () => {
     await h.ok('verify', { kind: 'persistence', description: 'aluno após reload', target: { role: 'cell', name: 'Teste NOVO_QA' } });
     await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'PASSED' });
 
-    const blocked = await h.call('run_complete', { runId, recommendation: 'APROVADO', summary: 'tudo certo' });
+    const blocked = await h.call('run_complete', { runId, recommendation: 'APROVADO', summary: 'tudo certo', noExplorationReason: 'teste da ferramenta, sem exploração' });
     expect(blocked.text).toMatch(/#1 \/api\/students \(3\): UNREGISTERED/);
 
     const bad = await h.call('data_register', { runId, id: 1, cleanup: { method: 'api', request: { method: 'DELETE', path: '/api/students/3' } } });
@@ -148,7 +148,7 @@ describe('limpeza de dados criados', () => {
     expect(cleanup.results).toEqual([
       { id: 1, resource: '/api/students', status: 'VERIFIED', detail: 'DELETE /api/students/3 → 204; verificação GET /api/students → 200' },
     ]);
-    expect((await h.ok('run_complete', { runId, recommendation: 'APROVADO', summary: 'tudo certo' })).status).toBe('COMPLETED');
+    expect((await h.ok('run_complete', { runId, recommendation: 'APROVADO', summary: 'tudo certo', noExplorationReason: 'teste da ferramenta, sem exploração' })).status).toBe('COMPLETED');
   }, 60_000);
 
   it('limpeza que não se confirma fica FAILED e continua bloqueando', async () => {
@@ -163,7 +163,7 @@ describe('limpeza de dados criados', () => {
     expect(cleanup.results[0].detail).toMatch(/ainda contém "Ana Souza"/);
     await h.ok('scenario_start', { runId, code: 'CT-001' });
     await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'NOT_EXECUTED', reason: 'teste de limpeza' });
-    expect((await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'limpeza falhou' })).text).toMatch(/FAILED/);
+    expect((await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'limpeza falhou', noExplorationReason: 'teste da ferramenta, sem exploração' })).text).toMatch(/FAILED/);
   }, 60_000);
 
   it('limpeza via API só para dado detectado, no caminho do próprio id; GET que devolve HTML não prova nada', async () => {
@@ -248,7 +248,7 @@ describe('mutação percebida pela rede (não só pelo texto do alvo)', () => {
     expect(h.db.prepare("SELECT COUNT(*) AS n FROM events WHERE type = 'guard.mutation'").get()).toEqual({ n: 1 });
     await h.ok('verify', { kind: 'api', description: 'aluno 1 destacado', path: '/api/students', bodyContains: 'featured' });
     await h.ok('scenario_complete', { runId, code: 'CT-001', status: 'PASSED' });
-    const blocked = await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'mutação sem registro' });
+    const blocked = await h.call('run_complete', { runId, recommendation: 'INCONCLUSIVO', summary: 'mutação sem registro', noExplorationReason: 'teste da ferramenta, sem exploração' });
     expect(blocked.text).toMatch(/PUT \/api\/students\/1 \(1\): UNREGISTERED/);
   }, 60_000);
 
@@ -284,7 +284,7 @@ describe('o banco não guarda segredo digitado nem senha na URL', () => {
   it('URL das ações é redigida e campo de senha digitado como literal não vira amostra', async () => {
     h = await createHarness();
     const runId = (await h.ok('run_start', { issueKey: 'FIX-28', env: 'fixture-local', mode: 'manual' })).runId as string;
-    await h.ok('plan_save', { runId, scenarios: [{ code: 'CT-001', title: 'login', priority: 'P2', risk: 'LOW', types: ['functional'], steps: ['entrar'], expected: 'login ok' }] });
+    await h.ok('plan_save', { runId, scenarios: [{ code: 'CT-001', title: 'login', priority: 'P2', risk: 'LOW', types: ['functional'], preconditions: 'admin logado no app de teste', steps: ['entrar'], expected: 'tela inicial após o login' }] });
     await h.ok('plan_approve', { runId });
     await h.ok('browser_open', { runId, role: 'admin' });
     await h.ok('navigate', { url: '/login?nickName=ana&password=minhasenha', snapshot: false });
@@ -308,10 +308,10 @@ describe('cursor visível no vídeo', () => {
     const runId = await loggedInRun(h, 'FIX-31', ['CT-001']);
     await h.ok('scenario_start', { runId, code: 'CT-001' });
     await h.ok('navigate', { url: '/students', snapshot: false });
-    const layer = await h.ok('verify', { kind: 'ui', description: 'camada do cursor presente e fora da acessibilidade', target: { css: '[data-novo-qa-cursor]' }, condition: 'attribute', attribute: 'aria-hidden', text: 'true', timeoutMs: 2000 });
+    const layer = await h.ok('verify', { kind: 'ui', description: 'camada do cursor presente e fora da acessibilidade', target: { css: '[data-sanctum-cursor]' }, condition: 'attribute', attribute: 'aria-hidden', text: 'true', timeoutMs: 2000 });
     expect(layer.passed).toBe(true);
     const snap = await h.ok('snapshot', {});
-    expect(JSON.stringify(snap)).not.toContain('novo-qa-cursor');
+    expect(JSON.stringify(snap)).not.toContain('sanctum-cursor');
     // Clique continua chegando no botão (a camada não intercepta o ponteiro).
     await h.ok('act', { action: 'click', target: { role: 'button', name: 'Novo aluno' } });
     await h.ok('verify', { kind: 'ui', description: 'formulário abriu', target: { label: 'Nome' } });

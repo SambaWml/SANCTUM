@@ -1,12 +1,15 @@
 import { spawn, spawnSync } from 'node:child_process';
 import { closeSync, existsSync, mkdirSync, openSync, readFileSync, readSync, renameSync, statSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
+import type { Config } from '../config/schema.ts';
 import type { Db } from '../state/db.ts';
+import { StateStore } from '../state/store.ts';
 import {
   AGY_FORBIDDEN, antigravityDriver, claudeDriver,
   type AgentDriver, type MissionAgent, type MissionKind, type MissionTarget, type TurnEvent, type Windows,
 } from './agents.ts';
 import { createPrompt, describeTool } from './prompts.ts';
+import { isForbiddenRule } from './agents.ts';
 
 /**
  * Missões lançadas pela Central de Caça: o agente roda em segundo plano, um processo por turno,
@@ -63,7 +66,14 @@ interface Tail {
 }
 
 /** Regras negadas que o painel nunca libera: o turno segue com o aviso, sem perguntar. */
-const forbidden = (rule: string) => AGY_FORBIDDEN.includes(rule.replace(/\(.*$/, ''));
+const forbidden = (rule: string) => isForbiddenRule(rule);
+/** Regra do Antigravity cuja permissão vira concessão única conferida pelo sanctum. */
+const SENSITIVE_RULE = /^mcp\(sanctum\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/;
+
+/** Concessões ainda não usadas da missão deixam de valer (fim do turno, parada). */
+function expireGrants(db: Db, missionId: string): void {
+  db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND kind = 'plan' AND status = 'ANSWERED'`).run(missionId);
+}
 /** Retomadas automáticas seguidas (só ações proibidas) antes de parar e chamar o usuário. */
 const MAX_AUTO_RESUME = 2;
 
@@ -73,10 +83,13 @@ export class MissionManager {
   private readonly autoResumes = new Map<string, number>();
   private readonly drivers: Record<MissionAgent, AgentDriver>;
   private readonly now: () => Date;
+  /** Só para abortRun (não usa config): saída de emergência com o registro do que ficou pendente. */
+  private readonly store: StateStore;
   private timer: NodeJS.Timeout | null = null;
 
   constructor(private readonly deps: MissionDeps) {
     this.now = deps.now ?? (() => new Date());
+    this.store = new StateStore(deps.db, {} as Config, { now: this.now });
     this.drivers = {
       claude: deps.drivers?.claude ?? claudeDriver(deps.claudeBin),
       antigravity: deps.drivers?.antigravity ?? antigravityDriver(deps.agyBin),
@@ -111,9 +124,9 @@ export class MissionManager {
                           WHERE status = 'RUNNING' AND (log_path IS NULL OR pid IS NULL)`).run(this.ts());
   }
 
-  launch(input: { agent: MissionAgent; target: MissionTarget; kind: MissionKind; objective?: string }): MissionRow {
+  launch(input: { agent: MissionAgent; target: MissionTarget; kind: MissionKind; objective?: string; images?: { name: string; dataBase64: string }[] }): MissionRow {
     if (!this.drivers[input.agent]) throw new MissionError(`agente ${input.agent} não é lançado pelo painel`);
-    if (input.target.kind === 'url' && (input.kind === 'retest' || input.kind === 'resume')) throw new MissionError('reteste e retomada exigem um card');
+    if (input.target.kind === 'url' && (input.kind === 'retest' || input.kind === 'resume' || input.kind === 'analyze')) throw new MissionError('reteste, retomada e análise da US exigem um card');
     const target = input.target.kind === 'card' ? input.target.key : input.target.url;
     const busy = this.deps.db.prepare(`SELECT id FROM missions WHERE target = ? AND status = 'RUNNING'`).get(target) as { id: string } | undefined;
     if (busy) throw new MissionError(`já existe a missão ${busy.id} rodando para ${target}`);
@@ -121,53 +134,82 @@ export class MissionManager {
     const stamp = ts.replace(/[-:]/g, '').slice(0, 15);
     let id = `M-${stamp}`;
     for (let n = 2; this.deps.db.prepare('SELECT 1 FROM missions WHERE id = ?').get(id); n++) id = `M-${stamp}-${n}`;
-    const objective = input.objective?.trim() || null;
+    let objective = input.objective?.trim() || null;
+    const savedImages = input.images && input.images.length ? this.saveImages(target, input.images) : [];
+    let chatObjective = objective ? `Lançamento: ${objective}` : `Iniciou missão ${input.kind.toUpperCase()} para ${target}`;
+    if (savedImages.length) {
+      chatObjective += '\n\n' + savedImages.map(r => `![${r.name}](${r.webUrl})`).join('\n');
+      const imgRef = `\n\n[ANEXOS VISUAIS DE REFERÊNCIA — ${savedImages.length} imagem(ns)]:\n` +
+        savedImages.map(r => `• ${r.absPath} (${r.name})`).join('\n') +
+        `\n(Use read_file nas imagens acima para confrontar o layout/Figma com a tela do app).`;
+      objective = (objective || `Missão ${input.kind.toUpperCase()} para ${target}`) + imgRef;
+    }
     this.deps.db.prepare(`INSERT INTO missions (id, agent, target, kind, objective, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 'RUNNING', ?, ?)`)
       .run(id, input.agent, target, input.kind, objective, ts, ts);
-    this.addMessage(id, 'user', objective ? `Lançamento: ${objective}` : `Iniciou missão ${input.kind.toUpperCase()} para ${target}`, ts);
+    this.addMessage(id, 'user', chatObjective, ts);
     this.turn(id, this.drivers[input.agent].firstPrompt(input.target, input.kind, objective ?? undefined));
     return this.get(id);
   }
 
+  private saveImages(target: string, images: { name: string; dataBase64: string }[]): { name: string; absPath: string; webUrl: string }[] {
+    if (!images.length) return [];
+    const safeTarget = target.replace(/[^A-Za-z0-9_-]/g, '_');
+    const refDir = join(this.deps.rootDir, 'runs', safeTarget, 'references');
+    mkdirSync(refDir, { recursive: true });
+    const saved: { name: string; absPath: string; webUrl: string }[] = [];
+    const now = Date.now();
+    for (let i = 0; i < images.length; i++) {
+      const img = images[i]!;
+      const rawBase64 = img.dataBase64.replace(/^data:image\/[a-zA-Z0-9+.-]+;base64,/, '');
+      const ext = img.name.match(/\.(png|jpe?g|webp|gif|svg)$/i)?.[0]?.toLowerCase() || '.png';
+      const cleanBase = img.name.replace(/\.[^/.]+$/, '').replace(/[^A-Za-z0-9_-]/g, '_').slice(0, 30) || 'ref';
+      const filename = `ref-${now}-${i}-${cleanBase}${ext}`;
+      const filePath = join(refDir, filename);
+      writeFileSync(filePath, Buffer.from(rawBase64, 'base64'));
+      saved.push({
+        name: img.name,
+        absPath: filePath,
+        webUrl: `/runs/${safeTarget}/references/${filename}`,
+      });
+    }
+    return saved;
+  }
+
   /** Resposta do usuário: continua a conversa. approvePlan grava a aprovação antes, liberando o plan_approve. */
-  reply(id: string, text: string, opts: { approvePlan?: boolean } = {}): MissionRow {
+  reply(id: string, text: string, opts: { approvePlan?: boolean; images?: { name: string; dataBase64: string }[] } = {}): MissionRow {
     const m = this.get(id);
     if (m.status === 'RUNNING') throw new MissionError('o agente ainda está trabalhando; espere ele terminar o turno');
     if (!m.session_id) throw new MissionError('missão sem conversa para continuar; lance de novo');
-    const message = text.trim() || (opts.approvePlan ? 'Plano aprovado. Pode seguir.' : '');
-    if (!message) throw new MissionError('escreva a resposta');
+
+    const savedImages = opts.images && opts.images.length ? this.saveImages(m.target, opts.images) : [];
+    let baseText = text.trim();
+    if (!baseText && savedImages.length) {
+      baseText = `Envio de ${savedImages.length} anexo(s) visual(is) / print(s) para referência e auditoria.`;
+    }
+    const message = baseText || (opts.approvePlan ? 'Plano aprovado. Pode seguir.' : '');
+    if (!message) throw new MissionError('escreva a resposta ou anexe ao menos uma imagem');
     if (opts.approvePlan) createPrompt(this.deps.db, { missionId: id, kind: 'plan', summary: 'Plano aprovado pelo painel', decision: 'allow' }, this.now());
 
     const allowedRules: string[] = [];
-    if (m.agent === 'antigravity' && opts.approvePlan) allowedRules.push('mcp(novo-qa/plan_approve)');
+    if (m.agent === 'antigravity' && opts.approvePlan) allowedRules.push('mcp(sanctum/plan_approve)');
 
-    // Se havia pedidos de permissão pendentes para o Antigravity, e o usuário respondeu no chat:
-    const pendingPerms = this.deps.db.prepare(`SELECT id, tool FROM prompts WHERE mission_id = ? AND kind = 'permission' AND status = 'PENDING'`).all(id) as { id: number; tool: string }[];
-    if (m.agent === 'antigravity' && pendingPerms.length) {
-      const isDeny = /^(não|nao|negado|cancelar|recusar|cancela|pare)\b/i.test(message);
-      for (const p of pendingPerms) {
-        if (!isDeny) {
-          allowedRules.push(p.tool);
-          this.deps.db.prepare(`UPDATE prompts SET status = 'USED', decision = 'allow' WHERE id = ?`).run(p.id);
-          const tool = /^mcp\(novo-qa\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/.exec(p.tool)?.[1];
-          if (tool) {
-            const count = tool === 'jira_create_issue' || tool === 'jira_comment' ? 10 : 1;
-            for (let i = 0; i < count; i++) {
-              createPrompt(this.deps.db, { missionId: id, kind: 'plan', tool, summary: `Concessão de ${tool} via chat`, decision: 'allow' }, this.now());
-            }
-          }
-        } else {
-          this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED', decision = 'deny' WHERE id = ?`).run(p.id);
-        }
-      }
-    } else {
-      this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    // Resposta em texto nunca aprova permissão: só o botão "Permitir" de cada pedido. Os pedidos
+    // pendentes perdem o sentido quando o usuário responde outra coisa — o agente pede de novo se precisar.
+    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+
+    let chatMessage = message;
+    let agentMessage = message;
+    if (savedImages.length) {
+      chatMessage += '\n\n' + savedImages.map(r => `![${r.name}](${r.webUrl})`).join('\n');
+      agentMessage += `\n\n[ANEXOS VISUAIS ENVIADOS PELO USUÁRIO — ${savedImages.length} imagem(ns)]:\n` +
+        savedImages.map(r => `• ${r.absPath} (Referência: ${r.name})`).join('\n') +
+        `\n(Instrução: Use a ferramenta read_file nos caminhos absolutos acima para inspecionar os prints/mockups do Figma e verificar se a tela do sistema está de acordo com as referências visuais).`;
     }
 
     this.autoResumes.delete(id);
-    this.push(id, `você: ${message}`);
-    this.addMessage(id, 'user', message);
-    this.resume(id, message, allowedRules);
+    this.push(id, `você: ${message}${savedImages.length ? ` (+${savedImages.length} imagens)` : ''}`);
+    this.addMessage(id, 'user', chatMessage);
+    this.resume(id, agentMessage, allowedRules);
     return this.get(id);
   }
 
@@ -175,17 +217,26 @@ export class MissionManager {
     const m = this.get(id);
     if (m.pid && m.status === 'RUNNING') (this.deps.killTree ?? killTree)(m.pid);
     this.tails.delete(id);
-    // Pedidos que ficaram esperando não valem mais.
+    // Pedidos que ficaram esperando e concessões não usadas não valem mais.
     this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    expireGrants(this.deps.db, id);
     if (m.status === 'RUNNING' || m.status === 'WAITING') {
       this.deps.db.prepare(`UPDATE missions SET status = 'STOPPED', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
     }
-    if (m.run_id) {
-      this.deps.db.prepare(`UPDATE runs SET status = 'ABORTED', ended_at = COALESCE(ended_at, ?) WHERE id = ? AND status IN ('PLANNING','AWAITING_APPROVAL','EXECUTING')`)
-        .run(this.ts(), m.run_id);
-    }
+    this.abortOpenRun(m, 'missão parada pelo usuário no painel');
     this.push(id, 'missão parada pelo usuário');
     return this.get(id);
+  }
+
+  /**
+   * Run ainda aberto quando o usuário para ou conclui a missão: sai pelo caminho do core (abortRun),
+   * que guarda o motivo e registra os dados de teste pendentes. Nunca vira COMPLETED por fora do
+   * run_complete — isso pularia o teto da recomendação e serviria de base errada para o reteste.
+   */
+  private abortOpenRun(m: MissionRow, reason: string): void {
+    if (!m.run_id) return;
+    const run = this.deps.db.prepare('SELECT status FROM runs WHERE id = ?').get(m.run_id) as { status: string } | undefined;
+    if (run && ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(run.status)) this.store.abortRun(m.run_id, reason);
   }
 
   /** Conclui a missão manualmente a qualquer momento a pedido do usuário. */
@@ -194,11 +245,10 @@ export class MissionManager {
     if (m.pid && m.status === 'RUNNING') (this.deps.killTree ?? killTree)(m.pid);
     this.tails.delete(id);
     this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    expireGrants(this.deps.db, id);
     this.deps.db.prepare(`UPDATE missions SET status = 'DONE', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
-    if (m.run_id) {
-      this.deps.db.prepare(`UPDATE runs SET status = 'COMPLETED', ended_at = COALESCE(ended_at, ?) WHERE id = ? AND status IN ('PLANNING','AWAITING_APPROVAL','EXECUTING')`)
-        .run(this.ts(), m.run_id);
-    }
+    // Concluir a missão não conclui o run: se o agente não fechou (run_complete), ele é abortado com motivo.
+    this.abortOpenRun(m, 'missão concluída pelo usuário no painel antes de o agente fechar o run');
     this.push(id, 'missão concluída pelo usuário');
     this.addMessage(id, 'system', '🏁 Missão finalizada manualmente pelo usuário.');
     return this.get(id);
@@ -312,15 +362,10 @@ export class MissionManager {
       const allowed = answered.filter((a) => a.decision === 'allow').map((a) => a.tool);
       const denied = answered.filter((a) => a.decision === 'deny').map((a) => a.tool);
       for (const a of answered) this.deps.db.prepare(`UPDATE prompts SET status = 'USED' WHERE id = ?`).run(a.id);
-      // Ação sensível permitida: cria grants (múltiplos para criação de issues/comentários repetidos)
+      // Ação sensível permitida: uma concessão por "Permitir" (o sanctum confere ao executar).
       for (const rule of allowed) {
-        const tool = /^mcp\(novo-qa\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/.exec(rule)?.[1];
-        if (tool) {
-          const count = tool === 'jira_create_issue' || tool === 'jira_comment' ? 10 : 1;
-          for (let i = 0; i < count; i++) {
-            createPrompt(this.deps.db, { missionId: m.id, kind: 'plan', tool, summary: `Concessão de ${tool} pelo painel`, decision: 'allow' }, this.now());
-          }
-        }
+        const tool = SENSITIVE_RULE.exec(rule)?.[1];
+        if (tool) createPrompt(this.deps.db, { missionId: m.id, kind: 'plan', tool, summary: `Concessão única de ${tool} pelo painel`, decision: 'allow' }, this.now());
       }
       const message = [
         allowed.length ? `O usuário permitiu pelo painel: ${allowed.join(', ')}. Continue de onde parou.` : '',
@@ -337,17 +382,20 @@ export class MissionManager {
     this.turn(id, message, m.session_id ?? undefined, allow);
   }
 
-  /** Liga a missão ao run que o agente abriu (Claude: NOVO_QA_MISSION no MCP; Antigravity: mesmo alvo e cliente, depois do lançamento). */
+  /** Liga a missão ao run mais recente que o agente abriu. */
   private link(): void {
-    const open = this.deps.db.prepare(`SELECT * FROM missions WHERE run_id IS NULL AND archived_at IS NULL`).all() as unknown as MissionRow[];
+    const open = this.deps.db.prepare(`SELECT * FROM missions WHERE archived_at IS NULL`).all() as unknown as MissionRow[];
     for (const m of open) {
-      const run = (m.agent === 'claude'
-        ? this.deps.db.prepare(`SELECT id FROM runs WHERE json_extract(agent, '$.mission') = ? ORDER BY started_at DESC LIMIT 1`).get(m.id)
-        : this.deps.db.prepare(`SELECT id FROM runs WHERE started_at >= ? AND lower(COALESCE(json_extract(agent, '$.client'), '')) LIKE ?
+      let run = this.deps.db.prepare(`SELECT id FROM runs WHERE json_extract(agent, '$.mission') = ? ORDER BY started_at DESC LIMIT 1`).get(m.id) as { id: string } | undefined;
+      if (!run) {
+        run = this.deps.db.prepare(`SELECT id FROM runs WHERE started_at >= ? AND lower(COALESCE(json_extract(agent, '$.client'), '')) LIKE ?
                                 AND (issue_key = ? OR (? LIKE 'http%' AND issue_key LIKE 'EXPLORA-%'))
-                                AND id NOT IN (SELECT run_id FROM missions WHERE run_id IS NOT NULL) ORDER BY started_at LIMIT 1`)
-          .get(m.created_at, `%${m.agent}%`, m.target, m.target)) as { id: string } | undefined;
-      if (run) this.deps.db.prepare('UPDATE missions SET run_id = ? WHERE id = ?').run(run.id, m.id);
+                                ORDER BY started_at DESC LIMIT 1`)
+          .get(m.created_at, `%${m.agent}%`, m.target, m.target) as { id: string } | undefined;
+      }
+      if (run && run.id !== m.run_id) {
+        this.deps.db.prepare('UPDATE missions SET run_id = ? WHERE id = ?').run(run.id, m.id);
+      }
     }
   }
 
@@ -363,8 +411,8 @@ export class MissionManager {
     try {
       const proc = (this.deps.spawnFn ?? spawn)(driver.bin(), driver.args({ prompt, resume, allow }), {
         cwd: this.deps.rootDir, windowsHide: true, detached: true, stdio: ['ignore', out, err],
-        // O MCP iniciado pelo próprio agente herda NOVO_QA_MISSION (liga o run e os pedidos ao painel).
-        env: { ...process.env, NOVO_QA_MISSION: id, MCP_TOOL_TIMEOUT: String(45 * 60_000) },
+        // O MCP iniciado pelo próprio agente herda SANCTUM_MISSION (liga o run e os pedidos ao painel).
+        env: { ...process.env, SANCTUM_MISSION: id, MCP_TOOL_TIMEOUT: String(45 * 60_000) },
       });
       proc.on('error', (e) => this.deps.db.prepare(`UPDATE missions SET status = 'FAILED', pid = NULL, error = ?, updated_at = ? WHERE id = ? AND status = 'RUNNING'`)
         .run(`não foi possível iniciar o ${driver.label}: ${e.message}`, this.ts(), id));
@@ -412,6 +460,9 @@ export class MissionManager {
     this.tails.delete(m.id);
     const current = this.get(m.id);
     if (current.status !== 'RUNNING' || current.pid !== m.pid) return; // parada pelo usuário ou turno mais novo
+    // Concessão de uso único vale só para o turno em que foi dada: a que sobrou não fica guardada
+    // para liberar uma ação mais tarde sem o usuário ver o pedido.
+    expireGrants(this.deps.db, m.id);
     const set = (status: MissionStatus, message: string | null, error: string | null) => {
       this.deps.db.prepare(`UPDATE missions SET status = ?, pid = NULL, last_message = COALESCE(?, last_message), error = ?, updated_at = ? WHERE id = ?`)
         .run(status, message, error, this.ts(), m.id);
@@ -420,12 +471,17 @@ export class MissionManager {
     };
 
     // Antigravity: ação negada por falta de permissão encerra o turno. Vira pedido no painel
-    // (ou, se o NOVO QA proíbe, segue com o aviso, sem perguntar).
+    // (ou, se o Sanctum proíbe, segue com o aviso, sem perguntar).
     if (tail.denied.length) {
+      // O resultado do turno repete cada negação de forma genérica ("mcp", "write_file"): com a
+      // específica ("mcp(sanctum/x)") ao lado, a genérica é descartada — permitida, ela liberaria
+      // tudo daquele tipo no turno seguinte.
+      const specific = (d: { rule: string }) => d.rule.includes('(');
+      tail.denied = tail.denied.filter((d) => specific(d) || !tail.denied.some((o) => specific(o) && o.rule.startsWith(`${d.rule}(`)));
       const ask = tail.denied.filter((d) => !forbidden(d.rule));
       const blocked = tail.denied.filter((d) => forbidden(d.rule)).map((d) => d.rule);
       for (const d of ask) createPrompt(this.deps.db, { missionId: m.id, kind: 'permission', tool: d.rule, summary: describeRule(d.rule, d.detail), input: safeJson(d.detail) }, this.now());
-      const note = blocked.length ? `O NOVO QA proíbe: ${blocked.join(', ')} (operar o sistema por fora das ferramentas do novo-qa). Use as ferramentas do novo-qa.` : '';
+      const note = blocked.length ? `O Sanctum proíbe: ${blocked.join(', ')} (operar o sistema por fora das ferramentas do sanctum). Use as ferramentas do sanctum.` : '';
       if (ask.length) {
         set('WAITING', [tail.result?.text, `Precisa da sua permissão para: ${ask.map((d) => d.rule).join(', ')}`, note].filter(Boolean).join('\n\n'), null);
         this.push(m.id, 'esperando sua permissão');
@@ -435,11 +491,11 @@ export class MissionManager {
       this.autoResumes.set(m.id, n);
       if (n <= MAX_AUTO_RESUME) {
         set('RUNNING', null, null);
-        this.push(m.id, `bloqueado pelo NOVO QA: ${blocked.join(', ')} — seguindo com o aviso`);
+        this.push(m.id, `bloqueado pelo Sanctum: ${blocked.join(', ')} — seguindo com o aviso`);
         this.turn(m.id, note, current.session_id ?? undefined);
         return;
       }
-      set('WAITING', `O agente insistiu em ações proibidas pelo NOVO QA (${blocked.join(', ')}). Oriente o próximo passo ou pare a missão.`, null);
+      set('WAITING', `O agente insistiu em ações proibidas pelo Sanctum (${blocked.join(', ')}). Oriente o próximo passo ou pare a missão.`, null);
       this.push(m.id, 'esperando você');
       return;
     }
@@ -488,7 +544,7 @@ export class MissionManager {
 
 const safeJson = (s: string): unknown => { try { return JSON.parse(s); } catch { return s; } };
 
-/** Pedido do Antigravity em uma linha: a regra negada e, se for ferramenta do novo-qa, o que ela faria. */
+/** Pedido do Antigravity em uma linha: a regra negada e, se for ferramenta do sanctum, o que ela faria. */
 function describeRule(rule: string, detail: string): string {
   const mcp = /^mcp\(([^/]+)\/(.+)\)$/.exec(rule);
   const params = safeJson(detail) as { Arguments?: Record<string, unknown> } | string;

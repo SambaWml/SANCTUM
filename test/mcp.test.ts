@@ -32,7 +32,7 @@ async function call(name: string, args: Record<string, unknown>) {
   return { isError: result.isError ?? false, text, json: result.isError ? undefined : JSON.parse(text) };
 }
 
-describe('servidor MCP novo-qa', () => {
+describe('servidor MCP sanctum', () => {
   it('expõe só as ferramentas de estado — verificações não são registráveis pelo modelo', async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
@@ -44,7 +44,7 @@ describe('servidor MCP novo-qa', () => {
   it('fluxo via MCP: PASS sem verificação volta como erro de regra', async () => {
     const start = await call('run_start', { issueKey: 'FIX-1', env: 'fixture-local', mode: 'manual' });
     const runId = start.json.runId as string;
-    const plan = { code: 'CT-001', title: 'Login válido', priority: 'P0', risk: 'HIGH', types: ['functional'], steps: ['logar'], expected: 'dashboard' };
+    const plan = { code: 'CT-001', title: 'Login válido', priority: 'P0', risk: 'MEDIUM', types: ['functional'], preconditions: 'admin cadastrado, sem sessão', steps: ['logar'], expected: 'dashboard visível após o login' };
     expect((await call('plan_save', { runId, scenarios: [plan] })).json.status).toBe('AWAITING_APPROVAL');
 
     const early = await call('scenario_start', { runId, code: 'CT-001' });
@@ -66,12 +66,12 @@ describe('servidor MCP novo-qa', () => {
   });
 
   it('o run guarda o cliente MCP que o iniciou (e o modelo, se informado)', async () => {
-    process.env.NOVO_QA_MODEL = 'claude-opus-5-5';
+    process.env.SANCTUM_MODEL = 'claude-opus-5-5';
     try {
       const runId = (await call('run_start', { issueKey: 'FIX-2', env: 'fixture-local', mode: 'manual' })).json.runId as string;
       expect(JSON.parse(store.getRun(runId).agent!)).toEqual({ client: 'test', version: '0', model: 'claude-opus-5-5' });
     } finally {
-      delete process.env.NOVO_QA_MODEL;
+      delete process.env.SANCTUM_MODEL;
     }
   });
 

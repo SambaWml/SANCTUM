@@ -1,5 +1,6 @@
 import type { Redactor } from '../security/redact.ts';
 import type { Db } from '../state/db.ts';
+import { isForbiddenRule } from './agents.ts';
 
 /**
  * Pedidos que esperam o usuário no painel ao vivo. O agente lançado pelo painel roda sem terminal:
@@ -83,6 +84,11 @@ export async function decidePermission(deps: PermissionDeps, toolName: string, i
   const { db, redactor, missionId } = deps;
   const now = deps.now ?? (() => new Date());
   if (!missionId) return { behavior: 'deny', message: 'permissão pelo painel só vale para missões lançadas pela Central de Caça' };
+  // Proibido sempre, sem perguntar: terminal e escrita nos arquivos do próprio Sanctum.
+  const file = typeof input.file_path === 'string' ? input.file_path : typeof input.notebook_path === 'string' ? input.notebook_path : undefined;
+  if (isForbiddenRule(toolName, file)) {
+    return { behavior: 'deny', message: 'proibido em missão do painel: terminal e alteração dos arquivos do Sanctum. Use as ferramentas do sanctum; o relatório abre pelo painel.' };
+  }
   if (/plan_approve$/.test(toolName) && consumeGrant(db, missionId, 'plan_approve')) return { behavior: 'allow', updatedInput: input };
 
   // O pedido mostrado no painel é redigido; o input original só volta para o Claude Code.

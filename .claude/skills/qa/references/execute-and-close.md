@@ -5,10 +5,15 @@ Vale para /qa, /qa-resume e /retest, com o plano já aprovado (run EXECUTING).
 ## Execução em lotes
 Repita até `batch_brief` voltar vazio:
 1. `batch_brief(runId)`.
-2. Delegue o lote ao subagente `test-executor` com: `runId`, os códigos do lote e qualquer orientação que só você tem (ex.: "dev pediu para abrir pelo card do professor na barra lateral"). Não copie o briefing: ele chama `batch_brief`. Cenário com `resume` no briefing continua de onde parou.
+2. Delegue o lote de acordo com o modo da missão:
+   - **Missão de Reconhecimento / Exploratória (`explore` ou URL sem card)**: A expedição inteira é comandada pelo subagente `test-explorer` (veja `references/exploratory.md`). Ele tem carta branca para desvio de rota, ataques de caos, injeção de falhas com `network_simulate` e geração dinâmica de novos cenários via `scenario_add`.
+   - **Missão Regular de Card (`qa` / `retest`)**:
+     * Cenários funcionais regulares e de regressão: delegue ao subagente `test-executor` com `runId`, códigos e orientações específicas.
+     * Com `--explore` ou cenários de risco exploratório (`EXP-*`): delegue a bateria exploratória ao subagente `test-explorer` para caça agressiva nas bordas e vulnerabilidades do sistema.
+   Não copie o briefing: os subagentes chamam `batch_brief`. Cenário com `resume` no briefing continua de onde parou.
 3. Leia o resumo devolvido. Anomalia sem explicação → decida se vira exploratório (`scenario_add`) no próximo lote. Pedido de aprovação RED → pergunte ao usuário antes de mandar seguir.
 
-Com `--explore`, reserve um lote para exploração dirigida pelos riscos mais altos.
+Padrão Sanctum: todo teste termina com exploração registrada — pelo menos 1 EXP executado em volta do risco maior (3 no exploratório), criados com `scenario_add` durante a execução (ver `references/plan-example.md`, seção EXP). Sem isso o `run_complete` pede `noExplorationReason`. Em missões com `--explore`, certifique-se de que o `test-explorer` explore profundamente as frestas, dados caóticos e falhas invisíveis de console/network antes de concluir.
 
 ## Limpeza
 `cleanup_run(runId)`. Itens `unregistered` → `data_register` (api/manual com `verify`, ou `keep` com motivo). Repita até tudo VERIFIED ou KEPT.

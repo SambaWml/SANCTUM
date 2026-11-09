@@ -138,9 +138,11 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
       } else if (req.classification === 'REQUIREMENT_AMBIGUITY') {
         problems.push('ambiguidade de requisito não é falha — use NEEDS_REVIEW');
       } else if (req.classification === 'PRODUCT_BUG') {
-        const inv = facts.investigation;
-        if (!inv.network && !inv.console && !inv.api && inv.reproductions === 0) {
-          problems.push('PRODUCT_BUG exige investigação: consulte network, console ou api, ou reproduza — ou classifique como UNKNOWN');
+        // Só é bug o que se reproduz (regra do usuário, 09/11): a mesma verificação refeita e
+        // reprovada de novo. Visto uma vez, ou intermitente, é NEEDS_REVIEW com "X de Y" no reason.
+        if (facts.investigation.reproductions === 0) {
+          problems.push('PRODUCT_BUG exige reprodução: refaça a mesma verificação (mesma description) e veja falhar de novo. ' +
+            'Visto uma vez ou intermitente → NEEDS_REVIEW com "intermitente X de Y tentativas" no reason');
         }
       }
       break;
@@ -179,8 +181,8 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
  * Teto da recomendação do run (execute-and-close.md): o agente escolhe, o core limita.
  * Ordem APROVADO > INCONCLUSIVO > REPROVADO; vale qualquer recomendação igual ou abaixo do teto.
  * PRODUCT_BUG em P0/P1 → REPROVADO; P0/P1 FAILED (sem bug), BLOCKED ou NEEDS_REVIEW (salvo
- * EXPECTED_BEHAVIOR) → INCONCLUSIVO; sem nenhum PASSED → INCONCLUSIVO. P2/P3 e NOT_EXECUTED
- * (exige motivo) não travam.
+ * EXPECTED_BEHAVIOR) → INCONCLUSIVO; P0/P1 PASSED com confiança LOW → INCONCLUSIVO; sem nenhum
+ * PASSED → INCONCLUSIVO. P2/P3 e NOT_EXECUTED (exige motivo) não travam.
  */
 export const RECOMMENDATIONS = ['REPROVADO', 'INCONCLUSIVO', 'APROVADO'] as const;
 export type Recommendation = (typeof RECOMMENDATIONS)[number];
@@ -190,6 +192,8 @@ export interface RecommendationFact {
   priority: 'P0' | 'P1' | 'P2' | 'P3';
   status: ScenarioStatus;
   classification: Classification | null;
+  /** Confiança da rubrica no PASSED; LOW = uma verificação fraca (ex.: só ver a tela). */
+  confidence?: Confidence | null;
 }
 
 export function recommendationCeiling(scenarios: RecommendationFact[]): { ceiling: Recommendation; reasons: string[] } {
@@ -201,6 +205,10 @@ export function recommendationCeiling(scenarios: RecommendationFact[]): { ceilin
   const open = critical.filter((s) =>
     s.status === 'FAILED' || s.status === 'BLOCKED' || (s.status === 'NEEDS_REVIEW' && s.classification !== 'EXPECTED_BEHAVIOR'));
   const reasons = open.map((s) => `${s.code} (${s.priority}) ${s.status}${s.classification ? `/${s.classification}` : ''}`);
+  // Aprovado raso não sustenta aprovação do card (auditoria 09/11: 52 de 198 PASSED eram LOW).
+  for (const s of critical.filter((x) => x.status === 'PASSED' && x.confidence === 'LOW')) {
+    reasons.push(`${s.code} (${s.priority}) PASSED com confiança baixa (verifique o resultado com network, api ou persistence)`);
+  }
   if (!scenarios.some((s) => s.status === 'PASSED')) reasons.push('nenhum cenário PASSED');
   return reasons.length > 0 ? { ceiling: 'INCONCLUSIVO', reasons } : { ceiling: 'APROVADO', reasons: [] };
 }

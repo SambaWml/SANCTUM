@@ -1,6 +1,6 @@
 ---
 name: qa-resume
-description: Retoma uma execução de QA do NOVO QA pelo card ou runId, usando o estado salvo e preservando cenários concluídos.
+description: Retoma uma execução de QA do Sanctum pelo card ou runId, usando o estado salvo e preservando cenários concluídos.
 ---
 
 # Retomada pelo Codex

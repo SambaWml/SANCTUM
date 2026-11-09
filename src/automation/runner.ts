@@ -64,7 +64,7 @@ export function parseReport(json: JsonReport): ParsedReport {
     const firstError = failing
       ? [...new Set([failing.error?.message, ...(failing.errors ?? []).map((e) => e.message)].filter(Boolean))].join('\n')
       : undefined;
-    const blocked = runs.flatMap((t) => (t.annotations ?? []).filter((a) => a.type === 'novo-qa-blocked').map((a) => a.description ?? ''));
+    const blocked = runs.flatMap((t) => (t.annotations ?? []).filter((a) => a.type === 'sanctum-blocked').map((a) => a.description ?? ''));
     return {
       file: spec.file,
       title: spec.title,
@@ -129,8 +129,8 @@ export async function runPlaywright(o: RunOptions): Promise<{ exitCode: number |
   const env = {
     ...process.env,
     PLAYWRIGHT_JSON_OUTPUT_NAME: reportPath,
-    ...(o.envId ? { NOVO_QA_ENV: o.envId } : {}),
-    ...(o.baseUrl ? { NOVO_QA_BASE_URL: o.baseUrl } : {}),
+    ...(o.envId ? { SANCTUM_ENV: o.envId } : {}),
+    ...(o.baseUrl ? { SANCTUM_BASE_URL: o.baseUrl } : {}),
   };
 
   let output = '';

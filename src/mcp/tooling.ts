@@ -43,13 +43,13 @@ export function createRegistrar(
   return (name, description, shape, handler) => {
     const callback = async (rawArgs: unknown): Promise<CallToolResult> => {
       const args = redactor.value(rawArgs) as Parameters<typeof handler>[0];
-      // Quem está operando (metadado do run e das aprovações): clientInfo do MCP + NOVO_QA_MODEL.
+      // Quem está operando (metadado do run e das aprovações): clientInfo do MCP + SANCTUM_MODEL.
       const client = server.server.getClientVersion();
       store.agent = {
-        ...(client?.name || process.env.NOVO_QA_CLIENT ? { client: client?.name ?? process.env.NOVO_QA_CLIENT } : {}),
+        ...(client?.name || process.env.SANCTUM_CLIENT ? { client: client?.name ?? process.env.SANCTUM_CLIENT } : {}),
         ...(client?.version ? { version: client.version } : {}),
-        ...(process.env.NOVO_QA_MODEL ? { model: process.env.NOVO_QA_MODEL } : {}),
-        ...(process.env.NOVO_QA_MISSION ? { mission: process.env.NOVO_QA_MISSION } : {}),
+        ...(process.env.SANCTUM_MODEL ? { model: process.env.SANCTUM_MODEL } : {}),
+        ...(process.env.SANCTUM_MISSION ? { mission: process.env.SANCTUM_MISSION } : {}),
       };
       const runId = (args as { runId?: unknown }).runId;
       // Ferramenta de navegador não recebe runId: vale o run da sessão aberta (base de métricas e timeline).
@@ -63,7 +63,7 @@ export function createRegistrar(
           }
           const result = await server.server.elicitInput({
             mode: 'form',
-            message: redactor.text(`NOVO QA — autorizar ${name}? Confira o plano apresentado ou a ação específica antes de confirmar.\n${JSON.stringify(args)}`),
+            message: redactor.text(`Sanctum — autorizar ${name}? Confira o plano apresentado ou a ação específica antes de confirmar.\n${JSON.stringify(args)}`),
             requestedSchema: {
               type: 'object',
               properties: { confirm: { type: 'boolean', title: 'Autorizo esta operação específica', default: false } },
@@ -95,8 +95,9 @@ export function createRegistrar(
         const known = KNOWN_ERRORS.some((E) => err instanceof E);
         const first = ((err as Error).message ?? String(err)).split('\n').slice(0, known ? 12 : 1).join('\n');
         const message = known ? first : `erro: ${first.slice(0, 500)}`;
-        // Recusa de regra/guard também é fato do run: fica no evento (redigida e curta).
-        store.finishEvent(eventId, { ok: false, ms: Date.now() - started, error: redactor.text(message.split('\n')[0]!.slice(0, 200)) });
+        // Recusa de regra/guard também é fato do run: fica no evento, redigida e com o motivo inteiro
+        // (só a 1ª linha escondia o porquê, ex.: "proposta recusada:" — auditoria de fluxo 09/11).
+        store.finishEvent(eventId, { ok: false, ms: Date.now() - started, error: redactor.text(message.replace(/\s*\n\s*/g, ' | ').slice(0, 500)) });
         return { isError: true, content: [{ type: 'text', text: redactor.text(message) }] };
       }
     };

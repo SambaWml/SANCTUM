@@ -52,7 +52,7 @@ export function proposeKnowledge(rootDir: string, project: string, module: strin
   return { file: `knowledge/${project}/_staging/${module}.yaml`, added: fresh.length, duplicates: statements.length - fresh.length };
 }
 
-/** Propostas pendentes por módulo (novo-qa knowledge <projeto>). */
+/** Propostas pendentes por módulo (sanctum knowledge <projeto>). */
 export function stagingSummary(rootDir: string, project: string) {
   const dir = join(projectDir(rootDir, project), '_staging');
   if (!existsSync(dir)) return [];

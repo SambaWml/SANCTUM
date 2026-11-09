@@ -7,7 +7,7 @@ import { loadModules } from '../src/knowledge/modules.ts';
 import { promoteStaging, proposeKnowledge, stagingSummary } from '../src/knowledge/staging.ts';
 
 let root: string;
-beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'novo-qa-kp-')); });
+beforeEach(() => { root = mkdtempSync(join(tmpdir(), 'sanctum-kp-')); });
 afterEach(() => rmSync(root, { recursive: true, force: true }));
 
 const obs = (statement: string) => ({ statement, kind: 'behavior' as const, status: 'OBSERVED' as const, confidence: 'HIGH' as const, source: { type: 'run' as const, reference: 'R1' } });
