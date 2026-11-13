@@ -18,6 +18,8 @@ export interface NetEntry {
   requestBody?: string;
   responseHeaders?: Record<string, string>;
   responseBody?: string;
+  /** Resposta fabricada por network_simulate: não prova nada sobre o servidor. */
+  simulated?: boolean;
 }
 
 /** Captura requests de documento/XHR/fetch. Assets (img, css, js, fontes) são ignorados. */
@@ -29,6 +31,14 @@ export class NetworkLog {
   private readonly byRequest = new WeakMap<Request, NetEntry>();
   /** Último Authorization que a própria aplicação enviou, por origem (só em memória; nunca devolvido). */
   private readonly authByOrigin = new Map<string, string>();
+  private readonly simulated = new WeakSet<Request>();
+
+  /** Chamado pelo route antes de responder com uma simulação. */
+  markSimulated(req: Request): void {
+    this.simulated.add(req);
+    const entry = this.byRequest.get(req);
+    if (entry) entry.simulated = true;
+  }
 
   authorizationFor(origin: string): string | undefined {
     return this.authByOrigin.get(origin);
@@ -50,6 +60,7 @@ export class NetworkLog {
         startedAt: Date.now(),
         requestHeaders: req.headers(),
         requestBody: req.postData()?.slice(0, MAX_BODY) ?? undefined,
+        ...(this.simulated.has(req) ? { simulated: true } : {}),
       };
       this.byRequest.set(req, entry);
       this.entries.push(entry);
@@ -63,6 +74,7 @@ export class NetworkLog {
       const entry = this.byRequest.get(res.request());
       if (!entry) return;
       entry.status = res.status();
+      if (this.simulated.has(res.request())) entry.simulated = true;
       entry.responseHeaders = res.headers();
       this.finish(entry);
       const type = res.headers()['content-type'] ?? '';

@@ -1,12 +1,6 @@
 ---
 name: analisar
-description: Analisa uma US/card do Jira antes do teste no Sanctum — lacunas, perguntas ao PO, riscos, melhorias na funcionalidade e rascunho de cenários no padrão. Não testa nem publica no Jira.
+description: Analisa uma US/card do Jira antes do teste (Sanctum) — lacunas e ambiguidades por critério, perguntas ao PO, riscos e regressões, melhorias na própria funcionalidade (sugestão) e rascunho de cenários no padrão Sanctum. Não testa nem publica no Jira.
 ---
 
-# Análise da US pelo Codex
-
-Leia [o adaptador do Codex](../../../docs/CODEX.md#execução-dos-fluxos)
-e siga [o roteiro de análise](../../../.claude/skills/analisar/SKILL.md).
-Use o card do pedido no lugar de `$ARGUMENTS`. Grave com `us_analysis_save`;
-nada vai para o Jira sem pedido. As adaptações do Codex prevalecem para
-ferramentas e aprovações.
+Siga o roteiro `docs/agents/analisar.md` etapa por etapa (referências em `docs/agents/references/`), com as diferenças do seu cliente em `docs/agents/clients/` (`codex.md` ou `antigravity.md`). O card, a URL e as opções vêm do pedido do usuário.

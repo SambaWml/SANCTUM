@@ -26,11 +26,15 @@ let child: ChildProcessByStdio<Writable, Readable, null>;
 let generation = 0;
 let initializeMsg: Message | undefined;
 let initializedMsg: Message | undefined;
-/** Chamada do cliente sem resposta ainda → quando foi enviada. */
-const inflight = new Map<string | number, number>();
+/** Chamada do cliente sem resposta ainda → quando foi enviada e se é chamada de ferramenta. */
+const inflight = new Map<string | number, { sentAt: number; tool: boolean }>();
 // Chamada sem resposta há mais que isso é considerada perdida (cliente cancelou): não trava a recarga,
 // mas recebe erro na troca de processo. Chamadas longas legítimas (automation_run, act lento) ficam abaixo.
-const STALE_MS = 15 * 60_000;
+// Acima da espera do pedido de permissão do painel (30 min, prompts.ts): uma recarga não derruba a aprovação.
+const STALE_MS = 35 * 60_000;
+// Só chamada de ferramenta pode demorar. Um tools/list (ou ping) sem resposta é pedido perdido numa troca de
+// processo: em 12/11 um deles segurou a recarga por 15 min e a sessão ficou com o código antigo.
+const STALE_OTHER_MS = 45_000;
 // Tempo para o servidor velho fechar navegador, salvar vídeo e banco antes de ser morto.
 const SHUTDOWN_MS = 20_000;
 let pending = false;
@@ -48,7 +52,19 @@ function flushQueue(): void {
 /** Chamadas que o filho morto não vai responder: o cliente recebe erro em vez de ficar esperando. */
 function failInflight(reason: string): void {
   for (const id of inflight.keys()) toClientRaw({ jsonrpc: '2.0', id, error: { code: -32000, message: reason } });
+  // O que já recebeu erro sai da fila: senão o filho novo executaria e o agente, ao repetir, rodaria duas vezes.
+  const failed = new Set(inflight.keys());
+  const keep = queue.filter((line) => { try { return !failed.has((JSON.parse(line) as Message).id as string | number); } catch { return true; } });
+  queue.splice(0, queue.length, ...keep);
   inflight.clear();
+}
+
+/** Quedas seguidas (ex.: erro de sintaxe em src/): espera crescente em vez de reiniciar em laço. */
+let crashes: number[] = [];
+function crashDelay(): number {
+  const now = Date.now();
+  crashes = [...crashes.filter((t) => now - t < 60_000), now];
+  return crashes.length <= 1 ? 0 : Math.min(30_000, 500 * 2 ** (crashes.length - 2));
 }
 
 const log = (msg: string) => process.stderr.write(`[sanctum launcher] ${msg}\n`);
@@ -82,10 +98,14 @@ function start(replay: boolean): void {
     // Reinício planejado (tryRestart) cuida de subir o próximo; aqui só queda inesperada.
     if (closing || restarting || current !== child) return;
     // Saída inesperada: sobe de novo e refaz o handshake, se o cliente já tinha feito.
-    log(`servidor saiu (código ${code}); reiniciando`);
+    const delay = crashDelay();
+    log(`servidor saiu (código ${code}); reiniciando${delay ? ` em ${Math.round(delay / 1000)} s` : ''}`);
     failInflight('servidor sanctum reiniciou; repita a chamada');
-    start(initializeMsg !== undefined);
+    ready = false; // até o filho novo subir, o que chegar vai para a fila
+    setTimeout(() => { if (!closing && current === child) start(initializeMsg !== undefined); }, delay);
   });
+  // Escrever num filho que acabou de morrer (EPIPE) não pode derrubar o launcher.
+  current.stdin.on('error', (e) => log(`escrita no servidor falhou: ${e.message}`));
   if (replay && initializeMsg) {
     ready = false;
     current.stdin.write(`${JSON.stringify({ ...initializeMsg, id: `${RELOAD_ID_PREFIX}${generation}` })}\n`);
@@ -110,7 +130,7 @@ function browserOpen(): boolean {
 function safeToRestart(): boolean {
   // Uma chamada perdida não pode travar a recarga para sempre; as recentes, sim.
   const now = Date.now();
-  const fresh = [...inflight.values()].filter((sentAt) => now - sentAt <= STALE_MS).length;
+  const fresh = [...inflight.values()].filter((c) => now - c.sentAt <= (c.tool ? STALE_MS : STALE_OTHER_MS)).length;
   return fresh === 0 && !browserOpen();
 }
 
@@ -154,7 +174,7 @@ createInterface({ input: process.stdin }).on('line', (line) => {
   }
   if (msg.method === 'initialize') initializeMsg = msg;
   if (msg.method === 'notifications/initialized') initializedMsg = msg;
-  if (msg.id !== undefined && msg.method) inflight.set(msg.id, Date.now());
+  if (msg.id !== undefined && msg.method) inflight.set(msg.id, { sentAt: Date.now(), tool: msg.method === 'tools/call' });
   // Durante a troca de processo, a mensagem espera o filho novo (antes ia para o velho e se perdia).
   if (ready) child.stdin.write(`${line}\n`);
   else queue.push(line);

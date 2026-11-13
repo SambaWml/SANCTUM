@@ -1,11 +1,6 @@
 ---
 name: qa-resume
-description: Retoma uma execução de QA do Sanctum pelo card ou runId, usando o estado salvo e preservando cenários concluídos.
+description: Retoma um run de QA interrompido do Sanctum a partir do estado salvo, sem refazer cenários concluídos.
 ---
 
-# Retomada pelo Codex
-
-Leia [o adaptador do Codex](../../../docs/CODEX.md#execução-dos-fluxos)
-e siga [o roteiro de retomada](../../../.claude/skills/qa-resume/SKILL.md).
-Use o card ou runId do pedido no lugar de `$ARGUMENTS`. As adaptações do Codex
-prevalecem para ferramentas, aprovações e execução de lotes.
+Siga o roteiro `docs/agents/qa-resume.md` etapa por etapa (referências em `docs/agents/references/`), com as diferenças do seu cliente em `docs/agents/clients/` (`codex.md` ou `antigravity.md`). O card, a URL e as opções vêm do pedido do usuário.

@@ -87,6 +87,9 @@ describe('condições de teste: simulação de rede e responsivo', () => {
     await h.ok('act', { action: 'fill', target: { label: 'Nome' }, value: 'Simulado' });
     await h.ok('act', { action: 'click', target: { role: 'button', name: 'Salvar' } });
     await h.ok('verify', { kind: 'ui', description: 'tela trata erro do servidor', target: { role: 'status' }, condition: 'containsText', text: 'Erro ao salvar' });
+    // Resposta simulada não é prova do servidor; persistência não abre arquivo local (auditoria 13/11).
+    expect((await h.call('verify', { kind: 'network', description: 'POST simulado', urlContains: '/api/students', method: 'POST', status: '500' })).text).toMatch(/respondida por network_simulate/);
+    expect((await h.call('verify', { kind: 'persistence', description: 'arquivo local', path: 'file:///C:/Windows/win.ini', target: { css: 'body' }, condition: 'visible' })).text).toMatch(/URL recusada/);
     // O servidor não recebeu nada: o aluno não existe.
     await h.ok('verify', { kind: 'api', description: 'nada gravado no servidor', path: '/api/students', bodyContains: 'Ana Souza' });
     expect(JSON.stringify((await h.ok('verify', { kind: 'api', description: 'Simulado ausente', path: '/api/students' })).actual)).not.toContain('Simulado');

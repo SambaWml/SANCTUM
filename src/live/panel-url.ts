@@ -2,7 +2,7 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 /**
- * Endereço da Central de Caça. O painel aprova os pedidos do agente; se o navegador do teste
+ * Endereço do painel do Sanctum. O painel aprova os pedidos do agente; se o navegador do teste
  * abrisse o painel, o agente poderia aprovar a si mesmo. O painel grava a porta em uso e o
  * navegador do Sanctum recusa qualquer endereço local nessa porta.
  */

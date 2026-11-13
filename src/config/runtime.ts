@@ -3,7 +3,7 @@ import { config as loadDotEnv } from 'dotenv';
 import { checkDotEnv, checkEnvironments } from '../doctor/checks.ts';
 import type { Redactor } from '../security/redact.ts';
 import type { SecretStore } from '../security/secrets.ts';
-import { loadConfig, referencedEnvVars } from './load.ts';
+import { loadConfig, passwordEnvVars, referencedEnvVars } from './load.ts';
 import type { Config } from './schema.ts';
 
 /**
@@ -17,7 +17,7 @@ export function reloadConfig(deps: { rootDir: string; config: Config; secrets: S
   deps.config.projects = fresh.projects;
   deps.config.environments = fresh.environments;
   deps.config.policy = fresh.policy;
-  deps.secrets.allow(referencedEnvVars(fresh));
+  deps.secrets.allow(referencedEnvVars(fresh), passwordEnvVars(fresh));
   deps.redactor.configure({ secrets: deps.secrets.valuesForRedaction(), extraSensitiveKeys: fresh.policy.redaction.extraSensitiveKeys });
   const dotenv = checkDotEnv(deps.rootDir);
   return {

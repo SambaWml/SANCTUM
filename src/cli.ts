@@ -127,7 +127,7 @@ function knowledge(arg?: string): number {
 }
 
 /**
- * sanctum live [porta]: Central de Caça em http://127.0.0.1:<porta>. Lê o banco e lança/acompanha
+ * sanctum live [porta]: Painel do Sanctum em http://127.0.0.1:<porta>. Lê o banco e lança/acompanha
  * missões do Claude em segundo plano; as ações da página exigem a chave gerada a cada início.
  */
 async function live(arg?: string): Promise<number> {
@@ -159,7 +159,7 @@ async function live(arg?: string): Promise<number> {
     return 1;
   }
   recordLivePort(ROOT, port);
-  console.log(`Central de Caça em http://127.0.0.1:${port}  (Ctrl+C para sair)`);
+  console.log(`Painel do Sanctum em http://127.0.0.1:${port}  (Ctrl+C para sair)`);
   await new Promise<void>((resolve) => process.once('SIGINT', resolve));
   server.close();
   db.close();

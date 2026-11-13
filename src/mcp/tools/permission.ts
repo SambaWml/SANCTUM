@@ -6,7 +6,7 @@ import type { Db } from '../../state/db.ts';
 import type { StateStore } from '../../state/store.ts';
 
 /**
- * `permission_prompt`: o --permission-prompt-tool do agente lançado pela Central de Caça. Fica fora
+ * `permission_prompt`: o --permission-prompt-tool do agente lançado pelo painel do Sanctum. Fica fora
  * do registrador comum de propósito: o registrador redige entrada e saída, e o Claude Code precisa
  * receber o input original de volta em updatedInput (redigido, um comando ou arquivo mudaria).
  * O que vai para o painel e para o evento é redigido em decidePermission.
@@ -15,7 +15,7 @@ export function registerPermissionPrompt(server: McpServer, deps: { db: Db; reda
   server.registerTool(
     'permission_prompt',
     {
-      description: 'Uso interno do Claude Code (--permission-prompt-tool) em missões da Central de Caça: pede a permissão ao usuário pelo painel. Não chame diretamente.',
+      description: 'Uso interno do Claude Code (--permission-prompt-tool) em missões do painel do Sanctum: pede a permissão ao usuário pelo painel. Não chame diretamente.',
       inputSchema: { tool_name: z.string(), input: z.record(z.string(), z.unknown()), tool_use_id: z.string().optional() },
     },
     async (args) => {

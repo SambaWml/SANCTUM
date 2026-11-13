@@ -1,56 +1,41 @@
-# Sanctum no Codex
+# Sanctum — instruções para qualquer agente de IA
 
-Agente local de QA em português. O servidor MCP `sanctum` fornece navegador,
-estado, evidências e regras; o agente planeja e investiga. Leia `CLAUDE.md` para
-as convenções do núcleo e a seção pertinente de `docs/ARCHITECTURE.md`.
+Este arquivo vale para **todo** agente que trabalhe neste repositório (Claude Code, Codex, Antigravity ou outro). Leia-o inteiro antes da primeira ação. O que muda de um cliente para outro está em `docs/agents/clients/<cliente>.md`; nada do roteiro muda.
 
-## Integração e segurança
+## O que é
+Agente local de QA. **Você é o QA**; o código em `src/` fornece ferramentas (servidor MCP `sanctum`), estado (SQLite), segurança (Action Guard, redação de segredos) e evidência (prints, vídeo, relatório). Arquitetura e decisões: `docs/ARCHITECTURE.md` (leia a seção relevante, não o arquivo todo).
 
-- Configuração do Codex: `.codex/config.toml`; skills: `.agents/skills/`.
-  Preserve `.claude/`, `CLAUDE.md` e `.mcp.json`: continuam atendendo o Claude.
-- Antes de QA, confirme que as ferramentas `sanctum` estão disponíveis (o `sanctum` integra
-  leitura do Jira via `digest_get`, `getJiraIssue` e TWG local, ou Atlassian MCP).
-  Se faltarem, explique a conexão necessária; não simule resultados nem opere
-  o app por shell, browser externo, CUA, scripts ad-hoc ou outro MCP.
-- Nunca declare PASSED sem verificação executada e registrada por `verify`.
-- Senhas só pelo `.env`, `secret:NOME` ou `role:<papel>.password`; nunca no chat.
-- Apresente o plano e aguarde aprovação explícita antes de `plan_approve`.
-  `act_approved` exige autorização para a ação específica. A autorização do
-  plano não autoriza automaticamente uma ação RED.
-- As duas ferramentas sensíveis têm `approval_mode = "prompt"` no Codex.
-  Não afrouxe essas configurações nem use uma chamada alternativa para evitá-las.
-  O servidor também exige confirmação humana por MCP elicitation form quando
-  iniciado com `SANCTUM_CLIENT=codex`; falta de suporte ou recusa bloqueia a ação.
-- O hook `.codex/hooks/guard-shell.mjs` reutiliza o bloqueio de shell do Claude.
-  Não presuma que hooks locais estejam ativos em clientes com orquestração cloud.
-  A obrigação de operar o app só pelo `sanctum` vale em todos os clientes.
-- Siga o roteiro da skill etapa por etapa. Não crie scripts nem arquivos avulsos
-  (na raiz ou fora dela) para consultar o banco, o Jira ou montar relatórios: use
-  `run_status`, `report_build`, `digest_*` e o Atlassian MCP.
-- Bug que o usuário mandar abrir: `jira_create_issue` e, logo depois, `bug_evidence`
-  para montar a pasta do bug (`runs/_evidencias/<card>-sub-bugs/<BUG> <título>/`).
-  Roteiro em `.claude/skills/qa/references/execute-and-close.md` ("Bug no Jira").
-- Não publique comentários no Jira sem pedido explícito. Observações não viram
-  regras de negócio sem fonte documental.
+## Regras invioláveis
+- Nunca declare PASS sem verificação executada e registrada (`verify`).
+- Segredos só como `secret:NOME` ou `role:<papel>.password`; nunca peça senha no chat — peça para colocar no `.env`. Não leia `.env` nem `.auth/`.
+- Não contorne o Action Guard: nada de terminal, scripts, navegador próprio ou outro MCP para operar o sistema testado. Só o navegador do `sanctum` (`browser_open`, `navigate`, `act`, `verify`).
+- Comportamento observado não vira regra de negócio sem fonte (proveniência).
+- Ferramentas sensíveis — `plan_approve`, `act_approved`, `jira_create_issue`, `jira_comment`, `jira_transition`, `question_answer` — só com a confirmação do usuário pedida pelo cliente. Nunca afrouxe essa configuração, nunca chame por caminho alternativo. Aprovar o plano não aprova uma ação de risco.
+- Card de bug, comentário ou transição no Jira só quando o usuário pedir. Um achado só é bug se reproduz (mesmos passos, ao menos 2 vezes).
+- Sessão exploratória não se cumpre com espera: nunca agende pausa para atingir o mínimo de tempo.
+- Não crie scripts nem arquivos avulsos para consultar o banco, o Jira ou montar relatórios: use `run_status`, `report_build`, `digest_*`.
+- Fale com o usuário em português.
 
-## Fluxos
+## Fluxos (roteiros em `docs/agents/`)
+| Pedido | Roteiro | O que faz |
+|---|---|---|
+| testar um card · explorar um sistema pela URL | `qa.md` | lê o card (ou mapeia o sistema), planeja por risco, espera aprovação, executa com verificação, fecha com relatório |
+| retomar um run interrompido | `qa-resume.md` | continua do estado salvo, sem refazer o concluído |
+| retestar após correção | `retest.md` | reexecuta o que não passou, mais vizinhos de risco, e compara |
+| automatizar o que foi testado | `automate.md` | gera e valida automação a partir do run concluído |
+| analisar a US antes do teste | `analisar.md` | lacunas, perguntas ao PO, riscos, melhorias e rascunho de cenários |
 
-Use as skills locais `qa`, `qa-resume`, `retest` e `automate` para pedidos de QA,
-retomada, reteste e automação. Elas referenciam os roteiros existentes e adaptam
-a execução ao Codex. Em linguagem natural: "teste o card PROJ-123".
+Papéis que os fluxos entregam a um contexto separado quando o cliente tiver subagente (senão, você mesmo faz, no mesmo ciclo): `roles/executor.md` (lote de cenários), `roles/explorer.md` (sessão exploratória), `roles/engineer.md` (automação). Referências: `references/planning.md`, `plan-example.md`, `exploratory.md`, `execute-and-close.md`.
 
-Um agente opera este workspace por vez. Antes de trocar entre Claude e Codex,
-feche o navegador/servidor anterior e consulte `run_status`; retome o estado
-salvo, sem criar outro run para o mesmo trabalho. Banco, sessões, relatórios e
-conhecimento são compartilhados. Não há exclusão mútua entre clientes garantida.
+Um agente opera este workspace por vez. Antes de trocar de cliente, feche o navegador e consulte `run_status`; retome o run salvo em vez de criar outro.
 
-## Desenvolvimento
+## Ambiente novo
+`env_register` (só acrescenta; criação de dados desligada até o usuário liberar), senha no `.env` (com aspas se tiver `#`), `config_reload`. Saídas: `runs/` (evidências), `reports/` (relatórios), `knowledge/<projeto>/` (execution knowledge, `mapa.yaml`, `_staging/` para revisão).
 
-TypeScript ESM com imports `.ts`, execução por `tsx`. SQLite só por
-`src/state/sqlite.ts`; saída do MCP sanitizada por `src/security/redact.ts`.
-Valide mudanças de código com `npm run typecheck` e os testes pertinentes;
-`npm test` executa a suíte completa com app fixture local.
-
-No MCP iniciado pelo Codex, `SANCTUM_CLIENT=codex` desabilita a ingestão de
-transcripts do Claude. Tempo, chamadas de ferramentas e resultados continuam
-disponíveis; tokens/custos do Codex ainda não são contabilizados.
+## Desenvolver o Sanctum
+Vale para qualquer agente que mexa no código, igual para todos:
+- TypeScript ESM, imports com extensão `.ts`, executado via `tsx`. Testes em `test/` (vitest). SQLite só via `src/state/sqlite.ts`. Toda saída para o modelo passa por `src/security/redact.ts`.
+- Construção por milestones: implementar → `npm test` e `npm run typecheck` verdes → validar → **parar para aprovação** antes do próximo passo. Nunca commitar sem ordem explícita do usuário.
+- Regra que o agente deve seguir mora em **um** lugar: `docs/agents/`. Arquivos em `.claude/`, `.agents/` e `.codex/` são adaptadores finos (apontam, não repetem). O teste `test/agents-contract.test.ts` confere ferramentas citadas, caminhos, lista de sensíveis e neutralidade.
+- Em missão de QA, os arquivos do Sanctum (`src/`, `test/`, `.claude/`, `.codex/`, `.agents/`, `docs/agents/`, política) não são alterados.
+- Comandos: `npm test` · `npm run typecheck` · `npm run doctor` · `npm run storage` · `npm run knowledge <projeto>` · `npm run live` (painel em http://127.0.0.1:4777).

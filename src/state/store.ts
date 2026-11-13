@@ -1,6 +1,11 @@
 import type { Config } from '../config/schema.ts';
 import { OPEN_CLEANUP, type CleanupSpec, type CleanupStatus, type CreatedDataRow } from './cleanup.ts';
 import { transaction, type Db } from './db.ts';
+import { activeMinutes as activeMinutesOf, CHARTER_MIN, checkCharterSubstance, type CharterFacts, type CharterMin } from './exploration.ts';
+
+/** Chamadas que são exploração de fato (navegador); status, fechar sessão etc. não contam como atividade. */
+const EXPLORE_ACTIVITY = ['tool.navigate', 'tool.snapshot', 'tool.act', 'tool.act_approved', 'tool.verify', 'tool.network', 'tool.console',
+  'tool.screenshot', 'tool.browser_viewport', 'tool.network_simulate', 'tool.browser_open', 'network.simulate', 'browser.open'];
 import {
   evaluateCompletion,
   FINAL_STATUSES,
@@ -108,6 +113,37 @@ export interface ValidatedActionRow {
 
 export type ExploratoryInput = Omit<ScenarioInput, 'code'> & { parentCode?: string };
 
+/**
+ * Charter: sessão exploratória com foco (alvo, persona, testes), tempo e resumo do que foi coberto
+ * (auditoria do exploratório 09/11: o charter só existia no texto e a exploração virava roteiro).
+ */
+export interface CharterInput { target: string; persona?: string; tours: string[]; timeboxMin?: number; origin?: string }
+export interface CharterSummary { covered: string[]; tours: string[]; observations: string[]; questions: string[]; notes?: string }
+export interface CharterRow {
+  code: string; target: string; persona: string | null; tours: string[]; origin: string | null; timeboxMin: number;
+  status: 'PLANNED' | 'OPEN' | 'CLOSED' | 'SKIPPED'; startedAt: string | null; endedAt: string | null;
+  summary: (CharterSummary & { minutes?: number; wallMinutes?: number; overrunMin?: number; findings?: string[]; skipped?: string; short?: string; thin?: string[] }) | null;
+}
+export const DEFAULT_TIMEBOX_MIN = 45;
+
+export interface QuestionRow {
+  id: number; project: string; module: string; text: string; options: string[]; about: string | null;
+  status: 'OPEN' | 'ANSWERED' | 'DISMISSED'; answer: string | null; askedAt: string; answeredAt: string | null;
+}
+
+/**
+ * EXP é comportamento novo achado explorando. Lote/área é charter; reteste de bug é regressão no plano
+ * ou /retest; limpeza é cleanup_run; evidência de bug é bug_evidence (auditoria 09/11: títulos assim
+ * eram 1 em cada 4 EXP).
+ */
+const NOT_AN_EXP: { re: RegExp; use: string }[] = [
+  { re: /^\s*(lote|batch|bloco|rodada)\b/i, use: 'área/lote a explorar é um charter (charter_start), não um EXP' },
+  { re: /\b(reteste|retest)\b/i, use: 'reteste de bug é cenário de regressão no plano (antes da aprovação) ou /retest' },
+  { re: /\b(cleanup|limpeza|limpar dados)\b/i, use: 'limpeza é cleanup_run/data_register' },
+  { re: /^\s*(evid[eê]ncia|gravar v[ií]deo|print)\b/i, use: 'evidência de bug é bug_evidence (ou screenshot no próprio cenário)' },
+  { re: /^\s*(investigar e corrigir|corrigir)\b/i, use: 'correção não é teste; registre o achado no cenário onde apareceu' },
+];
+
 const ACTIVE_RUN: RunStatus[] = ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'];
 
 /** Volume de uma tentativa de cenário: aviso e trava (auditoria de fluxo 09/11: 243 ações em 2 cenários). */
@@ -116,10 +152,13 @@ const PLAN_CODE = /^CT-\d{2,4}$/;
 
 export interface StoreOptions {
   now?: () => Date;
+  /** Substância mínima de uma sessão exploratória (padrão CHARTER_MIN; os testes da ferramenta encurtam). */
+  charterMin?: CharterMin;
 }
 
 export class StateStore {
   private readonly now: () => Date;
+  private readonly charterMin: CharterMin;
   /** Agente da sessão MCP (clientInfo + SANCTUM_MODEL), gravado no run e nas aprovações. */
   agent: AgentInfo | null = null;
 
@@ -129,6 +168,7 @@ export class StateStore {
     options: StoreOptions = {},
   ) {
     this.now = options.now ?? (() => new Date());
+    this.charterMin = options.charterMin ?? CHARTER_MIN;
   }
 
   private ts(): string {
@@ -213,15 +253,37 @@ export class StateStore {
     };
   }
 
-  completeRun(runId: string, recommendation: Recommendation, summary: string): RunRow {
+  /**
+   * Conclui o run. Missão sem card (EXPLORA-*) não tem critério de aceite: não aprova nem reprova
+   * (recomendação gravada como null; o relatório mostra o veredito de exploração).
+   */
+  completeRun(runId: string, recommendation: Recommendation | null, summary: string): RunRow {
     const run = this.getRun(runId);
     if (run.status !== 'EXECUTING') throw new StateError(`run está ${run.status}; só runs EXECUTING podem ser concluídos`);
+    const charters = this.listCharters(runId);
+    const openCharter = charters.find((c) => c.status === 'OPEN');
+    if (openCharter) throw new StateError(`charter ${openCharter.code} ainda aberto — feche com charter_end (o que cobriu, testes, observações, perguntas)`);
+    const planned = charters.filter((c) => c.status === 'PLANNED');
+    if (planned.length) {
+      throw new StateError(`charters planejados sem sessão: ${planned.map((c) => `${c.code} (${c.target})`).join(', ')} — rode (charter_start) ou pule com charter_end + skipReason`);
+    }
+    // EXP registrado e não explorado vira ideia não explorada (fica no resumo do charter, não segura o run).
+    const idle = this.db.prepare(`SELECT id, code FROM scenarios WHERE run_id = ? AND origin = 'exploratory' AND status = 'PENDING'`).all(runId) as { id: number; code: string }[];
+    for (const s of idle) {
+      this.db.prepare(`UPDATE scenarios SET status = 'NOT_EXECUTED', reason = 'ideia registrada e não explorada', ended_at = ? WHERE id = ?`).run(this.ts(), s.id);
+    }
+    if (idle.length) this.logEvent(runId, null, 'exp.unexplored', idle.map((s) => s.code));
     const open = this.listScenarios(runId).filter((s) => s.status === 'PENDING' || s.status === 'IN_PROGRESS');
     if (open.length > 0) {
       throw new StateError(`cenários sem status final: ${open.map((s) => s.code).join(', ')} — conclua ou marque NOT_EXECUTED`);
     }
+    const free = run.issue_key.startsWith(`${FREE_MISSION_PREFIX}-`);
     const gate = recommendationCeiling(this.recommendationFacts(runId));
-    if (!recommendationAllowed(recommendation, gate.ceiling)) {
+    if (free) {
+      recommendation = null;
+    } else if (!recommendation) {
+      throw new StateError('recomendação obrigatória (APROVADO, INCONCLUSIVO ou REPROVADO)');
+    } else if (!recommendationAllowed(recommendation, gate.ceiling)) {
       throw new StateError(`recomendação ${recommendation} não permitida: o teto é ${gate.ceiling} (${gate.reasons.join('; ')})`);
     }
     const dirty = this.listCreatedData(runId).filter((d) => OPEN_CLEANUP.includes(d.cleanup_status));
@@ -260,7 +322,7 @@ export class StateStore {
   // ── Plano ───────────────────────────────────────────────────────────
 
   /** Salva (ou substitui) o plano. Só antes da aprovação; depois disso, use cenários exploratórios. */
-  savePlan(runId: string, scenarios: ScenarioInput[], modules: string[] = []): { count: number; status: RunStatus } {
+  savePlan(runId: string, scenarios: ScenarioInput[], modules: string[] = [], charters: CharterInput[] = []): { count: number; charters: number; status: RunStatus } {
     const run = this.getRun(runId);
     if (run.status !== 'PLANNING' && run.status !== 'AWAITING_APPROVAL') {
       throw new StateError(`plano não pode mudar com run ${run.status}; use scenario_add para exploratórios`);
@@ -285,9 +347,116 @@ export class StateStore {
           s.preconditions ?? null, JSON.stringify(s.steps), s.expected, i + 1),
       );
       this.db.prepare(`UPDATE runs SET status = 'AWAITING_APPROVAL', modules = ? WHERE id = ?`).run(JSON.stringify(modules), runId);
+      this.db.prepare(`DELETE FROM charters WHERE run_id = ? AND status = 'PLANNED'`).run(runId);
+      charters.forEach((c, i) => this.insertCharter(runId, `CH-${String(i + 1).padStart(2, '0')}`, c, 'PLANNED'));
     });
-    this.logEvent(runId, null, 'plan.save', { count: scenarios.length });
-    return { count: scenarios.length, status: 'AWAITING_APPROVAL' };
+    this.logEvent(runId, null, 'plan.save', { count: scenarios.length, charters: charters.length });
+    return { count: scenarios.length, charters: charters.length, status: 'AWAITING_APPROVAL' };
+  }
+
+  // ── Charters (exploração) ───────────────────────────────────────────
+
+  private insertCharter(runId: string, code: string, c: CharterInput, status: 'PLANNED' | 'OPEN'): void {
+    if (!c.target?.trim() || c.target.trim().length < 3) throw new StateError('charter exige target (a tela, fluxo ou risco a explorar)');
+    if (!c.tours?.length) throw new StateError('charter exige ao menos um teste/tour (ex.: estados vazio e de erro, outro papel, voltar/recarregar)');
+    const timebox = c.timeboxMin ?? DEFAULT_TIMEBOX_MIN;
+    if (timebox < 10 || timebox > 120) throw new StateError('timeboxMin entre 10 e 120 minutos');
+    this.db.prepare(`INSERT INTO charters (run_id, code, target, persona, tours, origin, timebox_min, status, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+      .run(runId, code, c.target.trim(), c.persona ?? null, JSON.stringify(c.tours), c.origin ?? null, timebox, status, status === 'OPEN' ? this.ts() : null);
+  }
+
+  listCharters(runId: string): CharterRow[] {
+    const rows = this.db.prepare(`SELECT * FROM charters WHERE run_id = ? ORDER BY code`).all(runId) as Record<string, unknown>[];
+    return rows.map((r) => ({
+      code: String(r.code), target: String(r.target), persona: (r.persona as string | null) ?? null, tours: JSON.parse(String(r.tours)) as string[],
+      origin: (r.origin as string | null) ?? null, timeboxMin: Number(r.timebox_min), status: r.status as CharterRow['status'],
+      startedAt: (r.started_at as string | null) ?? null, endedAt: (r.ended_at as string | null) ?? null,
+      summary: r.summary ? (JSON.parse(String(r.summary)) as CharterRow['summary']) : null,
+    }));
+  }
+
+  /** Abre um charter planejado (code) ou um novo. Um por vez: o EXP criado enquanto ele está aberto fica ligado a ele. */
+  startCharter(runId: string, input: { code?: string } & Partial<CharterInput>): CharterRow & { deadline: string } {
+    this.requireExecuting(runId);
+    const charters = this.listCharters(runId);
+    const open = charters.find((c) => c.status === 'OPEN');
+    if (open) throw new StateError(`charter ${open.code} ainda aberto — feche com charter_end antes de abrir outro`);
+    let code = input.code;
+    if (code) {
+      const planned = charters.find((c) => c.code === code);
+      if (!planned) throw new StateError(`charter ${code} não existe neste run`);
+      if (planned.status !== 'PLANNED') throw new StateError(`charter ${code} está ${planned.status}`);
+      this.db.prepare(`UPDATE charters SET status = 'OPEN', started_at = ?, persona = COALESCE(?, persona), timebox_min = COALESCE(?, timebox_min) WHERE run_id = ? AND code = ?`)
+        .run(this.ts(), input.persona ?? null, input.timeboxMin ?? null, runId, code);
+    } else {
+      code = `CH-${String(charters.length + 1).padStart(2, '0')}`;
+      this.insertCharter(runId, code, { target: input.target ?? '', persona: input.persona, tours: input.tours ?? [], timeboxMin: input.timeboxMin, origin: input.origin }, 'OPEN');
+    }
+    this.logEvent(runId, null, 'charter.start', { code });
+    const row = this.listCharters(runId).find((c) => c.code === code)!;
+    return { ...row, deadline: new Date(Date.parse(row.startedAt!) + row.timeboxMin * 60_000).toISOString() };
+  }
+
+  /** Fecha o charter com o resumo da sessão (ou pula um planejado, com motivo). */
+  endCharter(runId: string, code: string, input: Partial<CharterSummary> & { skipReason?: string; shortReason?: string }): CharterRow {
+    this.requireExecuting(runId);
+    const c = this.listCharters(runId).find((x) => x.code === code);
+    if (!c) throw new StateError(`charter ${code} não existe neste run`);
+    const ts = this.ts();
+    if (input.skipReason) {
+      if (c.status !== 'PLANNED') throw new StateError(`só charter planejado pode ser pulado (${code} está ${c.status})`);
+      if (input.skipReason.trim().length < 10) throw new StateError('skipReason: diga por que a sessão não foi feita');
+      this.db.prepare(`UPDATE charters SET status = 'SKIPPED', ended_at = ?, summary = ? WHERE run_id = ? AND code = ?`)
+        .run(ts, JSON.stringify({ covered: [], tours: [], observations: [], questions: [], skipped: input.skipReason.trim() }), runId, code);
+      this.logEvent(runId, null, 'charter.skip', { code, reason: input.skipReason.trim() });
+      return this.listCharters(runId).find((x) => x.code === code)!;
+    }
+    if (c.status !== 'OPEN') throw new StateError(`charter ${code} está ${c.status}; abra com charter_start`);
+    if (!input.covered?.length) throw new StateError('charter_end exige covered: telas, rotas e estados que você realmente percorreu');
+    if (!input.tours?.length) throw new StateError('charter_end exige tours: os testes que você aplicou de fato');
+    const busy = this.db.prepare(`SELECT code FROM scenarios WHERE run_id = ? AND charter_code = ? AND status = 'IN_PROGRESS'`).get(runId, code) as { code: string } | undefined;
+    if (busy) throw new StateError(`conclua ${busy.code} antes de fechar o charter`);
+    const minutes = Math.round((Date.parse(ts) - Date.parse(c.startedAt!)) / 60_000); // relógio (prazo); a substância usa o tempo ativo
+    const findings = (this.db.prepare(`SELECT code FROM scenarios WHERE run_id = ? AND charter_code = ? ORDER BY seq`).all(runId, code) as { code: string }[]).map((r) => r.code);
+    // Substância: tempo, atividade, evidência e rastro dos testes declarados (ver exploration.ts).
+    const since = c.startedAt!;
+    const n = (sql: string, ...a: string[]) => Number((this.db.prepare(sql).get(runId, since, ...a) as { n: number }).n);
+    const ev = (type: string) => n(`SELECT COUNT(*) n FROM events WHERE run_id = ? AND ts >= ? AND type = ?`, type);
+    // Tempo com atividade: soma dos intervalos entre ações, verificações, prints e ferramentas de
+    // inspeção, cada um limitado (13/11: o agente fazia 1 min e agendava 8 de espera). Espera parada não soma.
+    const activityTs = (this.db.prepare(`
+        SELECT ts FROM actions WHERE run_id = ? AND ts >= ? UNION ALL
+        SELECT ts FROM verifications WHERE run_id = ? AND ts >= ? UNION ALL
+        SELECT ts FROM evidence WHERE run_id = ? AND ts >= ? AND kind = 'screenshot' UNION ALL
+        SELECT ts FROM events WHERE run_id = ? AND ts >= ? AND type IN (${EXPLORE_ACTIVITY.map((t) => `'${t}'`).join(',')})`)
+      .all(runId, since, runId, since, runId, since, runId, since) as { ts: string }[]).map((r) => r.ts);
+    const activeMinutes = activeMinutesOf(since, activityTs, this.charterMin.idleCapMin ?? CHARTER_MIN.idleCapMin);
+    const facts: CharterFacts = {
+      // Tempo explorando, não tempo de relógio (12/11: um agente agendou 400 s de espera para "cumprir" o mínimo).
+      minutes: activeMinutes, findings: findings.length,
+      actions: n(`SELECT COUNT(*) n FROM actions WHERE run_id = ? AND ts >= ? AND ok = 1`),
+      navigations: ev('tool.navigate'),
+      screenshots: n(`SELECT COUNT(*) n FROM evidence WHERE run_id = ? AND ts >= ? AND kind = 'screenshot'`),
+      simulations: ev('network.simulate'), viewports: ev('tool.browser_viewport'),
+      inspections: ev('tool.console') + ev('tool.network'), roleOpens: ev('browser.open'),
+    };
+    const thin = checkCharterSubstance(input.tours, facts, this.charterMin);
+    const shortReason = input.shortReason?.trim();
+    if (thin.length && !shortReason) {
+      throw new StateError(`sessão ${code} ainda sem substância para fechar:\n- ${thin.join('\n- ')}\n` +
+        'Continue explorando no foco do charter. Se não dá para continuar (ambiente caiu, área inacessível), feche com shortReason — a sessão fica registrada, mas não conta como exploração feita.');
+    }
+    if (shortReason && shortReason.length < 20) throw new StateError('shortReason: explique por que a sessão terminou antes (o que impediu)');
+    const summary = {
+      covered: input.covered, tours: input.tours, observations: input.observations ?? [], questions: input.questions ?? [],
+      ...(input.notes ? { notes: input.notes } : {}), minutes: activeMinutes, findings,
+      ...(minutes !== activeMinutes ? { wallMinutes: minutes } : {}),
+      ...(minutes > c.timeboxMin ? { overrunMin: minutes - c.timeboxMin } : {}),
+      ...(thin.length && shortReason ? { short: shortReason, thin } : {}),
+    };
+    this.db.prepare(`UPDATE charters SET status = 'CLOSED', ended_at = ?, summary = ? WHERE run_id = ? AND code = ?`).run(ts, JSON.stringify(summary), runId, code);
+    this.logEvent(runId, null, 'charter.end', { code, minutes, findings: findings.length, ...(summary.short ? { short: true } : {}) });
+    return this.listCharters(runId).find((x) => x.code === code)!;
   }
 
   /** Chamado só pela ferramenta plan_approve, que exige aprovação humana no Claude Code. */
@@ -466,6 +635,13 @@ export class StateStore {
   addExploratory(runId: string, input: ExploratoryInput): ScenarioRow {
     this.requireExecuting(runId);
     if (input.parentCode) this.getScenario(runId, input.parentCode);
+    const misuse = NOT_AN_EXP.find((x) => x.re.test(input.title));
+    if (misuse) throw new StateError(`"${input.title}" não é EXP: ${misuse.use}. EXP é um comportamento novo que você encontrou explorando.`);
+    // Rastreável: nasce de um cenário (parentCode) ou da sessão exploratória aberta.
+    const charter = this.listCharters(runId).find((c) => c.status === 'OPEN');
+    if (!input.parentCode && !charter) {
+      throw new StateError('EXP precisa de origem: parentCode (o cenário onde a anomalia apareceu) ou um charter aberto (charter_start)');
+    }
     const row = this.db
       .prepare(
         `SELECT COALESCE(MAX(seq), 0) AS seq,
@@ -476,12 +652,12 @@ export class StateStore {
     const code = `EXP-${String((row.exp ?? 0) + 1).padStart(3, '0')}`;
     this.db
       .prepare(
-        `INSERT INTO scenarios (run_id, code, title, priority, types, risk, origin, parent_code, preconditions, steps, expected, seq)
-         VALUES (?, ?, ?, ?, ?, ?, 'exploratory', ?, ?, ?, ?, ?)`,
+        `INSERT INTO scenarios (run_id, code, title, priority, types, risk, origin, parent_code, preconditions, steps, expected, seq, charter_code)
+         VALUES (?, ?, ?, ?, ?, ?, 'exploratory', ?, ?, ?, ?, ?, ?)`,
       )
       .run(runId, code, input.title, input.priority, JSON.stringify(input.types), input.risk, input.parentCode ?? null,
-        input.preconditions ?? null, JSON.stringify(input.steps), input.expected, row.seq + 1);
-    this.logEvent(runId, null, 'scenario.add', { code, parent: input.parentCode ?? null });
+        input.preconditions ?? null, JSON.stringify(input.steps), input.expected, row.seq + 1, charter?.code ?? null);
+    this.logEvent(runId, null, 'scenario.add', { code, parent: input.parentCode ?? null, charter: charter?.code ?? null });
     return this.getScenario(runId, code);
   }
 
@@ -688,6 +864,46 @@ export class StateStore {
          ORDER BY a.seq`,
       )
       .all(runId) as unknown as ValidatedActionRow[];
+  }
+
+  // ── Perguntas ao usuário (modo descoberta) ──────────────────────────
+
+  /** Registra o que não dá para deduzir do sistema. Só antes da aprovação do plano: é o que decide o plano. */
+  askQuestions(runId: string, questions: { module: string; text: string; options?: string[]; about?: string }[]): QuestionRow[] {
+    const run = this.getRun(runId);
+    if (!ACTIVE_RUN.includes(run.status)) throw new StateError(`run está ${run.status}`);
+    const known = new Set(this.listQuestions(runId).map((q) => q.text.trim().toLowerCase()));
+    const ts = this.ts();
+    for (const q of questions) {
+      if (known.has(q.text.trim().toLowerCase())) continue;
+      this.db.prepare(`INSERT INTO questions (project, run_id, module, text, options, about, status, asked_at) VALUES (?, ?, ?, ?, ?, ?, 'OPEN', ?)`)
+        .run(run.project, runId, q.module, q.text.trim(), q.options?.length ? JSON.stringify(q.options) : null, q.about ?? null, ts);
+    }
+    this.logEvent(runId, null, 'question.ask', { count: questions.length });
+    return this.listQuestions(runId);
+  }
+
+  listQuestions(runId: string): QuestionRow[] {
+    const rows = this.db.prepare(`SELECT * FROM questions WHERE run_id = ? ORDER BY id`).all(runId) as Record<string, unknown>[];
+    return rows.map((r) => ({
+      id: Number(r.id), project: String(r.project), module: String(r.module), text: String(r.text),
+      options: r.options ? (JSON.parse(String(r.options)) as string[]) : [], about: (r.about as string | null) ?? null,
+      status: r.status as QuestionRow['status'], answer: (r.answer as string | null) ?? null,
+      askedAt: String(r.asked_at), answeredAt: (r.answered_at as string | null) ?? null,
+    }));
+  }
+
+  /** Resposta do usuário (ou dispensa com motivo). Quem chama grava a regra; aqui fica o registro. */
+  answerQuestion(runId: string, id: number, input: { answer?: string; dismiss?: string }): QuestionRow {
+    const q = this.listQuestions(runId).find((x) => x.id === id);
+    if (!q) throw new StateError(`pergunta ${id} não existe neste run`);
+    if (q.status !== 'OPEN') throw new StateError(`pergunta ${id} já está ${q.status}`);
+    const text = (input.answer ?? input.dismiss ?? '').trim();
+    if (text.length < 2) throw new StateError('informe answer (o que o usuário respondeu) ou dismiss (por que não será respondida agora)');
+    const status = input.answer ? 'ANSWERED' : 'DISMISSED';
+    this.db.prepare(`UPDATE questions SET status = ?, answer = ?, answered_at = ? WHERE id = ?`).run(status, text, this.ts(), id);
+    this.logEvent(runId, null, 'question.answer', { id, status });
+    return this.listQuestions(runId).find((x) => x.id === id)!;
   }
 
   logEvent(runId: string | null, scenarioId: number | null, type: string, payload: unknown): number {

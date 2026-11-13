@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { createReadStream, existsSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { createReadStream, existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { createServer as createHttpServer, type IncomingMessage, type Server, type ServerResponse } from 'node:http';
 import { dirname, extname, isAbsolute, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -9,6 +9,8 @@ import type { Db } from '../state/db.ts';
 import { MissionError, type MissionKind, type MissionManager, type MissionTarget } from './missions.ts';
 import { answerPrompt, pendingPrompts } from './prompts.ts';
 import { buildLiveState, buildRun } from './state.ts';
+import { buildBusiness } from './business.ts';
+import { runDetail } from './detail.ts';
 import type { UsageMeter } from './usage.ts';
 
 /**
@@ -26,9 +28,26 @@ export interface LiveServerDeps {
   now?: () => Date;
 }
 
-const PAGE = join(dirname(fileURLToPath(import.meta.url)), 'page.html');
+const PAGE = join(dirname(fileURLToPath(import.meta.url)), 'panel.html');
 const MEDIA: Record<string, string> = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webm': 'video/webm' };
-const KINDS: MissionKind[] = ['qa', 'explore', 'retest', 'resume', 'analyze'];
+/**
+ * O painel carrega o código uma vez. Se src/live ou src/mcp mudaram depois (auditoria 12/11: uma missão
+ * pediu permissão 6 vezes para ferramentas já liberadas, porque o painel aberto tinha a lista antiga),
+ * devolve a data da mudança para a tela avisar que é preciso reiniciar.
+ */
+const STARTED_AT = Date.now();
+function staleSince(): string | null {
+  let newest = 0;
+  for (const dir of ['live', 'mcp', 'state']) {
+    try {
+      const base = join(import.meta.dirname, '..', dir);
+      for (const f of readdirSync(base)) if (f.endsWith('.ts')) newest = Math.max(newest, statSync(join(base, f)).mtimeMs);
+    } catch { /* pasta ausente: nada a comparar */ }
+  }
+  return newest > STARTED_AT ? new Date(newest).toISOString() : null;
+}
+
+const KINDS: MissionKind[] = ['qa', 'explore', 'retest', 'resume', 'analyze', 'automate'];
 
 /** Arquivo (relativo à raiz do projeto) dentro de `base`, seguindo links; null se sair da pasta ou não existir. */
 export function insideDir(rootDir: string, base: string, file: string): string | null {
@@ -40,10 +59,20 @@ export function insideDir(rootDir: string, base: string, file: string): string |
 }
 
 /** Alvo da missão: chave de card ou URL http(s) de qualquer sistema. */
+/**
+ * Card (PROJ-123, ou o link do card no Jira) ou endereço do sistema. Endereço sem http(s) é aceito:
+ * localhost e IP viram http://, o resto https://. Chave de card nunca tem ponto, então não há ambiguidade.
+ */
 export function parseTarget(v: unknown): MissionTarget | null {
   if (typeof v !== 'string') return null;
-  const text = v.trim();
-  if (/^[A-Z][A-Z0-9]+-\d+$/.test(text)) return { kind: 'card', key: text };
+  let text = v.trim();
+  const key = /(?:browse\/|selectedIssue=|^)([A-Za-z][A-Za-z0-9]+-\d+)(?:$|[?#&/])/.exec(text);
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(text);
+  // Chave sozinha, ou link do Jira (browse/selectedIssue). Endereço de outro sistema que termina em "ABC-12" continua endereço.
+  if (key && (!hasScheme || /atlassian\.net|\/browse\/|selectedIssue=/.test(text))) return { kind: 'card', key: key[1]!.toUpperCase() };
+  if (!hasScheme && /^[^\s/]+(\.[^\s/]+|:\d+)/.test(text)) {
+    text = `${/^(localhost|127\.|10\.|192\.168\.|\[?::1)/i.test(text) ? 'http' : 'https'}://${text}`;
+  }
   try {
     const u = new URL(text);
     return u.protocol === 'http:' || u.protocol === 'https:' ? { kind: 'url', url: u.href } : null;
@@ -55,7 +84,9 @@ export function parseTarget(v: unknown): MissionTarget | null {
 export function createLiveServer(deps: LiveServerDeps): Server {
   const { db, rootDir, redactor } = deps;
   const send = (res: ServerResponse, status: number, type: string, body: string | Buffer) => {
-    res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer' });
+    res.writeHead(status, { 'content-type': type, 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'referrer-policy': 'no-referrer',
+      // O painel aprova pedidos do agente: nunca dentro de iframe de outra página (clickjacking, auditoria 13/11).
+      'x-frame-options': 'DENY', 'content-security-policy': "frame-ancestors 'none'" });
     res.end(body);
   };
   const json = (res: ServerResponse, status: number, body: unknown) => send(res, status, 'application/json; charset=utf-8', JSON.stringify(redactor.value(body)));
@@ -98,6 +129,10 @@ export function createLiveServer(deps: LiveServerDeps): Server {
       if (hide) {
         missions.hideRun(hide[1]!);
         return json(res, 200, { ok: true });
+      }
+      const abort = /^\/api\/runs\/([A-Z][A-Z0-9]*-\d+-\d{8}T\d{6}(?:-\d+)?)\/abort$/.exec(path);
+      if (abort) {
+        return json(res, 200, missions.abortRun(abort[1]!, typeof body.reason === 'string' ? body.reason.slice(0, 300) : ''));
       }
       if (path === '/api/runs/hide-inactive') {
         const count = missions.hideAllInactive();
@@ -147,10 +182,6 @@ export function createLiveServer(deps: LiveServerDeps): Server {
           .replace('__SANCTUM_JIRA__', /^https:\/\/[\w.-]+$/.test(process.env.SANCTUM_JIRA_URL ?? '') ? process.env.SANCTUM_JIRA_URL! : '');
         return send(res, 200, 'text/html; charset=utf-8', page);
       }
-      if (url.pathname === '/sanctum-logo.png') {
-        const logoPath = join(dirname(PAGE), 'sanctum-logo.png');
-        if (existsSync(logoPath)) return send(res, 200, 'image/png', readFileSync(logoPath));
-      }
       if (url.pathname === '/favicon.png' || url.pathname === '/favicon.ico') {
         const favPath = join(dirname(PAGE), 'favicon.png');
         if (existsSync(favPath)) return send(res, 200, 'image/png', readFileSync(favPath));
@@ -158,12 +189,24 @@ export function createLiveServer(deps: LiveServerDeps): Server {
       if (url.pathname === '/api/state') {
         return json(res, 200, {
           ...buildLiveState(db, { rootDir, now: deps.now?.() }),
+          business: buildBusiness(db, { rootDir, now: deps.now?.(), days: Number(url.searchParams.get('days') ?? 7) }),
           usage: deps.usage?.state() ?? null,
           missions: deps.missions?.list() ?? [],
           prompts: deps.missions ? pendingPrompts(db) : [],
+          // Código do painel mudou depois que ele subiu: as regras em memória (o que cada agente pode sem pedir) estão velhas.
+          staleSince: staleSince(),
         });
       }
 
+      // Detalhe do run (painel lateral): cenários com verificações, passo a passo completo, prints e vídeo.
+      const detailMatch = /^\/api\/runs\/([^/]+)\/detail$/.exec(url.pathname);
+      if (detailMatch) {
+        const runId = decodeURIComponent(detailMatch[1]!);
+        const row = db.prepare('SELECT * FROM runs WHERE id = ?').get(runId) as Record<string, unknown> | undefined;
+        if (!row) return json(res, 404, { error: 'run não encontrado' });
+        const run = buildRun(row, (sql, ...a) => db.prepare(sql).all(...a) as Record<string, unknown>[], (sql, ...a) => db.prepare(sql).get(...a) as Record<string, unknown> | undefined, { rootDir, now: deps.now?.() });
+        return json(res, 200, { run, detail: runDetail(db, runId, rootDir) });
+      }
       const runMatch = /^\/api\/runs\/([^/]+)$/.exec(url.pathname);
       if (runMatch) {
         const runId = decodeURIComponent(runMatch[1]!);

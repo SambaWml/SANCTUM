@@ -238,9 +238,72 @@ describe('execução', () => {
     const runId = approvedRun();
     const exp = store.addExploratory(runId, { title: 'Anomalia na paginação', priority: 'P1', risk: 'HIGH', types: ['exploratory'], steps: ['x'], expected: 'y', parentCode: 'CT-002' });
     expect(exp.code).toBe('EXP-001');
+    // Sem parentCode nem charter aberto: sem origem.
+    expect(() => store.addExploratory(runId, { title: 'Outra', priority: 'P2', risk: 'LOW', types: [], steps: ['x'], expected: 'y' })).toThrow(/precisa de origem/);
+    store.startCharter(runId, { target: 'Paginação com lista vazia', tours: ['estados vazio e erro'] });
     expect(store.addExploratory(runId, { title: 'Outra', priority: 'P2', risk: 'LOW', types: [], steps: ['x'], expected: 'y' }).code).toBe('EXP-002');
     expect(store.listScenarios(runId).map((s) => s.code)).toEqual(['CT-001', 'CT-002', 'CT-003', 'EXP-001', 'EXP-002']);
     expect(() => store.addExploratory(runId, { title: 'x x', priority: 'P2', risk: 'LOW', types: [], steps: ['x'], expected: 'yyy', parentCode: 'CT-999' })).toThrow(/não existe/);
+  });
+
+  it('EXP é comportamento novo: lote, reteste, limpeza e evidência são recusados com o lugar certo', () => {
+    const runId = approvedRun();
+    const add = (title: string) => () => store.addExploratory(runId, { title, priority: 'P2', risk: 'LOW', types: [], steps: ['x'], expected: 'y', parentCode: 'CT-001' });
+    expect(add('Lote 2: Arena (layout novo)')).toThrow(/charter/);
+    expect(add('Reteste GURUJA-9244: perfil do professor')).toThrow(/regressão no plano|\/retest/);
+    expect(add('Investigar e corrigir cleanup pendente')).toThrow(/não é EXP/);
+    expect(add('Evidência do GURUJA-9280 com cursor no vídeo')).toThrow(/bug_evidence/);
+    expect(add('Contador diverge entre Meta e Arquivo')().code).toBe('EXP-001');
+  });
+
+  it('charter: um por vez, fecha com resumo, planejado precisa rodar ou ser pulado; EXP pendente vira ideia não explorada', () => {
+    const runId = approvedRun();
+    for (const code of ['CT-001', 'CT-002', 'CT-003']) {
+      store.startScenario(runId, code);
+      store.recordVerification(runId, code, { kind: 'network', description: `${code} ok`, passed: true });
+      store.recordVerification(runId, code, { kind: 'ui', description: `${code} tela`, passed: true });
+      store.completeScenario(runId, code, { status: 'PASSED' });
+    }
+    const c = store.startCharter(runId, { target: 'Lista com filtros', tours: ['outro papel', 'voltar e recarregar'], timeboxMin: 30 });
+    expect(c).toMatchObject({ code: 'CH-01', status: 'OPEN', timeboxMin: 30 });
+    expect(() => store.startCharter(runId, { target: 'Outra área', tours: ['x x x'] })).toThrow(/ainda aberto/);
+    store.addExploratory(runId, { title: 'Filtro some ao voltar', priority: 'P2', risk: 'LOW', types: ['functional'], steps: ['x'], expected: 'filtro mantido' });
+    expect(() => store.completeRun(runId, 'APROVADO', 'x')).toThrow(/ainda aberto/);
+    expect(() => store.endCharter(runId, 'CH-01', { tours: ['outro papel'] })).toThrow(/covered/);
+    const summary = { covered: ['/lista', '/lista?filtro=x'], tours: ['voltar e recarregar', 'lista com a API em erro 500'], observations: ['botão pequeno no celular'], questions: ['filtro deve persistir?'] };
+    // Sessão de 0 min, sem atividade e com teste declarado sem rastro: não fecha.
+    expect(() => store.endCharter(runId, 'CH-01', summary)).toThrow(/sem substância[\s\S]*0 min de exploração[\s\S]*ações\/navegações[\s\S]*não houve network_simulate/);
+    for (let i = 0; i < 15; i++) store.recordAction(runId, null, { action: 'click', target: { role: 'button', name: `Filtro ${i}` }, guardLevel: 'GREEN', ok: true });
+    store.logEvent(runId, null, 'network.simulate', { status: 500 });
+    // Esperar parado não cumpre o mínimo (12/11: um agente agendou 400 s de espera para isso).
+    clock = new Date(clock.getTime() + 12 * 60_000);
+    expect(() => store.endCharter(runId, 'CH-01', summary)).toThrow(/0 min de exploração[\s\S]*esperar parado não soma/);
+    // Uma ação depois da espera não compra o tempo parado: o intervalo conta no máximo 3 min (13/11).
+    store.recordAction(runId, null, { action: 'click', target: { role: 'button', name: 'Voltar' }, guardLevel: 'GREEN', ok: true });
+    expect(() => store.endCharter(runId, 'CH-01', summary)).toThrow(/3 min de exploração/);
+    // Só olhar e simular erro é 1 teste com rastro; precisa de 2 tipos diferentes.
+    for (let i = 0; i < 4; i++) { clock = new Date(clock.getTime() + 2 * 60_000); store.recordAction(runId, null, { action: 'click', target: { role: 'button', name: `Página ${i}` }, guardLevel: 'GREEN', ok: true }); }
+    expect(() => store.endCharter(runId, 'CH-01', summary)).toThrow(/1 teste\(s\) com rastro[\s\S]*browser_viewport/);
+    // Explorando de verdade, com atividade espalhada e celular: fecha.
+    clock = new Date(clock.getTime() + 60_000);
+    store.logEvent(runId, null, 'tool.browser_viewport', null);
+    const closed = store.endCharter(runId, 'CH-01', { ...summary, tours: [...summary.tours, 'celular'] });
+    expect(closed.summary).toMatchObject({ findings: ['EXP-001'], observations: ['botão pequeno no celular'], minutes: 12 });
+    expect(closed.summary!.wallMinutes).toBe(21);
+    expect(closed.summary!.short).toBeUndefined();
+    const run = store.completeRun(runId, 'APROVADO', 'ok');
+    expect(run.status).toBe('COMPLETED');
+    expect(store.listScenarios(runId).find((s) => s.code === 'EXP-001')!.status).toBe('NOT_EXECUTED');
+  });
+
+  it('sessão que não pôde continuar fecha com shortReason, fica marcada e não conta como exploração', () => {
+    const runId = approvedRun();
+    store.startCharter(runId, { target: 'Checkout em erro', tours: ['voltar e recarregar'] });
+    expect(() => store.endCharter(runId, 'CH-01', { covered: ['/checkout'], tours: ['voltar e recarregar'], shortReason: 'caiu' })).toThrow(/explique/);
+    const closed = store.endCharter(runId, 'CH-01', { covered: ['/checkout'], tours: ['voltar e recarregar'], shortReason: 'ambiente caiu com 502 logo depois do login' });
+    expect(closed.status).toBe('CLOSED');
+    expect(closed.summary).toMatchObject({ short: 'ambiente caiu com 502 logo depois do login' });
+    expect(closed.summary!.thin!.join(' ')).toMatch(/0 min de exploração/);
   });
 
   it('runStatus por chave do card mostra retomada', () => {

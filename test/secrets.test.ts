@@ -39,6 +39,11 @@ describe('SecretStore', () => {
     expect(names).toEqual(['APP_ADMIN_PASSWORD', 'JIRA_API_TOKEN']);
   });
 
+  it('redige senha de papel com qualquer nome de variável e nomes em português (13/11)', () => {
+    const s = new SecretStore(['LOJA_ADMIN_CHAVE', 'LOJA_USER'], { LOJA_ADMIN_CHAVE: 'k3y-secreta', LOJA_USER: 'maria', OUTRA_SENHA: 's3nha-x', APP_PWD: 'pwd-123' }, ['LOJA_ADMIN_CHAVE']);
+    expect(s.valuesForRedaction().map((x) => x.name).sort()).toEqual(['APP_PWD', 'LOJA_ADMIN_CHAVE', 'OUTRA_SENHA']);
+  });
+
   it('lista ausentes por nome', () => {
     expect(store.missing(['APP_URL', 'OTHER_PASSWORD'])).toEqual(['OTHER_PASSWORD']);
   });

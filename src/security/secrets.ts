@@ -1,8 +1,8 @@
-import { referencedEnvVars } from '../config/load.ts';
+import { passwordEnvVars, referencedEnvVars } from '../config/load.ts';
 import type { Config } from '../config/schema.ts';
 
 /** Variáveis cujo nome indica segredo, mesmo que a config não as referencie. */
-const SECRET_NAME = /PASSWORD|PASSWD|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY|CREDENTIAL/i;
+const SECRET_NAME = /PASS|PWD|SENHA|SECRET|TOKEN|API_?KEY|PRIVATE_?KEY|CREDENTIAL|CVV|CVC/i;
 
 /** Valores mais curtos que isto não são redigidos por valor exato (geraria ruído). */
 const MIN_REDACTABLE_LENGTH = 4;
@@ -24,17 +24,23 @@ export class SecretStore {
   /** Redigidos por valor exato: os referenciados + qualquer variável com nome de segredo. */
   private readonly redactable: Set<string>;
 
+  /** Senhas da config: redigidas pelo valor qualquer que seja o nome da variável (auditoria 13/11). */
+  private readonly passwords: Set<string>;
+
   constructor(
     allowedNames: Iterable<string>,
     private readonly env: NodeJS.ProcessEnv = process.env,
+    passwordNames: Iterable<string> = [],
   ) {
     this.allowed = new Set(allowedNames);
     this.redactable = new Set(this.allowed);
+    this.passwords = new Set(passwordNames);
     for (const name of Object.keys(env)) if (SECRET_NAME.test(name)) this.redactable.add(name);
   }
 
   /** Passa a aceitar novas referências (ex.: ambiente cadastrado após config_reload). */
-  allow(names: Iterable<string>): void {
+  allow(names: Iterable<string>, passwordNames: Iterable<string> = []): void {
+    for (const n of passwordNames) this.passwords.add(n);
     for (const n of names) {
       this.allowed.add(n);
       this.redactable.add(n);
@@ -43,7 +49,7 @@ export class SecretStore {
   }
 
   static fromConfig(config: Config, env: NodeJS.ProcessEnv = process.env): SecretStore {
-    return new SecretStore(referencedEnvVars(config), env);
+    return new SecretStore(referencedEnvVars(config), env, passwordEnvVars(config));
   }
 
   /** Resolve `secret:NOME`. Mensagens de erro citam só o nome, nunca o valor. */
@@ -67,7 +73,7 @@ export class SecretStore {
     for (const name of this.redactable) {
       const value = this.env[name];
       if (!value || value.length < MIN_REDACTABLE_LENGTH) continue;
-      if (SECRET_NAME.test(name)) out.push({ name, value });
+      if (SECRET_NAME.test(name) || this.passwords.has(name)) out.push({ name, value });
     }
     return out;
   }

@@ -280,7 +280,7 @@ describe('missões do Antigravity', () => {
     const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'FIX-1' }, kind: 'explore' });
     missions.poll();
     const args = calls[0]!.args;
-    expect(args[args.indexOf('-p') + 1]).toMatch(/Siga o roteiro \.claude\/skills\/qa\/SKILL\.md[\s\S]*Missão: \/qa FIX-1 --explore/);
+    expect(args[args.indexOf('-p') + 1]).toMatch(/Leia AGENTS\.md[\s\S]*clients\/antigravity\.md[\s\S]*Siga o roteiro docs\/agents\/qa\.md[\s\S]*Missão: \/qa FIX-1 --explore/);
     const { allow, deny } = settingsOf(args).permissions;
     expect(allow).toContain('mcp(sanctum/run_status)');
     expect(allow).not.toContain('mcp(sanctum/act_approved)');
@@ -310,6 +310,19 @@ describe('missões do Antigravity', () => {
     expect(consumeGrant(db, m.id, 'act_approved')).toBe(false);
     missions.poll();
     expect(missions.get(m.id).last_message).toBe('Removido.');
+  });
+
+  it('permissão respondida e depois Parar: a missão parada não volta a rodar sozinha (13/11)', () => {
+    const { spawnFn, calls } = fakeSpawn(() => ({ lines: [agyInit, denied('mcp(sanctum/act_approved)', { ServerName: 'sanctum', ToolName: 'act_approved', Arguments: { action: 'click', target: { name: 'Remover' }, justification: 'CT-007' } }), result()] }));
+    const missions = manager(spawnFn);
+    const m = missions.launch({ agent: 'antigravity', target: { kind: 'card', key: 'FIX-3' }, kind: 'qa' });
+    missions.poll();
+    const [p] = pendingPrompts(db);
+    answerPrompt(db, p!.id, 'allow', undefined);
+    missions.stop(m.id);
+    missions.poll();
+    expect(calls).toHaveLength(1);
+    expect(missions.get(m.id).status).toBe('STOPPED');
   });
 
   it('ação proibida pelo Sanctum não vira pedido: segue com o aviso e, se insistir, chama o usuário', () => {

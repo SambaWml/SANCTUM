@@ -24,6 +24,9 @@ approval_mode = "prompt"
 [mcp_servers.sanctum.tools.jira_transition]
 approval_mode = "prompt"
 
+[mcp_servers.sanctum.tools.question_answer]
+approval_mode = "prompt"
+
 # Autenticação OAuth própria do Codex; não copia credenciais do Claude.
 [mcp_servers.atlassian]
 url = "https://mcp.atlassian.com/v1/mcp/authv2"

@@ -1,7 +1,8 @@
 {
   "statusLine": { "type": "command", "command": "node .claude/statusline.mjs" },
   "permissions": {
-    "ask": ["mcp__sanctum__plan_approve", "mcp__sanctum__act_approved", "mcp__sanctum__jira_create_issue", "mcp__sanctum__jira_comment", "mcp__sanctum__jira_transition"]
+    "deny": ["Read(./.env)", "Read(./.env.local)", "Read(./.auth/**)"],
+    "ask": ["mcp__sanctum__plan_approve", "mcp__sanctum__act_approved", "mcp__sanctum__jira_create_issue", "mcp__sanctum__jira_comment", "mcp__sanctum__jira_transition", "mcp__sanctum__question_answer"]
   },
   "hooks": {
     "PreToolUse": [

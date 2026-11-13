@@ -13,8 +13,16 @@ export interface HtmlScenario {
   plain?: { verdict: string; text: string; next?: string } | undefined; severity?: string | undefined; jira?: string | undefined;
 }
 export interface HtmlVideo { path: string; chapters: { code: string; atSec: number }[] }
+export interface HtmlSession {
+  code: string; target: string; persona: string | null; origin: string | null; status: string; timeboxMin: number;
+  minutes: number | null; overrunMin: number | null; skipped: string | null; short?: string | null; planned: string[]; tours: string[]; covered: string[];
+  findings: string[]; ideas: string[]; observations: string[]; questions: string[]; notes: string | null;
+}
 export interface HtmlModel {
   issueKey: string; title: string; runId: string; env: string; mode: string; recommendation: string | null; conclusion: string | null;
+  /** Missão sem card: veredito da exploração no lugar de aprovado/reprovado. */
+  exploration?: string | null;
+  sessions?: HtmlSession[];
   explanations: { code: string; title: string; howToSee: string; happens: string; expected: string; note?: string; severity?: string | undefined; jira?: string | undefined }[];
   counts: { planned: number; executed: number; passed: number; failed: number; blocked: number; review: number; notExecuted: number; exploratory: number; bugs: number };
   retest?: { parent: string; fixed: number; stillFailing: number; regressed: number; rows: { code: string; was: string; now: string }[] };
@@ -39,7 +47,8 @@ const STATUS_LABEL: Record<string, string> = {
 };
 const RECOMMENDATION_CLASS: Record<string, string> = { APROVADO: 'ok', REPROVADO: 'bad', INCONCLUSIVO: 'warn' };
 const SEVERITY_LABEL: Record<string, string> = { alta: 'Alta', media: 'Média', baixa: 'Baixa', 'nao-bug': 'Não é bug' };
-const JIRA_BROWSE = 'https://luby.atlassian.net/browse/';
+// Site do Jira desta instalação (SANCTUM_JIRA_URL); sem ele, a chave aparece sem link.
+const jiraBrowse = () => (/^https:\/\/[\w.-]+$/.test(process.env.SANCTUM_JIRA_URL ?? '') ? `${process.env.SANCTUM_JIRA_URL}/browse/` : '');
 
 /** Grupo do filtro: severidade informada; sem ela, cenário do plano ou achado sem severidade. */
 const filterGroup = (code: string, origin: string | undefined, severity: string | undefined) =>
@@ -55,9 +64,10 @@ export function renderHtml(m: HtmlModel): string {
     `<button class="seek" onclick="seek('${videoId(path)}',${at})">▶ ${esc(label)}</button>`;
 
   const card = (label: string, value: number, cls = '') => `<div class="card ${cls}"><div class="n">${value}</div><div class="l">${esc(label)}</div></div>`;
+  const JIRA_BROWSE = jiraBrowse();
   const tags = (severity?: string, jira?: string) =>
     `${severity ? `<span class="sev sev-${esc(severity)}">${esc(SEVERITY_LABEL[severity] ?? severity)}</span>` : ''}` +
-    `${jira ? `<a class="jira" href="${JIRA_BROWSE}${esc(jira)}" target="_blank" onclick="event.stopPropagation()">Bug criado: ${esc(jira)}</a>` : ''}`;
+    `${jira ? (JIRA_BROWSE ? `<a class="jira" href="${JIRA_BROWSE}${esc(jira)}" target="_blank" onclick="event.stopPropagation()">Bug criado: ${esc(jira)}</a>` : `<span class="jira">Bug criado: ${esc(jira)}</span>`) : ''}`;
   const filterAttrs = (code: string, origin: string | undefined, severity?: string, jira?: string) =>
     ` data-group="${esc(filterGroup(code, origin, severity))}" data-jira="${jira ? 1 : 0}" data-code="${esc(code)}"`;
 
@@ -145,6 +155,7 @@ h1 { font-size:22px; margin:0 0 4px; } h2 { font-size:17px; margin:28px 0 10px; 
 .video video { width:100%; border-radius:6px; background:#000; }
 .chapters { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
 .muted { color:var(--muted); font-size:13px; }
+.session { margin:10px 0; } .session h3 { margin:0 0 4px; font-size:15px; } .session ul { margin:4px 0 8px; }
 pre { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; white-space:pre-wrap; font-size:13px; }
 table.cmp { border-collapse:collapse; } table.cmp td, table.cmp th { padding:4px 10px; border-bottom:1px solid var(--line); }
 .plain { background:var(--soft); border-left:4px solid var(--info); border-radius:6px; padding:8px 12px; margin:10px 0; } .plain p { margin:4px 0; }
@@ -163,6 +174,7 @@ table.cmp { border-collapse:collapse; } table.cmp td, table.cmp th { padding:4px
 <h1>${esc(m.issueKey)} — ${esc(m.title)}</h1>
 <div class="sub">${esc(m.runId)} · ambiente ${esc(m.env)} · modo ${esc(m.mode)} · gerado em ${esc(m.generatedAt)}</div>
 ${m.recommendation ? `<div class="rec ${RECOMMENDATION_CLASS[m.recommendation] ?? 'warn'}">${esc(m.recommendation)}</div>` : ''}
+${m.exploration ? `<div class="rec warn">${esc(m.exploration)}</div>` : ''}
 
 <div class="cards">
 ${card('Planejados', c.planned)}${card('Executados', c.executed)}${card('Passaram', c.passed, 'ok')}${card('Falharam', c.failed, c.failed ? 'bad' : '')}
@@ -194,6 +206,7 @@ ${m.videos.length ? `<h2>Vídeo da execução</h2>${m.videos.map((v, i) => `
   <div class="muted">${esc(v.path)}</div>
 </div>`).join('')}` : ''}
 
+${renderSessions(m.sessions ?? [])}
 <h2>Cenários</h2>
 ${m.scenarios.map(scenarioHtml).join('')}
 
@@ -252,4 +265,16 @@ var hideBox = document.getElementById('esconder-naobug');
 if (hideBox) hideBox.onchange = applyFilters;
 </script>
 </body></html>`;
+}
+
+function renderSessions(sessions: HtmlSession[]): string {
+  if (!sessions.length) return '';
+  const list = (label: string, items: string[]) => (items.length ? `<p><b>${esc(label)}</b></p><ul>${items.map((i) => `<li>${esc(i)}</li>`).join('')}</ul>` : '');
+  return `<h2>Sessões exploratórias</h2>${sessions.map((c) => {
+    const time = c.status === 'SKIPPED' ? `não feita: ${c.skipped ?? ''}` : c.minutes !== null ? `${c.minutes} de ${c.timeboxMin} min${c.overrunMin ? ` (passou ${c.overrunMin} min)` : ''}` : c.status;
+    return `<div class="card session"><h3>${esc(c.code)} — ${esc(c.target)}</h3><p class="muted">${esc(time)}${c.persona ? ` · persona: ${esc(c.persona)}` : ''}${c.origin ? ` · foco veio de: ${esc(c.origin)}` : ''}</p>` +
+      (c.short ? `<p><b>Encerrada antes da hora (não conta como exploração feita):</b> ${esc(c.short)}</p>` : '') + list('Percorrido', c.covered) + list('Testes aplicados', c.tours.length ? c.tours : c.planned) + list('Achados', c.findings) +
+      list('Observações (não são bugs)', c.observations) + list('Perguntas para o PO', c.questions) + list('Ideias não exploradas', c.ideas) +
+      (c.notes ? `<p class="muted">${esc(c.notes)}</p>` : '') + '</div>';
+  }).join('')}`;
 }

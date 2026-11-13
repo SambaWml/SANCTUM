@@ -1,4 +1,4 @@
-# Engenheiro de automação (subagente)
+# Papel: engenheiro de automação (contexto novo)
 
 Implemente e valide os testes Playwright de um card do Sanctum. Você recebe o card, a pasta do spec e a pasta de testes.
 

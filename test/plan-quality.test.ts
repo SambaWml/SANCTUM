@@ -49,7 +49,7 @@ describe('padrão Sanctum de plano', () => {
     const { StateStore } = await import('../src/state/store.ts');
     const config = loadConfig(join(import.meta.dirname, '..'));
     const db = openDb(':memory:');
-    const store = new StateStore(db, config);
+    const store = new StateStore(db, config, { charterMin: { minutes: 0, activity: 0 } });
     const server = createServer({ store, redactor: new Redactor(), rootDir: join(import.meta.dirname, '..'), config, db });
     const [a, b] = InMemoryTransport.createLinkedPair();
     await server.connect(b);
@@ -65,12 +65,22 @@ describe('padrão Sanctum de plano', () => {
     store.startScenario(runId, 'CT-001');
     store.recordVerification(runId, 'CT-001', { kind: 'network', description: 'GET contadores 200', passed: true });
     store.completeScenario(runId, 'CT-001', { status: 'PASSED' });
-    expect(await call('run_complete', { runId, recommendation: 'APROVADO', summary: 'contadores ok' })).toMatch(/ao menos 1 cenário\(s\) EXP/);
+    expect(await call('run_complete', { runId, recommendation: 'APROVADO', summary: 'contadores ok' })).toMatch(/ao menos 1 charter\(s\) fechado/);
+    await call('charter_start', { runId, target: 'Arquivo de metas: estados vazio e de erro', tours: ['voltar e recarregar com a lista vazia'] });
     const exp = store.addExploratory(runId, { ...ok('X'), title: 'Contador com meta sem aprofundamentos', priority: 'P2', risk: 'LOW' });
     store.startScenario(runId, exp.code);
     store.recordVerification(runId, exp.code, { kind: 'ui', description: 'contador zero', passed: true });
     store.completeScenario(runId, exp.code, { status: 'PASSED' });
+    await call('charter_end', { runId, code: 'CH-01', covered: ['/aluno/arquivo com lista vazia'], tours: ['voltar e recarregar com a lista vazia'] });
     expect(JSON.parse(await call('run_complete', { runId, recommendation: 'APROVADO', summary: 'contadores ok' })).status).toBe('COMPLETED');
+  });
+
+  it('exploração vai em charters: CT "exploratório" com roteiro é recusado; modo explore pede charters no plano', () => {
+    const scripted = checkPlanQuality([ok('CT-001'), ok('CT-002', { types: ['exploratory'] })], ctx).problems.join(' ');
+    expect(scripted).toMatch(/exploração não é CT com roteiro: troque CT-002/);
+    const explore = { ...ctx, mode: 'explore' };
+    expect(checkPlanQuality([ok('CT-001')], explore).problems.join(' ')).toMatch(/ao menos 2 charters/);
+    expect(checkPlanQuality([ok('CT-001')], { ...explore, charters: 2 }).problems).toEqual([]);
   });
 
   it('reteste cobra só pré-condição e esperado (repete o que falhou)', () => {

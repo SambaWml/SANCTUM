@@ -12,7 +12,7 @@ import { createPrompt, describeTool } from './prompts.ts';
 import { isForbiddenRule } from './agents.ts';
 
 /**
- * Missões lançadas pela Central de Caça: o agente roda em segundo plano, um processo por turno,
+ * Missões lançadas pelo painel do Sanctum: o agente roda em segundo plano, um processo por turno,
  * desacoplado do painel e com a saída em data/missions/. Cada resposta do usuário no painel
  * continua a mesma conversa. Como cada agente roda e pede permissão está em agents.ts.
  */
@@ -68,7 +68,7 @@ interface Tail {
 /** Regras negadas que o painel nunca libera: o turno segue com o aviso, sem perguntar. */
 const forbidden = (rule: string) => isForbiddenRule(rule);
 /** Regra do Antigravity cuja permissão vira concessão única conferida pelo sanctum. */
-const SENSITIVE_RULE = /^mcp\(sanctum\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition)\)$/;
+const SENSITIVE_RULE = /^mcp\(sanctum\/(plan_approve|act_approved|jira_create_issue|jira_comment|jira_transition|question_answer)\)$/;
 
 /** Concessões ainda não usadas da missão deixam de valer (fim do turno, parada). */
 function expireGrants(db: Db, missionId: string): void {
@@ -126,7 +126,12 @@ export class MissionManager {
 
   launch(input: { agent: MissionAgent; target: MissionTarget; kind: MissionKind; objective?: string; images?: { name: string; dataBase64: string }[] }): MissionRow {
     if (!this.drivers[input.agent]) throw new MissionError(`agente ${input.agent} não é lançado pelo painel`);
-    if (input.target.kind === 'url' && (input.kind === 'retest' || input.kind === 'resume' || input.kind === 'analyze')) throw new MissionError('reteste, retomada e análise da US exigem um card');
+    if (input.target.kind === 'url' && ['retest', 'resume', 'analyze', 'automate'].includes(input.kind)) throw new MissionError('reteste, retomada, análise da US e automação exigem um card');
+    // Reteste e automação partem de um teste concluído do card.
+    if (input.target.kind === 'card' && (input.kind === 'retest' || input.kind === 'automate')
+      && !this.deps.db.prepare(`SELECT 1 FROM runs WHERE issue_key = ? AND status = 'COMPLETED' LIMIT 1`).get(input.target.key)) {
+      throw new MissionError(`${input.target.key} ainda não tem teste concluído: ${input.kind === 'retest' ? 'reteste' : 'automação'} parte de um teste feito`);
+    }
     const target = input.target.kind === 'card' ? input.target.key : input.target.url;
     const busy = this.deps.db.prepare(`SELECT id FROM missions WHERE target = ? AND status = 'RUNNING'`).get(target) as { id: string } | undefined;
     if (busy) throw new MissionError(`já existe a missão ${busy.id} rodando para ${target}`);
@@ -217,8 +222,9 @@ export class MissionManager {
     const m = this.get(id);
     if (m.pid && m.status === 'RUNNING') (this.deps.killTree ?? killTree)(m.pid);
     this.tails.delete(id);
-    // Pedidos que ficaram esperando e concessões não usadas não valem mais.
-    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    // Pedidos que ficaram esperando, permissões já respondidas e concessões não usadas não valem mais
+    // (auditoria 13/11: uma permissão respondida antes do Parar fazia o poll retomar a missão parada).
+    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND (status = 'PENDING' OR (status = 'ANSWERED' AND kind = 'permission'))`).run(id);
     expireGrants(this.deps.db, id);
     if (m.status === 'RUNNING' || m.status === 'WAITING') {
       this.deps.db.prepare(`UPDATE missions SET status = 'STOPPED', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
@@ -244,7 +250,7 @@ export class MissionManager {
     const m = this.get(id);
     if (m.pid && m.status === 'RUNNING') (this.deps.killTree ?? killTree)(m.pid);
     this.tails.delete(id);
-    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND status = 'PENDING'`).run(id);
+    this.deps.db.prepare(`UPDATE prompts SET status = 'EXPIRED' WHERE mission_id = ? AND (status = 'PENDING' OR (status = 'ANSWERED' AND kind = 'permission'))`).run(id);
     expireGrants(this.deps.db, id);
     this.deps.db.prepare(`UPDATE missions SET status = 'DONE', pid = NULL, updated_at = ? WHERE id = ?`).run(this.ts(), id);
     // Concluir a missão não conclui o run: se o agente não fechou (run_complete), ele é abortado com motivo.
@@ -268,6 +274,20 @@ export class MissionManager {
     if (m.status === 'WAITING') this.stop(id);
     this.deps.db.prepare('UPDATE missions SET archived_at = ?, updated_at = ? WHERE id = ?').run(this.ts(), this.ts(), id);
     return this.get(id);
+  }
+
+  /**
+   * Encerra pelo painel um run que ninguém está operando (ficaria "em andamento" para sempre). Com missão
+   * trabalhando nele, pare a missão antes. O motivo fica no run, como num run_abort.
+   */
+  abortRun(runId: string, reason: string): { ok: true } {
+    const run = this.deps.db.prepare('SELECT status FROM runs WHERE id = ?').get(runId) as { status: string } | undefined;
+    if (!run) throw new MissionError(`run ${runId} não existe`);
+    if (!['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(run.status)) throw new MissionError(`run já está ${run.status}`);
+    const busy = this.deps.db.prepare(`SELECT id FROM missions WHERE run_id = ? AND status IN ('RUNNING','WAITING')`).get(runId) as { id: string } | undefined;
+    if (busy) throw new MissionError(`a missão ${busy.id} está neste run: pare a missão antes de encerrar`);
+    this.store.abortRun(runId, reason.trim().length >= 3 ? reason.trim() : 'encerrado pelo usuário no painel');
+    return { ok: true };
   }
 
   /** Tira um run do painel (ex.: parado sem ninguém operando). Não aborta nem apaga nada. */
@@ -354,7 +374,7 @@ export class MissionManager {
       }
     }
     // Antigravity: todos os pedidos de permissão do turno respondidos → continua com as regras liberadas.
-    const waiting = this.deps.db.prepare(`SELECT * FROM missions WHERE status IN ('WAITING', 'DONE', 'STOPPED') AND agent = 'antigravity'`).all() as unknown as MissionRow[];
+    const waiting = this.deps.db.prepare(`SELECT * FROM missions WHERE status IN ('WAITING', 'DONE') AND agent = 'antigravity'`).all() as unknown as MissionRow[];
     for (const m of waiting) {
       const answered = this.deps.db.prepare(`SELECT id, tool, decision FROM prompts WHERE mission_id = ? AND kind = 'permission' AND status = 'ANSWERED'`).all(m.id) as { id: number; tool: string; decision: 'allow' | 'deny' }[];
       const pending = this.deps.db.prepare(`SELECT 1 FROM prompts WHERE mission_id = ? AND status = 'PENDING'`).get(m.id);

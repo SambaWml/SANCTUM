@@ -36,7 +36,7 @@ describe('servidor MCP sanctum', () => {
   it('expõe só as ferramentas de estado — verificações não são registráveis pelo modelo', async () => {
     const { tools } = await client.listTools();
     expect(tools.map((t) => t.name).sort()).toEqual([
-      'plan_approve', 'plan_save', 'run_abort', 'run_complete', 'run_start', 'run_status',
+      'charter_end', 'charter_start', 'plan_approve', 'plan_save', 'run_abort', 'run_complete', 'run_start', 'run_status',
       'scenario_add', 'scenario_complete', 'scenario_reclassify', 'scenario_reopen', 'scenario_start',
     ]);
   });

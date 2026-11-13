@@ -1,15 +1,6 @@
 ---
 name: qa
-description: Testa um card do Jira no Sanctum, planejando por risco, aguardando aprovação, verificando no navegador e gerando evidências e relatório. Aceita explore e automate.
+description: Testa um card do Jira (ou explora um sistema pela URL, sem card) como QA — entende a demanda, planeja por risco, executa no navegador com verificação, investiga anomalias, coleta evidências e gera relatório.
 ---
 
-# QA pelo Codex
-
-Leia [o adaptador do Codex](../../../docs/CODEX.md#execução-dos-fluxos)
-e siga [o roteiro QA](../../../.claude/skills/qa/SKILL.md).
-O card e as opções vêm do pedido do usuário, no lugar de `$ARGUMENTS`.
-
-Os caminhos `references/` do roteiro são relativos à pasta original
-`.claude/skills/qa/`. Leia apenas as referências da etapa atual.
-As adaptações de execução, aprovação e subagentes de `docs/CODEX.md` prevalecem
-sobre instruções específicas do cliente Claude.
+Siga o roteiro `docs/agents/qa.md` etapa por etapa (referências em `docs/agents/references/`), com as diferenças do seu cliente em `docs/agents/clients/` (`codex.md` ou `antigravity.md`). O card, a URL e as opções vêm do pedido do usuário.

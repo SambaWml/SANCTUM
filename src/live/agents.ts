@@ -13,7 +13,7 @@ import { join } from 'node:path';
  */
 
 export type MissionAgent = 'claude' | 'antigravity';
-export type MissionKind = 'qa' | 'explore' | 'retest' | 'resume' | 'analyze';
+export type MissionKind = 'qa' | 'explore' | 'retest' | 'resume' | 'analyze' | 'automate';
 export type MissionTarget = { kind: 'card'; key: string } | { kind: 'url'; url: string };
 export type Windows = Record<string, { utilization?: number; resetsAt?: number }>;
 
@@ -45,6 +45,10 @@ export const SANCTUM_TOOLS = ['run_start', 'run_status', 'run_complete', 'plan_s
   'automation_assess', 'automation_spec', 'automation_run',
   // Pasta de evidência local e cadastro que só acrescenta: sem pedido (auditoria de fluxo 09/11).
   'bug_evidence', 'env_register',
+  // Sessões exploratórias (charter): só estado local.
+  'charter_start', 'charter_end',
+  // Modo descoberta: mapa do sistema e perguntas (a resposta, question_answer, passa pelo painel).
+  'system_map_save', 'question_ask',
   // Análise da US: só grava no estado local e gera relatório.
   'us_analysis_save'];
 
@@ -64,10 +68,12 @@ export const ALLOWED_TOOLS = [
 export const AGY_FORBIDDEN = ['run_command', 'send_command_input', 'open_browser_url', 'browser_subagent', 'execute_browser_javascript',
   'click_browser_pixel', 'browser_click_element', 'browser_input', 'browser_press_key', 'browser_select_option', 'browser_drag_pixel_to_pixel',
   'browser_mouse_down', 'browser_mouse_up', 'browser_move_mouse', 'browser_scroll', 'browser_scroll_dom', 'browser_refresh_page',
-  'browser_resize_window', 'read_browser_page', 'browser_get_dom', 'capture_browser_screenshot', 'capture_browser_console_logs'];
+  'browser_resize_window', 'read_browser_page', 'browser_get_dom', 'capture_browser_screenshot', 'capture_browser_console_logs',
+  // Espera agendada (13/11): o agente agendava minutos parado para "cumprir" o mínimo da sessão exploratória.
+  'schedule'];
 
 /** Ferramentas de escrita de arquivo (Antigravity e Claude Code). */
-const FILE_WRITE = /^(write_file|replace_file_content|multi_replace_file_content|sed_file|notebook_edit|Write|Edit|NotebookEdit)$/;
+const FILE_WRITE = /^(write_file|edit_file|replace_file_content|multi_replace_file_content|sed_file|notebook_edit|Write|Edit|NotebookEdit)$/;
 
 /**
  * Arquivos do próprio Sanctum: missão testa sistemas, não altera a ferramenta (código, regras,
@@ -102,13 +108,13 @@ export function isForbiddenRule(rule: string, path?: string): boolean {
 }
 
 const PANEL_RULES =
-  'Você foi lançado pela Central de Caça (painel do Sanctum) e roda sem terminal. Siga o roteiro da skill etapa por etapa, só com as ferramentas do Sanctum. ' +
+  'Você foi lançado pelo painel do Sanctum e roda sem terminal. Siga o roteiro da skill etapa por etapa, só com as ferramentas do Sanctum. ' +
   'Quando precisar do usuário (aprovar o plano, escolher usuário, tirar dúvida), escreva a pergunta no fim da sua resposta e encerre o turno: a resposta chega na próxima mensagem. ' +
   'Não use ferramenta de pergunta ao usuário. Permissões são pedidas ao usuário pelo painel. Senha nunca: só usuários já cadastrados ou .env.';
 
 export function missionCommand(target: MissionTarget, kind: MissionKind, objective?: string): string {
   const cmd = target.kind === 'url' ? `/qa ${target.url} --explore`
-    : { qa: `/qa ${target.key}`, explore: `/qa ${target.key} --explore`, retest: `/retest ${target.key}`, resume: `/qa-resume ${target.key}`, analyze: `/analisar ${target.key}` }[kind];
+    : { qa: `/qa ${target.key}`, explore: `/qa ${target.key} --explore`, retest: `/retest ${target.key}`, resume: `/qa-resume ${target.key}`, analyze: `/analisar ${target.key}`, automate: `/automate ${target.key}` }[kind];
   return objective ? `${cmd} ${objective}` : cmd;
 }
 
@@ -117,23 +123,23 @@ export function boundPrompt(target: MissionTarget, kind: MissionKind, objective?
   if (kind === 'analyze' && target.kind === 'card') {
     return [
       'Atue como QA usando o Sanctum neste workspace, seguindo a ferramenta à risca:',
-      '1. Leia AGENTS.md e CLAUDE.md antes de qualquer ação.',
-      '2. Siga o roteiro .claude/skills/analisar/SKILL.md etapa por etapa, na ordem.',
-      '3. Leia o Jira pelo sanctum (getJiraIssue, digest_get/digest_put) e grave a análise com us_analysis_save. Não use terminal, scripts nem o seu navegador próprio; telas do sistema só pelo navegador do sanctum, sem alterar dados.',
+      '1. Leia AGENTS.md (regras de todo agente) e docs/agents/clients/antigravity.md (o que muda para você) antes de qualquer ação.',
+      '2. Siga o roteiro docs/agents/analisar.md etapa por etapa, na ordem.',
+      '3. Leia o Jira pelo sanctum (getJiraIssue, digest_get/digest_put) e grave a análise com us_analysis_save. Não use terminal, scripts nem o seu navegador próprio; a análise não abre o navegador.',
       '4. Nada vai para o Jira: perguntas e melhorias ficam no relatório para eu decidir.',
       PANEL_RULES,
       '',
       `Missão: ${missionCommand(target, kind)}${objective ? `\nObjetivo/observação: ${objective}` : ''}`,
     ].join('\n');
   }
-  const skill = target.kind === 'url' ? 'qa' : { qa: 'qa', explore: 'qa', retest: 'retest', resume: 'qa-resume', analyze: 'qa' }[kind];
+  const skill = target.kind === 'url' ? 'qa' : { qa: 'qa', explore: 'qa', retest: 'retest', resume: 'qa-resume', analyze: 'qa', automate: 'automate' }[kind];
   return [
     'Atue como QA usando o Sanctum neste workspace, seguindo a ferramenta à risca:',
-    '1. Leia AGENTS.md e CLAUDE.md antes de qualquer ação.',
-    `2. Siga o roteiro .claude/skills/${skill}/SKILL.md etapa por etapa, na ordem, lendo as referências de cada etapa. Onde o roteiro fala do Claude (subagente, confirmação), use as adaptações de docs/CODEX.md e execute os lotes você mesmo.`,
-    '3. Opere o sistema só pelas ferramentas do MCP sanctum (call_mcp_tool, servidor sanctum). O sanctum integra digest_get e getJiraIssue para leitura direta do Jira sem depender de MCP externo. Não use comandos de terminal, scripts, nem o seu navegador próprio: o navegador é o do sanctum (browser_open, navigate, act, verify).',
+    '1. Leia AGENTS.md (regras de todo agente) e docs/agents/clients/antigravity.md (o que muda para você) antes de qualquer ação.',
+    `2. Siga o roteiro docs/agents/${skill}.md etapa por etapa, na ordem, lendo as referências de cada etapa (docs/agents/references/). Os papéis (docs/agents/roles/) são executados por você mesmo, um lote ou uma sessão por vez.`,
+    '3. Opere o sistema só pelas ferramentas do MCP sanctum (call_mcp_tool, servidor sanctum). Não use comandos de terminal, scripts, espera agendada nem o seu navegador próprio: o navegador é o do sanctum (browser_open, navigate, act, verify).',
     '4. Mostre o plano e espere minha aprovação antes de plan_approve. Ação de risco (RED) só com minha autorização para aquela ação.',
-    '5. Nunca declare PASSED sem verificação registrada (verify). Senha só pelo .env (secret:NOME).',
+    '5. Nunca declare PASSED sem verificação registrada (verify). Senha só pelo .env (secret:NOME); não leia .env nem .auth/.',
     '6. Feche com limpeza, run_complete e report_build. Card de bug no Jira só se eu pedir.',
     PANEL_RULES,
     '',
@@ -152,7 +158,7 @@ export const claudeDriver = (bin?: string): AgentDriver => ({
   args: ({ prompt, resume }) => ['-p', prompt, '--output-format', 'stream-json', '--verbose',
     '--permission-prompt-tool', 'mcp__sanctum__permission_prompt',
     '--allowedTools', ALLOWED_TOOLS.join(','),
-    '--disallowedTools', 'AskUserQuestion',
+    '--disallowedTools', 'AskUserQuestion,ScheduleWakeup,CronCreate',
     '--append-system-prompt', PANEL_RULES,
     ...(resume ? ['--resume', resume] : [])],
   parse(line) {

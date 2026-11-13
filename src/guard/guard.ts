@@ -44,5 +44,19 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export function isMutation(method: string, path: string, env: Environment, policy: Policy): boolean {
   if (!MUTATING_METHODS.has(method.toUpperCase())) return false;
   const p = path.toLowerCase();
+  if (TELEMETRY_PATHS.some((re) => re.test(p))) return false;
   return ![...policy.guard.mutationIgnore, ...env.mutationIgnore].some((s) => p.includes(s.toLowerCase()));
 }
+
+/**
+ * Telemetria servida no próprio domínio do app (medição de desempenho, analytics, relato de erro):
+ * é POST, mas não cria nem altera dado do sistema testado. Auditoria 12/11: os 9 "dados criados" de
+ * uma missão eram todos /cdn-cgi/rum (Cloudflare), e o agente teve de justificar um por um.
+ */
+const TELEMETRY_PATHS: RegExp[] = [
+  /^\/cdn-cgi\//,                                   // Cloudflare (RUM, challenge, beacon)
+  /^\/(_vercel|_next)\/(insights|speed-insights)\b/, // Vercel
+  /\/(g|j|r)\/collect\b|\/gtag\/|\/gtm\.js/,         // Google Analytics / Tag Manager com proxy próprio
+  /^\/(monitoring|sentry|_sentry|tunnel)\b.*envelope|\/api\/\d+\/envelope\b/, // Sentry (túnel)
+  /\/(rum|beacon|telemetry|web-vitals|vitals)\/?$/,  // beacons genéricos
+];

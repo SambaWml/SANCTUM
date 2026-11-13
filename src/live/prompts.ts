@@ -83,7 +83,7 @@ export interface PermissionDeps {
 export async function decidePermission(deps: PermissionDeps, toolName: string, input: Record<string, unknown>): Promise<PermissionResult> {
   const { db, redactor, missionId } = deps;
   const now = deps.now ?? (() => new Date());
-  if (!missionId) return { behavior: 'deny', message: 'permissão pelo painel só vale para missões lançadas pela Central de Caça' };
+  if (!missionId) return { behavior: 'deny', message: 'permissão pelo painel só vale para missões lançadas pelo painel do Sanctum' };
   // Proibido sempre, sem perguntar: terminal e escrita nos arquivos do próprio Sanctum.
   const file = typeof input.file_path === 'string' ? input.file_path : typeof input.notebook_path === 'string' ? input.notebook_path : undefined;
   if (isForbiddenRule(toolName, file)) {

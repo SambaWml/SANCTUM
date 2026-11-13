@@ -1,12 +1,6 @@
 ---
 name: retest
-description: Retesta um card do Sanctum após correção, usando o ciclo anterior e regressão por risco, com comparação dos resultados.
+description: Reteste de um card no Sanctum após correção — reexecuta o que não passou no último run concluído, mais vizinhos de risco, e compara com o resultado anterior.
 ---
 
-# Reteste pelo Codex
-
-Leia [o adaptador do Codex](../../../docs/CODEX.md#execução-dos-fluxos)
-e siga [o roteiro de reteste](../../../.claude/skills/retest/SKILL.md).
-Use o card do pedido no lugar de `$ARGUMENTS`. Preserve a aprovação do novo
-plano e a comparação com o run anterior. As adaptações do Codex prevalecem
-para ferramentas, aprovações e execução de lotes.
+Siga o roteiro `docs/agents/retest.md` etapa por etapa (referências em `docs/agents/references/`), com as diferenças do seu cliente em `docs/agents/clients/` (`codex.md` ou `antigravity.md`). O card, a URL e as opções vêm do pedido do usuário.

@@ -5,7 +5,7 @@ import { planCoverage } from '../state/coverage.ts';
 import type { Db } from '../state/db.ts';
 
 /**
- * Estado do painel ao vivo ("Central de Caça"), montado só por leitura do banco: nenhum token,
+ * Estado do painel do Sanctum, montado só por leitura do banco: nenhum token,
  * nenhuma escrita. O painel mostra o que os agentes estão fazendo; quem decide continua sendo o
  * terminal (aprovações seguem pelo Claude Code).
  */
@@ -20,7 +20,7 @@ export interface LiveScenario {
 }
 export interface LiveBug {
   code: string; title: string; jira?: string; runId: string; card: string; ts: string;
-  screenshot?: string | null; priority?: string | null; rarity?: 'common' | 'rare' | 'epic' | 'legendary';
+  screenshot?: string | null; priority?: string | null;
 }
 export interface Pending {
   runId: string; card: string; agent: AgentKind; kind: 'plan' | 'red'; title: string; detail: string; ts: string; scenarios?: LiveScenario[];
@@ -43,24 +43,23 @@ export interface LiveRun {
   video: { id: number; chapters: { code: string; atSec: number }[] } | null;
   shots: { id: number; code: string | null; name: string }[];
   lastShot: number | null; report: boolean;
+  /** Sessão exploratória aberta e as planejadas que faltam. */
+  charter: { code: string; target: string; minutesLeft: number; pending: number } | null;
   evidenceDir: string; reportPath: string;
 }
 
-export interface AgentScore { agent: AgentKind; label: string; xp: number; level: number; title: string; next: number; base: number }
-export interface Badge { id: string; icon: string; name: string; hint: string; unlocked: boolean; tier?: 'bronze' | 'prata' | 'ouro' | 'lendario'; progress?: string }
 
 export interface LiveState {
   generatedAt: string;
-  stats: { missionsToday: number; bugsToday: number; scenariosToday: number; streakDays: number; shieldPct?: number };
+  stats: { missionsToday: number; bugsToday: number; scenariosToday: number };
   runs: LiveRun[]; pending: Pending[]; bugs: LiveBug[]; timeline: FeedLine[];
-  agents: AgentScore[]; badges: Badge[];
 }
 
 const ACTIVE = ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'];
 const DONE = ['PASSED', 'FAILED', 'BLOCKED', 'NOT_EXECUTED', 'NEEDS_REVIEW'];
-const LABEL: Record<AgentKind, string> = { claude: 'Claude', antigravity: 'Antigravity', codex: 'Codex', other: 'Agente' };
-const TITLES = ['Aprendiz da Ordem', 'Escudeiro de Ferro', 'Caçador de Catacumbas', 'Cavaleiro Purificador', 'Mestre das Sombras', 'Lenda Ancestral'];
-const VERB: Record<string, string> = {
+const LABEL: Record<AgentKind, string> = { claude: 'Claude', antigravity: 'Antigravity', codex: 'Codex', other: 'Sem registro' };
+// 'Sem registro': runs de antes de 02/11, quando o run ainda não gravava qual agente o executou.
+export const VERB: Record<string, string> = {
   click: 'clicou em', fill: 'preencheu', press: 'teclou em', select: 'escolheu em', check: 'marcou', uncheck: 'desmarcou',
   hover: 'passou o mouse em', upload: 'enviou arquivo em', dblclick: 'clicou duas vezes em',
 };
@@ -77,7 +76,7 @@ export function agentKind(agentJson: unknown): AgentKind {
   return 'other';
 }
 
-function targetName(targetJson: unknown): string {
+export function targetName(targetJson: unknown): string {
   const t = parse<Record<string, unknown>>(targetJson, {});
   const name = str(t.name ?? t.label ?? t.placeholder ?? t.text ?? t.testId ?? t.role);
   return name.length > 60 ? `${name.slice(0, 57)}…` : name;
@@ -111,34 +110,48 @@ export function buildLiveState(db: Db, opts: BuildOptions): LiveState {
     }
   }
 
-  const today = now.toISOString().slice(0, 10);
+  // "Hoje" é o dia local de quem usa o painel (em UTC, às 21h do Brasil tudo zerava).
+  const today = startOfLocalDay(now).toISOString();
   const bugsAll = explainedBugs(all, `ts >= ?`, new Date(now.getTime() - 7 * 86400_000).toISOString());
+  const confirmed = confirmedBugs(all);
   const timeline = runs.flatMap((r) => r.feed.filter((f) => f.cls !== '' || /iniciado|PASSED|FAILED|BLOCKED/.test(f.text)))
     .sort((a, b) => b.ts.localeCompare(a.ts)).slice(0, 80);
-
-  const days = new Set(all(`SELECT DISTINCT substr(started_at, 1, 10) d FROM runs`).map((r) => str(r.d)));
-  // Sequência de dias com missão; o dia de hoje ainda sem missão não quebra a sequência.
-  let streak = 0;
-  let d = new Date(`${today}T12:00:00Z`);
-  if (!days.has(today)) d = new Date(d.getTime() - 86400_000);
-  for (; days.has(d.toISOString().slice(0, 10)); d = new Date(d.getTime() - 86400_000)) streak++;
-
-  const passedTotal = Number(get(`SELECT COUNT(*) n FROM scenarios WHERE status = 'PASSED'`)?.n ?? 0);
-  const allTotal = Number(get(`SELECT COUNT(*) n FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED')`)?.n ?? 0);
-  const shieldPct = allTotal > 0 ? Math.round((passedTotal / allTotal) * 1000) / 10 : 100;
 
   return {
     generatedAt: now.toISOString(),
     stats: {
       missionsToday: Number(get(`SELECT COUNT(*) n FROM runs WHERE started_at >= ?`, today)?.n ?? 0),
-      bugsToday: bugsAll.filter((b) => b.ts >= today).length,
+      bugsToday: [...confirmed.values()].filter((b) => b.ts >= today).length,
       scenariosToday: Number(get(`SELECT COUNT(*) n FROM scenarios WHERE ended_at >= ? AND status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW')`, today)?.n ?? 0),
-      streakDays: streak,
-      shieldPct,
     },
     runs, pending, bugs: bugsAll.slice(0, 36), timeline,
-    agents: agentScores(all), badges: badges(all, get),
   };
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const localDay = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const startOfLocalDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const prevDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate() - 1);
+
+export interface ConfirmedBug { agent: AgentKind; ts: string; exploratory: boolean }
+
+/**
+ * Bug confirmado: cenário classificado PRODUCT_BUG (o core exige reprodução) ou problema que virou
+ * card no Jira. Contado uma vez por run+cenário — chamar report_build de novo não soma nada.
+ */
+export function confirmedBugs(all: (sql: string, ...a: (string | number)[]) => Row[]): Map<string, ConfirmedBug> {
+  const out = new Map<string, ConfirmedBug>();
+  const agentOf = new Map(all(`SELECT id, agent FROM runs`).map((r) => [str(r.id), agentKind(r.agent)]));
+  for (const s of all(`SELECT run_id, code, COALESCE(ended_at, started_at) ts FROM scenarios WHERE classification = 'PRODUCT_BUG'`)) {
+    out.set(`${str(s.run_id)}:${str(s.code)}`, { agent: agentOf.get(str(s.run_id)) ?? 'other', ts: str(s.ts), exploratory: str(s.code).startsWith('EXP-') });
+  }
+  for (const e of all(`SELECT run_id, payload, ts FROM events WHERE type IN ('report.explain','report.summaries') AND payload LIKE '%"jira"%'`)) {
+    for (const x of parse<{ code: string; jira?: string }[]>(e.payload, [])) {
+      const key = `${str(e.run_id)}:${x.code}`;
+      if (x.jira && !out.has(key)) out.set(key, { agent: agentOf.get(str(e.run_id)) ?? 'other', ts: str(e.ts), exploratory: x.code.startsWith('EXP-') });
+    }
+  }
+  return out;
 }
 
 export function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) => Row[], get: (sql: string, ...a: (string | number)[]) => Row | undefined, opts: BuildOptions): LiveRun {
@@ -179,7 +192,10 @@ export function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) =
       case 'scenario.reopen': push(e.ts, `${code} reaberto: ${str(p.reason).slice(0, 100)}`, 'warn'); break;
       case 'scenario.loop': push(e.ts, `${code} andando em círculo: ${str(p.actions)} ações e ${str(p.verifications)} verificações${p.level === 'stop' ? ' — travado pelo Sanctum' : ''}`, 'bad'); break;
       case 'scenario.reclassify': push(e.ts, `${code} reclassificado ${str(p.from)} → ${str(p.to)}`, 'warn'); break;
-      case 'scenario.add': push(e.ts, `achou caminho novo: ${str(p.code)}`, 'info'); break;
+      case 'scenario.add': push(e.ts, `achou caminho novo: ${str(p.code)}${p.charter ? ` (sessão ${str(p.charter)})` : ''}`, 'info'); break;
+      case 'charter.start': push(e.ts, `abriu a sessão exploratória ${str(p.code)}`, 'info'); break;
+      case 'charter.end': push(e.ts, `fechou a sessão ${str(p.code)}: ${str(p.minutes)} min, ${str(p.findings)} achado(s)`, 'ok'); break;
+      case 'charter.skip': push(e.ts, `pulou a sessão ${str(p.code)}: ${str(p.reason).slice(0, 100)}`, 'warn'); break;
       case 'guard.block': push(e.ts, `${code ? `${code} ` : ''}guard ${str(p.level)}: ${str(p.reason)}${p.needsApproval ? ' — precisa de você' : ''}`, 'ask'); break;
       case 'guard.mutation': push(e.ts, `${code ? `${code} ` : ''}alteração de dados percebida pela rede`, 'warn'); break;
       case 'data.register': push(e.ts, `${code ? `${code} ` : ''}dado criado registrado para limpeza`, 'info'); break;
@@ -189,7 +205,7 @@ export function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) =
       case 'http.error': push(e.ts, `${code ? `${code} ` : ''}API respondeu erro ${str(p.status)} ${str(p.method)} ${str(p.path ?? p.url).slice(0, 80)}`.trim(), 'bad'); break;
       case 'browser.open': push(e.ts, 'abriu o navegador', 'muted'); break;
       case 'network.simulate': push(e.ts, `${code ? `${code} ` : ''}simulou falha de rede`, 'warn'); break;
-      case 'run.complete': push(e.ts, `missão concluída: ${str(p.recommendation)}`, p.recommendation === 'APROVADO' ? 'ok' : p.recommendation === 'REPROVADO' ? 'bad' : 'warn'); break;
+      case 'run.complete': push(e.ts, `missão concluída: ${p.recommendation ? str(p.recommendation) : 'exploração'}`, p.recommendation === 'APROVADO' ? 'ok' : p.recommendation === 'REPROVADO' ? 'bad' : 'warn'); break;
       case 'run.abort': push(e.ts, `missão abortada: ${str(p.reason).slice(0, 100)}`, 'bad'); break;
       case 'run.recommendation_lowered': push(e.ts, `recomendação rebaixada para ${str(p.to)}`, 'warn'); break;
       default: break;
@@ -265,6 +281,13 @@ export function buildRun(r: Row, all: (sql: string, ...a: (string | number)[]) =
     shots: pngs.filter((p) => failedCodes.has(codeOf.get(Number(p.scenario_id)) ?? '')).slice(-6)
       .map((p) => ({ id: Number(p.id), code: codeOf.get(Number(p.scenario_id)) ?? null, name: str(p.path).split(/[\\/]/).pop() ?? '' })),
     lastShot: pngs.length ? Number(pngs[pngs.length - 1]!.id) : null,
+    charter: (() => {
+      const rows = all(`SELECT code, target, timebox_min, started_at, status FROM charters WHERE run_id = ? AND status IN ('OPEN','PLANNED') ORDER BY code`, id);
+      const open = rows.find((c) => c.status === 'OPEN');
+      if (!open || !ACTIVE.includes(status)) return null;
+      const elapsed = ((opts.now ?? new Date()).getTime() - Date.parse(str(open.started_at))) / 60_000;
+      return { code: str(open.code), target: str(open.target), minutesLeft: Math.round(Number(open.timebox_min) - elapsed), pending: rows.length - 1 };
+    })(),
     report: existsSync(join(opts.rootDir, 'reports', str(r.issue_key), `${id}.html`)),
     evidenceDir: join(opts.rootDir, 'runs', str(r.issue_key), id, 'evidence'),
     reportPath: join(opts.rootDir, 'reports', str(r.issue_key), `${id}.html`),
@@ -303,84 +326,10 @@ function explainedBugs(all: (sql: string, ...a: (string | number)[]) => Row[], w
   for (const b of result) {
     const sc = all(`SELECT priority, risk, title FROM scenarios WHERE run_id = ? AND code = ? LIMIT 1`, b.runId, b.code)[0] as { priority?: string; risk?: string; title?: string } | undefined;
     const prio = sc?.priority ? str(sc.priority) : 'P1';
-    const risk = sc?.risk ? str(sc.risk) : 'MEDIUM';
-    const title = sc?.title ? str(sc.title) : b.title;
-    let rarity: 'common' | 'rare' | 'epic' | 'legendary' = 'common';
-    if (prio === 'P0' && (risk === 'HIGH' || /permiss|admin|seguran|dados|vazamento/i.test(title))) {
-      rarity = 'legendary';
-    } else if (prio === 'P0' || risk === 'HIGH') {
-      rarity = 'epic';
-    } else if (prio === 'P1') {
-      rarity = 'rare';
-    } else {
-      rarity = 'common';
-    }
-    b.priority = prio;
-    b.rarity = rarity;
+
 
     const ev = all(`SELECT path FROM evidence WHERE run_id = ? AND kind = 'screenshot' AND (scenario_id = (SELECT id FROM scenarios WHERE run_id = ? AND code = ?) OR path LIKE ?) ORDER BY id DESC LIMIT 1`, b.runId, b.runId, b.code, `%${b.code}%`)[0] as { path?: string } | undefined;
     b.screenshot = ev?.path ? `/${str(ev.path).replace(/\\/g, '/')}` : null;
   }
   return result.sort((a, b) => b.ts.localeCompare(a.ts));
-}
-
-/** XP real: 10 por cenário concluído, 30 por missão concluída, 50 por bug explicado no relatório. */
-function agentScores(all: (sql: string, ...a: (string | number)[]) => Row[]): AgentScore[] {
-  const xp = new Map<AgentKind, number>();
-  const add = (k: AgentKind, n: number) => xp.set(k, (xp.get(k) ?? 0) + n);
-  for (const r of all(`SELECT r.agent, COUNT(s.id) n FROM runs r JOIN scenarios s ON s.run_id = r.id
-                       WHERE s.status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW') GROUP BY r.agent`)) add(agentKind(r.agent), 10 * Number(r.n));
-  for (const r of all(`SELECT agent, COUNT(*) n FROM runs WHERE status = 'COMPLETED' GROUP BY agent`)) add(agentKind(r.agent), 30 * Number(r.n));
-  for (const r of all(`SELECT r.agent, e.payload FROM events e JOIN runs r ON r.id = e.run_id WHERE e.type = 'report.explain'`)) add(agentKind(r.agent), 50 * parse<unknown[]>(r.payload, []).length);
-  return [...xp].map(([agent, total]) => {
-    const level = Math.floor(Math.sqrt(total / 50)) + 1;
-    return { agent, label: LABEL[agent], xp: total, level, title: TITLES[Math.min(TITLES.length - 1, Math.floor((level - 1) / 4))]!, base: 50 * (level - 1) ** 2, next: 50 * level ** 2 };
-  }).sort((a, b) => b.xp - a.xp);
-}
-
-function badges(all: (sql: string, ...a: (string | number)[]) => Row[], get: (sql: string, ...a: (string | number)[]) => Row | undefined): Badge[] {
-  const n = (sql: string) => Number(get(sql)?.n ?? 0);
-  const bugs = all(`SELECT payload FROM events WHERE type = 'report.explain'`).reduce((acc, r) => acc + parse<unknown[]>(r.payload, []).length, 0);
-  const maxScen = n(`SELECT MAX(c) n FROM (SELECT COUNT(*) c FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW') GROUP BY run_id)`);
-  const totalScen = n(`SELECT COUNT(*) n FROM scenarios WHERE status IN ('PASSED','FAILED','BLOCKED','NEEDS_REVIEW')`);
-  const approvedRuns = n(`SELECT COUNT(*) n FROM runs WHERE status = 'COMPLETED' AND recommendation = 'APROVADO'`);
-  const flawlessRuns = n(`SELECT COUNT(*) n FROM runs r WHERE r.recommendation = 'APROVADO' AND (SELECT COUNT(*) FROM scenarios s WHERE s.run_id = r.id) >= 10
-                 AND NOT EXISTS (SELECT 1 FROM scenarios s WHERE s.run_id = r.id AND s.status IN ('FAILED', 'BLOCKED'))`);
-  const cleanRuns = n(`SELECT COUNT(*) n FROM runs r WHERE r.status = 'COMPLETED' AND EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id)
-                 AND NOT EXISTS (SELECT 1 FROM created_data d WHERE d.run_id = r.id AND d.cleanup_status <> 'VERIFIED')`);
-  const guardBlocks = n(`SELECT COUNT(*) n FROM events WHERE type = 'guard.block'`);
-  const retestsApproved = n(`SELECT COUNT(*) n FROM runs WHERE mode = 'retest' AND recommendation = 'APROVADO'`);
-  const speedRuns = n(`SELECT COUNT(*) n FROM runs WHERE status = 'COMPLETED' AND recommendation = 'APROVADO' AND ended_at IS NOT NULL AND (strftime('%s', ended_at) - strftime('%s', started_at)) BETWEEN 5 AND 300`);
-  const maxSquad = n(`SELECT MAX(c) n FROM (SELECT COUNT(DISTINCT json_extract(agent, '$.client')) c FROM runs WHERE agent IS NOT NULL GROUP BY substr(started_at, 1, 10))`);
-  const distinctAgents = n(`SELECT COUNT(DISTINCT json_extract(agent, '$.client')) n FROM runs WHERE agent IS NOT NULL`);
-
-  return [
-    // ── Trilha I: Caçador do Abismo (Bugs & Bestas Aprisionadas) ──
-    { id: 'first-bug', icon: '🩸', tier: 'bronze', name: 'Primeiro Sangue', hint: 'Abater e catalogar a primeira besta no grimório da fortaleza', progress: `${Math.min(bugs, 1)}/1`, unlocked: bugs >= 1 },
-    { id: 'hunter', icon: '🕷️', tier: 'prata', name: 'Exterminador do Abismo', hint: 'Aprisionar 25 bestas na masmorra da guilda', progress: `${Math.min(bugs, 25)}/25`, unlocked: bugs >= 25 },
-    { id: 'beast-slayer', icon: '⚔️', tier: 'ouro', name: 'Flagelo das Trevas', hint: 'Capturar e desvendar 50 bestas catalogadas no covil', progress: `${Math.min(bugs, 50)}/50`, unlocked: bugs >= 50 },
-    { id: 'reaper', icon: '💀', tier: 'lendario', name: 'Ceifador Arcano do Abismo', hint: 'Alcançar a marca lendária de 100 bestas exterminadas', progress: `${Math.min(bugs, 100)}/100`, unlocked: bugs >= 100 },
-
-    // ── Trilha II: Incursões & Profundezas (Câmaras & Criptas) ──
-    { id: 'crypt-walker', icon: '🕯️', tier: 'bronze', name: 'Explorador da Cripta', hint: 'Conquistar uma masmorra com 10+ câmaras provadas em um único run', progress: `${Math.min(maxScen, 10)}/10`, unlocked: maxScen >= 10 },
-    { id: 'marathon', icon: '🏰', tier: 'prata', name: 'Grande Incursão Profunda', hint: 'Incursão perigosa com 25+ câmaras provadas em combate', progress: `${Math.min(maxScen, 25)}/25`, unlocked: maxScen >= 25 },
-    { id: 'titan-labyrinth', icon: '🏛️', tier: 'ouro', name: 'Labirinto dos Titãs', hint: 'Incursão abissal extrema com 50+ câmaras provadas em um run', progress: `${Math.min(maxScen, 50)}/50`, unlocked: maxScen >= 50 },
-    { id: 'world-scout', icon: '🌌', tier: 'lendario', name: 'Cartógrafo do Infinito', hint: 'Mais de 200 câmaras provadas e purificadas acumuladas pela Ordem', progress: `${Math.min(totalScen, 200)}/200`, unlocked: totalScen >= 200 },
-
-    // ── Trilha III: Triunfo & Mestria Tática (Vitórias & Pureza) ──
-    { id: 'first-victory', icon: '⚜️', tier: 'bronze', name: 'Glória da Ordem', hint: 'Masmorra concluída com veredicto supremo de APROVADO', progress: `${Math.min(approvedRuns, 1)}/1`, unlocked: approvedRuns >= 1 },
-    { id: 'flawless', icon: '👑', tier: 'prata', name: 'Triunfo Imaculado', hint: 'Masmorra de 10+ câmaras conquistada sem nenhuma derrota ou bloqueio', progress: `${Math.min(flawlessRuns, 1)}/1`, unlocked: flawlessRuns >= 1 },
-    { id: 'citadel-champion', icon: '🏆', tier: 'ouro', name: 'Bastião Invencível', hint: 'Conquistar 5 masmorras distintas aprovadas com triunfos soberanos', progress: `${Math.min(approvedRuns, 5)}/5`, unlocked: approvedRuns >= 5 },
-    { id: 'warlord', icon: '🎖️', tier: 'lendario', name: 'Mestre Supremo da Guerra', hint: '10 masmorras conquistadas e purificadas com aprovação da corte', progress: `${Math.min(approvedRuns, 10)}/10`, unlocked: approvedRuns >= 10 },
-    { id: 'retest', icon: '🔁', tier: 'prata', name: 'Expurgo Triunfal', hint: 'Reteste expurgou todas as falhas e purificou o card', progress: `${Math.min(retestsApproved, 1)}/1`, unlocked: retestsApproved >= 1 },
-    { id: 'speedrun', icon: '⚡', tier: 'ouro', name: 'Incursão Relâmpago', hint: 'Masmorra aprovada e purificada em menos de 5 minutos de batalha', progress: `${Math.min(speedRuns, 1)}/1`, unlocked: speedRuns >= 1 },
-
-    // ── Trilha IV: Vigilância, Rituais & Irmandade (Defesa & Comitiva) ──
-    { id: 'clean', icon: '🧹', tier: 'bronze', name: 'Purificador da Ordem', hint: 'Masmorra concluída com todo rastro de dados purificado', progress: `${Math.min(cleanRuns, 1)}/1`, unlocked: cleanRuns >= 1 },
-    { id: 'void-alchemist', icon: '🧪', tier: 'ouro', name: 'Alquimista do Vazio', hint: '5 masmorras com todo rastro de dados expurgado da existência', progress: `${Math.min(cleanRuns, 5)}/5`, unlocked: cleanRuns >= 5 },
-    { id: 'guardian', icon: '🛡️', tier: 'bronze', name: 'Escudo Inabalável', hint: 'Guardião deteve ritual perigoso de ação de risco', progress: `${Math.min(guardBlocks, 1)}/1`, unlocked: guardBlocks >= 1 },
-    { id: 'iron-bastion', icon: '⛩️', tier: 'ouro', name: 'Muralha de Ferro Rúnico', hint: 'Neutralizar 5 rituais de risco iminente na fortaleza', progress: `${Math.min(guardBlocks, 5)}/5`, unlocked: guardBlocks >= 5 },
-    { id: 'squad', icon: '🤝', tier: 'prata', name: 'Comitiva Lendária', hint: 'Dois campeões operaram em batalha no mesmo dia em conjunto', progress: `${Math.min(maxSquad, 2)}/2`, unlocked: maxSquad >= 2 },
-    { id: 'conclave-triad', icon: '🧙‍♂️', tier: 'lendario', name: 'Conclave da Tríade Sagrada', hint: 'Os três campeões lendários (Ladino, Arquimago e Paladino) operando na guilda', progress: `${Math.min(distinctAgents, 3)}/3`, unlocked: distinctAgents >= 3 },
-  ];
 }

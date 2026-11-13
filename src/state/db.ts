@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, renameSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import type { DatabaseSync } from 'node:sqlite';
 import { loadSqlite } from './sqlite.ts';
@@ -274,7 +274,7 @@ const MIGRATIONS: string[] = [
   ALTER TABLE missions ADD COLUMN archived_at TEXT;
   CREATE TABLE hidden_runs (run_id TEXT PRIMARY KEY, hidden_at TEXT NOT NULL);
   `,
-  // 10: histórico de mensagens da conversa direta com o agente na Central de Caça.
+  // 10: histórico de mensagens da conversa direta com o agente no painel do Sanctum.
   `
   CREATE TABLE mission_messages (
     id          INTEGER PRIMARY KEY,
@@ -299,18 +299,75 @@ const MIGRATIONS: string[] = [
   );
   CREATE INDEX us_analyses_issue ON us_analyses(issue_key, created_at);
   `,
+  // 12: exploratório por charter (sessão com foco, tempo e resumo) e a classificação OBSERVATION
+  //     (usabilidade/layout/melhoria: nunca bug, não segura a recomendação).
+  `
+  CREATE TABLE charters (
+    id           INTEGER PRIMARY KEY,
+    run_id       TEXT NOT NULL REFERENCES runs(id),
+    code         TEXT NOT NULL,
+    target       TEXT NOT NULL,
+    persona      TEXT,
+    tours        TEXT NOT NULL,
+    origin       TEXT,
+    timebox_min  INTEGER NOT NULL,
+    status       TEXT NOT NULL CHECK (status IN ('PLANNED','OPEN','CLOSED','SKIPPED')),
+    started_at   TEXT,
+    ended_at     TEXT,
+    summary      TEXT,
+    UNIQUE (run_id, code)
+  );
+  ALTER TABLE scenarios ADD COLUMN charter_code TEXT;
+  DROP TRIGGER scenarios_class_ins;
+  DROP TRIGGER scenarios_class_upd;
+  CREATE TRIGGER scenarios_class_ins BEFORE INSERT ON scenarios
+    WHEN NEW.classification IS NOT NULL AND NEW.classification NOT IN
+      ('PRODUCT_BUG','AUTOMATION_FAILURE','ENVIRONMENT_FAILURE','TEST_DATA_FAILURE','REQUIREMENT_AMBIGUITY','EXPECTED_BEHAVIOR','OBSERVATION','UNKNOWN')
+    BEGIN SELECT RAISE(ABORT, 'classificação inválida'); END;
+  CREATE TRIGGER scenarios_class_upd BEFORE UPDATE OF classification ON scenarios
+    WHEN NEW.classification IS NOT NULL AND NEW.classification NOT IN
+      ('PRODUCT_BUG','AUTOMATION_FAILURE','ENVIRONMENT_FAILURE','TEST_DATA_FAILURE','REQUIREMENT_AMBIGUITY','EXPECTED_BEHAVIOR','OBSERVATION','UNKNOWN')
+    BEGIN SELECT RAISE(ABORT, 'classificação inválida'); END;
+  `,
+  // 13: modo descoberta — perguntas ao usuário antes do plano. O que não dá para deduzir do sistema
+  //     fica em aberto até ser respondido (vira regra com fonte) ou dispensado.
+  `
+  CREATE TABLE questions (
+    id           INTEGER PRIMARY KEY,
+    project      TEXT NOT NULL,
+    run_id       TEXT NOT NULL REFERENCES runs(id),
+    module       TEXT NOT NULL,
+    text         TEXT NOT NULL,
+    options      TEXT,
+    about        TEXT,
+    status       TEXT NOT NULL CHECK (status IN ('OPEN','ANSWERED','DISMISSED')),
+    answer       TEXT,
+    asked_at     TEXT NOT NULL,
+    answered_at  TEXT
+  );
+  CREATE INDEX questions_run ON questions(run_id, status);
+  `,
 ];
 
 /**
  * Banco padrão: data/sanctum.db. Instalação de antes da troca de nome (data/novo-qa.db) é
  * renomeada na primeira abertura; se o arquivo antigo estiver em uso (outro processo aberto),
- * continua nele até a próxima vez.
+ * continua nele até a próxima vez. Um sanctum.db vazio (criado por um processo que subiu no meio
+ * da troca) nunca esconde o banco antigo com dados.
  */
 export function defaultDbPath(root: string): string {
   if (process.env.SANCTUM_DB) return process.env.SANCTUM_DB;
   const path = join(root, 'data', 'sanctum.db');
   const legacy = join(root, 'data', 'novo-qa.db');
-  if (existsSync(path) || !existsSync(legacy)) return path;
+  if (!existsSync(legacy)) return path;
+  if (existsSync(path)) {
+    if (!isEmptyDb(path)) return path;
+    try {
+      for (const ext of ['', '-wal', '-shm']) if (existsSync(path + ext)) unlinkSync(path + ext);
+    } catch {
+      return legacy; // vazio em uso por outro processo: segue no antigo, com os dados
+    }
+  }
   try {
     renameSync(legacy, path);
     for (const ext of ['-wal', '-shm']) if (existsSync(legacy + ext)) renameSync(legacy + ext, path + ext);
@@ -318,6 +375,20 @@ export function defaultDbPath(root: string): string {
   } catch {
     if (existsSync(path) && !existsSync(legacy)) return path;
     return legacy;
+  }
+}
+
+function isEmptyDb(path: string): boolean {
+  const { DatabaseSync } = loadSqlite();
+  let db: DatabaseSync | undefined;
+  try {
+    db = new DatabaseSync(path, { readOnly: true });
+    const n = (sql: string) => { try { return Number((db!.prepare(sql).get() as { n: number }).n); } catch { return 0; } };
+    return n('SELECT COUNT(*) n FROM runs') + n('SELECT COUNT(*) n FROM missions') + n('SELECT COUNT(*) n FROM events') === 0;
+  } catch {
+    return false;
+  } finally {
+    db?.close();
   }
 }
 

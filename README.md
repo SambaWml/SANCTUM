@@ -5,8 +5,8 @@
 <h1 align="center">SANCTUM</h1>
 
 <p align="center">
-  <b>Fortaleza Sagrada de Testes, Auditoria & Conclave Autônomo de QA</b><br>
-  <i>Incursões táticas de qualidade em software operadas por agentes de IA com verificação implacável e aprovação soberana.</i>
+  <b>Agente local de QA operado por IA, com verificação obrigatória e aprovação humana</b><br>
+  <i>Planeja por risco, executa no navegador, explora, prova cada resultado e entrega relatório com evidência.</i>
 </p>
 
 <p align="center">
@@ -14,23 +14,21 @@
   <img src="https://img.shields.io/badge/Playwright-Chromium-f6bd41?style=for-the-badge&logo=playwright&logoColor=black" alt="Playwright">
   <img src="https://img.shields.io/badge/TypeScript-ESM-3b82f6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript">
   <img src="https://img.shields.io/badge/MCP-Server-a855f7?style=for-the-badge" alt="MCP Server">
-  <img src="https://img.shields.io/badge/Status-Santuário%20Blindado-d9383a?style=for-the-badge" alt="Status">
 </p>
 
 ---
 
-## 🛡️ O que é o SANCTUM?
+## O que é o Sanctum
 
-O **SANCTUM** é um agente autônomo e orquestrador local de QA que roda integrado a ferramentas de IA (**Claude Code**, **Google Antigravity** e **Codex local**). 
+O **Sanctum** é um agente e orquestrador local de QA que roda integrado a ferramentas de IA (**Claude Code**, **Antigravity** e **Codex local**).
 
-Ele transforma a garantia de qualidade de software em uma **incursão tática de RPG Dark Fantasy**:
-* **A Comitiva de Campeões:** Seus agentes autônomos de IA (*Arquimago Antigravity*, *Ladino Claude*, *Paladino Codex*) descem às profundezas do sistema, operam o navegador, investigam consoles, inspecionam requisições de rede e catalogam falhas.
-* **O Mestre do Santuário (Você):** Mantém o controle soberano do sistema. Nenhuma ação destrutiva é executada sem autorização, e os planos de teste são aprovados por você com **1 clique**.
-* **Painel Salão de Guerra (Cockpit 16-bit):** Interface tática em tempo real servida localmente (`http://127.0.0.1:4777`), zero-scroll, com gamificação completa, Bestiário de Bugs colecionáveis, cálculo dinâmico da Blindagem da Fortaleza e notificações sonoras e nativas do Windows.
+* **Os agentes testam:** leem o card, planejam por risco, operam o navegador, conferem rede e console, exploram em sessões com foco e prazo e registram cada achado com evidência.
+* **Você decide:** nenhum plano é executado e nenhuma ação de risco acontece sem a sua aprovação.
+* **Painel de operação** (`http://127.0.0.1:4777`): indicadores do período, decisões pendentes, missões em andamento e resultados de cada card.
 
 ---
 
-## ⚡ Regras Sagradas que o Código Garante
+## Regras que o código garante
 
 1. **Nenhum PASSED Sem Prova:** Um cenário de teste só pode ser marcado como `PASSED` se uma asserção for fisicamente executada e registrada pela ferramenta `verify`. Sem verificação, a aprovação é rejeitada pelo núcleo.
 2. **Action Guard & Proteção de Produção:** Ações de risco (*RED*, como pagamentos, exclusões e mutações de banco) são retidas pelo guardião até a autorização explícita do usuário. Em ambientes do tipo `prod`, mutações de escrita são permanentemente bloqueadas.
@@ -49,7 +47,9 @@ Antes de iniciar, certifique-se de possuir em sua máquina:
 * **Agente de IA Suportado:**
   * [Claude Code](https://claude.com/claude-code) (CLI, extensão do VS Code ou Desktop)
   * [Google Antigravity](https://antigravity.google) (com suporte nativo a MCP)
-  * [Codex local](docs/CODEX.md)
+  * [Codex local](docs/agents/clients/codex.md)
+
+Todo agente segue o mesmo roteiro: as regras estão em [AGENTS.md](AGENTS.md) e em [docs/agents/](docs/agents/); os arquivos em `.claude/`, `.agents/` e `.codex/` são só adaptadores. O que muda por cliente está em `docs/agents/clients/`.
 * **Jira / Confluence:** Atlassian MCP conectado ao seu cliente de IA ou TWG local para leitura direta de cards.
 
 ---
@@ -84,7 +84,7 @@ LOJA_HML_ADMIN_PASSWORD='senha_do_admin'
 LOJA_HML_CLIENTE_PASSWORD='senha_do_cliente'
 ```
 
-### 4. Diagnosticar a Saúde do Santuário
+### 4. Diagnosticar a instalação
 Execute o verificador do sistema para garantir que tudo está pronto:
 ```bash
 npm run doctor
@@ -93,39 +93,35 @@ Se tudo estiver correto, o doutor validará Node.js, dependências, Playwright, 
 
 ---
 
-## 🏰 Central de Caça / Salão de Guerra ao Vivo
+## Painel de operação
 
-O SANCTUM possui um painel tático web ao vivo com estética **Dark Fantasy Pixel RPG 16-bit**.
-
-### Iniciar o Painel:
 ```bash
 npm run live
 ```
-Abra em seu navegador: **`http://127.0.0.1:4777`**
+Abra **`http://127.0.0.1:4777`**.
 
-### Funcionalidades do Cockpit:
-* **Salão Tático (Zero-Scroll):** Terminal Tático e Comitiva de Heróis dispostos lado a lado (50%/50%) para visualização simultânea de conversas e logs.
-* **Aprovações Rápidas em 1 Clique:** Detecção inteligente de pedidos de permissão (`write_file`, rituais) com botões rápidos `[✔ AUTORIZAR]` e `[✖ NEGAR]` para prosseguir sem digitação manual.
-* **Covil das Bestas & Grimório:** Cartas de monstros colecionáveis categorizadas por raridade (*Maldito, Espectral, Abissal, Ancestral*) com fotos de evidências e pontuação de dano/XP.
-* **Blindagem da Fortaleza (0-100%):** Medidor dinâmico da saúde da release com base na taxa de sucesso dos cenários provados.
-* **Glórias da Ordem:** Sistema de 20 conquistas e troféus épicos em 4 patamares de dificuldade (*Tier I · Bronze, Tier II · Prata, Tier III · Ouro e Tier IV · Mítico/Lendário*).
-* **Sinais & Notificações:** Áudio sintetizado via Web Audio API (Corneta Heróica e Sino de Sangue da Masmorra) e notificações nativas do Windows com o brasão oficial de SANCTUM.
+* **Indicadores do período** (hoje, 7 ou 30 dias): cards testados, bugs confirmados (e quantos viraram card no Jira), aprovados de primeira, tempo médio por card, cobertura dos critérios de aceite e consumo do Claude. Tudo calculado dos testes registrados; nada estimado.
+* **Precisa de você:** uma fila única com o que trava os agentes — plano para aprovar, permissão de ação de risco, perguntas do modo descoberta, agente esperando resposta, missão que parou e run sem ninguém operando.
+* **Em andamento:** etapa de cada missão e um bloco por cenário (passou, falhou, em revisão).
+* **Resultados:** veredito de cada card, bugs com link do Jira, duração, relatório e reteste.
+* **Agentes e limites**, módulos que mais falham e o conhecimento que espera revisão.
+* **Nova missão** pela tela (Claude ou Antigravity) e conversa com o agente sem sair do painel.
 
 ---
 
-## 🎮 Comandos de Operação via IA
+## Comandos no agente
 
 Dentro do seu agente de IA (Claude Code, Antigravity ou Codex), no diretório do projeto:
 
-| Comando | O que faz no Santuário |
+| Comando | O que faz |
 | :--- | :--- |
-| `/qa CARD-123` | **Incursão Completa:** lê o card no Jira, elabora plano tático por risco, aguarda seu aval, executa no navegador e gera relatório com evidências. |
-| `/qa CARD-123 --explore` | **Reconhecimento Exploratório:** o mesmo fluxo, porém explorando caminhos alternativos, limites de campos e bordas do sistema. |
-| `/qa CARD-123 --automate` | **Incursão com Automação:** ao final da execução manual bem-sucedida, gera e valida testes automatizados Playwright. |
-| `/qa-resume CARD-123` | **Retomada de Expedição:** retoma um teste pausado ou interrompido exatamente da câmara onde parou. |
-| `/retest CARD-123` | **Ritual de Expurgo:** retesta apenas os cenários que falharam no ciclo anterior e compara os resultados. |
-| `/analisar CARD-123` | **Leitura do Pergaminho:** analisa a US antes do teste — lacunas por critério, perguntas ao PO, riscos, melhorias na funcionalidade e rascunho de cenários. Não testa nem publica no Jira. |
-| `/automate CARD-123` | **Forja de Automação:** transforma passos e evidências de um teste manual anterior em suite Playwright. |
+| `/qa CARD-123` | lê o card no Jira, monta o plano por risco, espera a sua aprovação, executa no navegador e gera relatório com evidências. |
+| `/qa CARD-123 --explore` | o mesmo fluxo com sessões exploratórias (charters) em volta do risco. Com uma URL no lugar do card, entra em modo descoberta: mapeia o sistema, pergunta o que não dá para deduzir e só então planeja. |
+| `/qa CARD-123 --automate` | ao final da execução manual bem-sucedida, gera e valida testes automatizados Playwright. |
+| `/qa-resume CARD-123` | retoma um teste interrompido de onde parou. |
+| `/retest CARD-123` | retesta apenas os cenários que falharam no ciclo anterior e compara os resultados. |
+| `/analisar CARD-123` | analisa a US antes do teste — lacunas por critério, perguntas ao PO, riscos, melhorias na funcionalidade e rascunho de cenários. Não testa nem publica no Jira. |
+| `/automate CARD-123` | transforma passos e evidências de um teste manual anterior em suite Playwright. |
 
 ---
 
@@ -195,9 +191,8 @@ SANCTUM/
 ├── src/
 │   ├── browser/             # Sessão Playwright, observadores de rede e console
 │   ├── guard/               # Action Guard (salvaguarda de ações perigosas)
-│   ├── live/                # Servidor do painel tático ao vivo e página HTML 16-bit
-│   │   ├── sanctum-logo.png # Brasão oficial do SANCTUM
-│   │   ├── page.html        # Interface Dark Fantasy Pixel RPG
+│   ├── live/                # Servidor do painel de operação
+│   │   ├── panel.html       # Painel de operação
 │   │   ├── server.ts        # Servidor HTTP local (127.0.0.1:4777)
 │   │   └── state.ts         # Cálculo de métricas, bestiário e 20 glórias multi-tier
 │   ├── mcp/                 # Servidor MCP expondo as ferramentas para os agentes de IA
@@ -209,5 +204,5 @@ SANCTUM/
 ---
 
 <p align="center">
-  <b>SANCTUM</b> · Protegido pela Ordem de QA · <i>Nenhuma falha passa pelo Santuário.</i>
+  <b>Sanctum</b> · agente local de QA
 </p>

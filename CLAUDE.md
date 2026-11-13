@@ -1,20 +1,3 @@
 # Sanctum
 
-Agente local de QA. Você (Claude) é o QA; o código em `src/` fornece ferramentas, estado, segurança e evidência. Arquitetura e decisões: `docs/ARCHITECTURE.md` (leia a seção relevante, não o arquivo todo).
-
-## Regras invioláveis
-- Nunca declare PASS sem verificação executada e registrada.
-- Segredos só como `secret:NOME`; nunca peça senha no chat — peça para colocar no `.env`.
-- Não contorne o Action Guard (nada de scripts Playwright ad-hoc para operar o app).
-- Comportamento observado não vira regra de negócio sem fonte (proveniência).
-
-## Uso
-- `/qa CARD [--explore] [--automate]` ou `/qa <URL> --explore` (missão sem card, qualquer sistema), `/qa-resume CARD`, `/retest CARD`, `/automate CARD`, `/analisar CARD` (análise da US antes do teste: lacunas, perguntas ao PO, melhorias, rascunho de cenários) — skills em `.claude/skills/`; executa em lotes pelo subagente `test-executor` (`.claude/agents/`).
-- Ambiente novo: `env_register` (só acrescenta; criação de dados desligada até o usuário liberar), senha no `.env` (com aspas se tiver `#`), `config_reload`.
-- Saídas: `runs/` (evidências), `reports/` (relatórios), `knowledge/<projeto>/` (execution knowledge e `_staging/` para revisão).
-
-## Desenvolvimento
-- `npm test` · `npm run typecheck` · `npm run doctor` · `npm run storage` (retenção, simulação) · `npm run knowledge <projeto>` (propostas a revisar) · `npm run live` (Central de Caça em http://127.0.0.1:4777: acompanha os agentes e lança missões do Claude pela tela)
-- TypeScript ESM, imports com extensão `.ts`, executado via `tsx`. Testes em `test/` (vitest).
-- SQLite só via `src/state/sqlite.ts`. Toda saída para o modelo passa por `src/security/redact.ts`.
-- Construção por milestones (ARCHITECTURE.md §12): implementar → testar → validar → parar para aprovação.
+Leia `AGENTS.md`: é a fonte das regras, dos fluxos e das convenções de desenvolvimento, igual para todo agente. O que é só do Claude Code está em `docs/agents/clients/claude-code.md` (comandos `/qa`, `/qa-resume`, `/retest`, `/automate`, `/analisar`; subagentes `test-executor`, `test-explorer`; confirmação das ferramentas sensíveis pelo prompt de permissão).

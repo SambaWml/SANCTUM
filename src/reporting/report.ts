@@ -35,7 +35,13 @@ export function buildReport(
 ) {
   const { db, store, cache, rootDir, redactor } = deps;
   const run = store.getRun(runId);
-  const recorded = store.scenarioDetails(runId);
+  // EXP registrado e não explorado é ideia, não cenário: sai da tabela e vai para a sessão (charter).
+  const UNEXPLORED = 'ideia registrada e não explorada';
+  const allRecorded = store.scenarioDetails(runId);
+  const unexplored = allRecorded.filter((s) => s.origin === 'exploratory' && s.status === 'NOT_EXECUTED' && s.reason === UNEXPLORED);
+  const recorded = allRecorded.filter((s) => !unexplored.includes(s));
+  const charters = store.listCharters(runId);
+  const free = run.issue_key.startsWith('EXPLORA-');
 
   const all = (sql: string, ...p: (string | number)[]) => db.prepare(sql).all(...p) as Row[];
   const one = (sql: string, ...p: (string | number)[]) => db.prepare(sql).get(...p) as Row;
@@ -75,6 +81,14 @@ export function buildReport(
   const exploratory = scenarios.filter((s) => s.origin === 'exploratory');
   const executed = count((s) => ['PASSED', 'FAILED', 'BLOCKED', 'NEEDS_REVIEW'].includes(s.status));
   const bugs = scenarios.filter((s) => s.status === 'FAILED' && s.classification === 'PRODUCT_BUG');
+  const observations = scenarios.filter((s) => s.classification === 'OBSERVATION').length
+    + charters.reduce((n, c) => n + (c.summary?.observations?.length ?? 0), 0);
+  const questions = charters.reduce((n, c) => n + (c.summary?.questions?.length ?? 0), 0);
+  const closedCharters = charters.filter((c) => c.status === 'CLOSED');
+  // Missão sem card não tem critério de aceite: o veredito é o que a exploração achou.
+  const explorationVerdict = free
+    ? `Exploração concluída: ${bugs.length} bug(s) confirmado(s), ${observations} observação(ões), ${questions} pergunta(s) em ${closedCharters.length} sessão(ões)`
+    : null;
 
   const guardBlocks = all(`SELECT type, payload FROM events WHERE run_id = ? AND type IN ('guard.block','guard.network_block') ORDER BY id`, runId);
   const approvals = all(`SELECT action, target, level, decision FROM approvals WHERE run_id = ? AND level <> 'PLAN' ORDER BY id`, runId);
@@ -106,8 +120,11 @@ export function buildReport(
     ...(run.parent_run_id ? [`Retest de ${run.parent_run_id}: corrigidos ${fixed} · ainda falham ${stillFailing} · regressões ${regressed}`] : []),
     ...(resolvedLater.length ? [`Aprovados depois em reteste: ${resolvedLater.map((s) => `${s.code} (${resolvedBy.get(s.code)})`).join(', ')}`] : []),
     `Guard: ${guardBlocks.length} bloqueio(s), ${approvals.length} aprovação(ões) RED · Limpeza: ${created.filter((d) => d.cleanup_status === 'VERIFIED').length}/${created.filter((d) => d.cleanup_status !== 'KEPT').length} verificada(s)`,
-    `Recommendation: ${run.recommendation ?? '(run não concluído)'}`,
-    `Teto da recomendação: ${gate.ceiling}${gate.reasons.length ? ` (${gate.reasons.join('; ')})` : ''}`,
+    ...(explorationVerdict ? [explorationVerdict] : [
+      `Recommendation: ${run.recommendation ?? '(run não concluído)'}`,
+      `Teto da recomendação: ${gate.ceiling}${gate.reasons.length ? ` (${gate.reasons.join('; ')})` : ''}`,
+    ]),
+    ...(charters.length ? [`Sessões exploratórias: ${closedCharters.length} de ${charters.length} feitas (${closedCharters.reduce((n, c) => n + (c.summary?.minutes ?? 0), 0)} min)`] : []),
     ...(agent ? [`Agente: ${[agent.client, agent.version && `v${agent.version}`, agent.model].filter(Boolean).join(' · ')}`] : []),
   ].join('\n');
 
@@ -204,9 +221,37 @@ export function buildReport(
     md.push('');
   }
 
-  if (exploratory.length) {
-    md.push('## Exploratórios', '');
-    for (const s of exploratory) md.push(`- **${s.code}**${s.parent_code ? ` (de ${s.parent_code})` : ''} ${s.title} — ${s.status}${s.observed ? `: ${s.observed}` : ''}`);
+  const sessions = charters.map((c) => ({
+    code: c.code, target: c.target, persona: c.persona, origin: c.origin, status: c.status, timeboxMin: c.timeboxMin,
+    minutes: c.summary?.minutes ?? null, overrunMin: c.summary?.overrunMin ?? null, skipped: c.summary?.skipped ?? null, short: c.summary?.short ?? null,
+    planned: c.tours, tours: c.summary?.tours ?? [], covered: c.summary?.covered ?? [],
+    findings: (c.summary?.findings ?? []).filter((code) => !unexplored.some((u) => u.code === code))
+      .map((code) => { const x = scenarios.find((s) => s.code === code); return x ? `${code} ${x.title} — ${x.status}${x.classification ? `/${x.classification}` : ''}` : code; }),
+    ideas: unexplored.filter((u) => (u as ScenarioDetails & { charter_code?: string | null }).charter_code === c.code).map((u) => `${u.code} ${u.title}`),
+    observations: c.summary?.observations ?? [], questions: c.summary?.questions ?? [], notes: c.summary?.notes ?? null,
+  }));
+  const looseIdeas = unexplored.filter((u) => !(u as ScenarioDetails & { charter_code?: string | null }).charter_code).map((u) => `${u.code} ${u.title}`);
+  if (sessions.length) {
+    md.push('## Sessões exploratórias', '');
+    for (const c of sessions) {
+      const time = c.status === 'SKIPPED' ? `não feita: ${c.skipped}` : c.minutes !== null ? `${c.minutes} de ${c.timeboxMin} min${c.overrunMin ? ` (passou ${c.overrunMin} min)` : ''}` : c.status;
+      md.push(`### ${c.code} — ${c.target}`, '', `- ${time}${c.persona ? ` · persona: ${c.persona}` : ''}${c.origin ? ` · foco veio de: ${c.origin}` : ''}`);
+      if (c.short) md.push(`- **Encerrada antes da hora (não conta como exploração feita):** ${c.short}`);
+      if (c.covered.length) md.push(`- Percorrido: ${c.covered.join('; ')}`);
+      if (c.tours.length) md.push(`- Testes aplicados: ${c.tours.join('; ')}`);
+      if (c.findings.length) md.push('- Achados:', ...c.findings.map((x) => `  - ${x}`));
+      if (c.observations.length) md.push('- Observações (não são bugs):', ...c.observations.map((x) => `  - ${x}`));
+      if (c.questions.length) md.push('- Perguntas para o PO:', ...c.questions.map((x) => `  - ${x}`));
+      if (c.ideas.length) md.push(`- Ideias não exploradas: ${c.ideas.join('; ')}`);
+      if (c.notes) md.push(`- Notas: ${c.notes}`);
+      md.push('');
+    }
+  }
+  const legacyExp = exploratory.filter((s) => !charters.some((c) => c.summary?.findings?.includes(s.code)));
+  if (legacyExp.length || looseIdeas.length) {
+    md.push(sessions.length ? '## Outros exploratórios' : '## Exploratórios', '');
+    for (const s of legacyExp) md.push(`- **${s.code}**${s.parent_code ? ` (de ${s.parent_code})` : ''} ${s.title} — ${s.status}${s.observed ? `: ${s.observed}` : ''}`);
+    if (looseIdeas.length) md.push(`- Ideias não exploradas: ${looseIdeas.join('; ')}`);
     md.push('');
   }
 
@@ -265,7 +310,8 @@ export function buildReport(
 
   // Rascunho para o Jira: publicar é ação externa e exige pedido explícito do usuário.
   md.push('## Rascunho de comentário para o Jira (não publicado)', '', '```markdown');
-  md.push(`**QA ${run.recommendation ?? 'em andamento'}** — ${run.issue_key} (${run.env})`, '');
+  md.push(`**QA ${explorationVerdict ? 'exploratório' : run.recommendation ?? 'em andamento'}** — ${run.issue_key} (${run.env})`, '');
+  if (explorationVerdict) md.push(explorationVerdict, '');
   md.push(`PASS ${by('PASSED')} · FAIL ${by('FAILED')} · BLOCKED ${by('BLOCKED')} · NEEDS_REVIEW ${by('NEEDS_REVIEW')} · exploratórios ${exploratory.length}`);
   for (const s of failed) md.push(`- ❌ ${s.code} ${s.title}: ${s.observed ?? ''} (${s.classification})`);
   for (const s of pending) md.push(`- ${STATUS_ICON[s.status]} ${s.code} ${s.title}: ${s.reason ?? ''}`);
@@ -284,6 +330,8 @@ export function buildReport(
     env: run.env,
     mode: run.mode,
     recommendation: run.recommendation,
+    exploration: explorationVerdict,
+    sessions,
     conclusion: run.summary,
     explanations: explanations.map((e) => ({ ...e, severity: severityOf(e.code), jira: jiraOf(e.code) })),
     counts: {

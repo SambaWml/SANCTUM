@@ -41,7 +41,8 @@ export async function createHarness(env: Partial<Environment> = {}): Promise<Har
   const secrets = SecretStore.fromConfig(config, { FIXTURE_ADMIN_PASSWORD: PASSWORD });
   const redactor = new Redactor({ secrets: secrets.valuesForRedaction() });
   const db = openDb(':memory:');
-  const store = new StateStore(db, config);
+  // Os testes da ferramenta não esperam 10 min por sessão: o mínimo de tempo/atividade é zerado (evidência e rastro continuam valendo).
+  const store = new StateStore(db, config, { charterMin: { minutes: 0, activity: 0 } });
   const browser = new BrowserService({ rootDir: root, config, store, secrets, redactor });
   const client = await connect({ store, redactor, rootDir: root, config, db, secrets, browser, automationBaseUrl: fixture.url });
 

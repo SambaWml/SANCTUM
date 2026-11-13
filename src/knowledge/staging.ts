@@ -97,3 +97,39 @@ export function promoteStaging(rootDir: string, project: string, module: string,
   rmSync(stagingPath);
   return { file: `knowledge/${project}/modules/${module}.yaml`, promoted: fresh.length, total: next.statements.length };
 }
+
+/**
+ * O que os testes anteriores aprenderam e ainda não foi revisado. Antes só o conhecimento promovido
+ * voltava para o agente, e nada era promovido (auditoria 12/11: 100+ aprendizados parados em 13
+ * módulos): agora entra no Context Package marcado como "não revisado".
+ */
+export function loadStaging(rootDir: string, project: string): { module: string; proposals: ProposedStatement[] }[] {
+  const dir = join(projectDir(rootDir, project), '_staging');
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir).filter((f) => f.endsWith('.yaml')).flatMap((f) => {
+    try {
+      const doc = parse(readFileSync(join(dir, f), 'utf8')) as { module?: string; proposals?: ProposedStatement[] };
+      return doc?.module ? [{ module: doc.module, proposals: doc.proposals ?? [] }] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/**
+ * Regra afirmada pelo usuário (resposta a uma pergunta do modo descoberta). É o único caminho pelo
+ * qual uma fonte "manual" entra sem edição de arquivo — e só é chamado por question_answer, que
+ * exige a confirmação do usuário a cada chamada.
+ */
+export function addUserRule(rootDir: string, project: string, module: string, statement: string, reference: string): { file: string; added: boolean } {
+  const dir = join(projectDir(rootDir, project), '_staging');
+  mkdirSync(dir, { recursive: true });
+  const path = join(dir, `${module}.yaml`);
+  const current = existsSync(path) ? ((parse(readFileSync(path, 'utf8')) as { proposals?: ProposedStatement[] })?.proposals ?? []) : [];
+  const entry: ProposedStatement = { statement, kind: 'business_rule', status: 'CONFIRMED', confidence: 'HIGH', source: { type: 'manual', reference } };
+  const check = ModuleFile.safeParse({ module, summary: 'validação de regra do usuário', source: entry.source, statements: [entry] });
+  if (!check.success) throw new KnowledgeError(`regra recusada: ${check.error.issues.map((i) => i.message).join('; ')}`);
+  const added = !current.some((p) => p.statement === statement);
+  if (added) writeFileSync(path, stringify({ module, reviewed: false, proposals: [...current, entry] }, { lineWidth: 0 }));
+  return { file: `knowledge/${project}/_staging/${module}.yaml`, added };
+}

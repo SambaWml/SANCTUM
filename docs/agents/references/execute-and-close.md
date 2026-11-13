@@ -1,19 +1,18 @@
 # Execução, limpeza, aprendizado e fechamento
 
-Vale para /qa, /qa-resume e /retest, com o plano já aprovado (run EXECUTING).
+Vale para os fluxos qa, qa-resume e retest, com o plano já aprovado (run EXECUTING).
 
 ## Execução em lotes
 Repita até `batch_brief` voltar vazio:
 1. `batch_brief(runId)`.
-2. Delegue o lote de acordo com o modo da missão:
-   - **Missão de Reconhecimento / Exploratória (`explore` ou URL sem card)**: A expedição inteira é comandada pelo subagente `test-explorer` (veja `references/exploratory.md`). Ele tem carta branca para desvio de rota, ataques de caos, injeção de falhas com `network_simulate` e geração dinâmica de novos cenários via `scenario_add`.
-   - **Missão Regular de Card (`qa` / `retest`)**:
-     * Cenários funcionais regulares e de regressão: delegue ao subagente `test-executor` com `runId`, códigos e orientações específicas.
-     * Com `--explore` ou cenários de risco exploratório (`EXP-*`): delegue a bateria exploratória ao subagente `test-explorer` para caça agressiva nas bordas e vulnerabilidades do sistema.
-   Não copie o briefing: os subagentes chamam `batch_brief`. Cenário com `resume` no briefing continua de onde parou.
+2. Entregue o lote ao papel certo (um contexto separado, se o cliente tiver; senão você mesmo, no mesmo ciclo):
+   - **Cenários (CT-*, regressões, EXP ligados a um CT)** → papel **executor** (`roles/executor.md`), com `runId` e os códigos do lote.
+   - **Sessões exploratórias (charters)** → papel **explorador** (`roles/explorer.md`), uma sessão por vez, com `charter_start`/`charter_end` (`references/exploratory.md`). Os testes da sessão são só os de `exploration.tours.allowed`; o foco é o do charter.
+   - Missão sem card: os CTs de linha de base vão ao executor; as sessões, ao explorador.
+   Não copie o briefing: quem executa chama `batch_brief`. Cenário com `resume` no briefing continua de onde parou.
 3. Leia o resumo devolvido. Anomalia sem explicação → decida se vira exploratório (`scenario_add`) no próximo lote. Pedido de aprovação RED → pergunte ao usuário antes de mandar seguir.
 
-Padrão Sanctum: todo teste termina com exploração registrada — pelo menos 1 EXP executado em volta do risco maior (3 no exploratório), criados com `scenario_add` durante a execução (ver `references/plan-example.md`, seção EXP). Sem isso o `run_complete` pede `noExplorationReason`. Em missões com `--explore`, certifique-se de que o `test-explorer` explore profundamente as frestas, dados caóticos e falhas invisíveis de console/network antes de concluir.
+Padrão Sanctum: teste de card (modo manual) termina com ao menos 1 sessão exploratória (charter) fechada em volta do risco maior; exploratório, ao menos 2; reteste e automação não exigem. Quando os lotes acabam, o `batch_brief` devolve `exploration` com os charters que faltam, os testes que o ambiente permite, os focos da análise e os bugs conhecidos: entregue cada sessão ao papel explorador (`references/exploratory.md`). Charter planejado que não deu para fazer: `charter_end` com `skipReason`. Sem sessão fechada o `run_complete` pede `noExplorationReason`. EXP registrado e não explorado vira "ideia não explorada" no relatório (não segura o fechamento).
 
 ## Limpeza
 `cleanup_run(runId)`. Itens `unregistered` → `data_register` (api/manual com `verify`, ou `keep` com motivo). Repita até tudo VERIFIED ou KEPT.
@@ -22,7 +21,7 @@ Padrão Sanctum: todo teste termina com exploração registrada — pelo menos 1
 `knowledge_propose` só com o que vale para o próximo card do módulo: regras com fonte documental, comportamentos observados (OBSERVED), riscos, regressões. Bug nunca vira regra.
 
 ## Fechamento
-Recomendação: REPROVADO se houver PRODUCT_BUG em P0/P1 ou critério de aceite violado; INCONCLUSIVO se P0/P1 BLOCKED/NEEDS_REVIEW; senão APROVADO. O `run_complete` recusa recomendação acima do teto calculado pelos cenários (e reclassificar depois de concluído rebaixa a recomendação, se preciso). `run_complete(runId, recommendation, summary)` → `report_build(runId, explanations, summaries)`:
+Recomendação: REPROVADO se houver PRODUCT_BUG em P0/P1 ou critério de aceite violado; INCONCLUSIVO se P0/P1 BLOCKED/NEEDS_REVIEW (OBSERVATION não segura); senão APROVADO. Missão sem card (EXPLORA-*) não tem recomendação: o relatório mostra os achados, observações e perguntas das sessões. O `run_complete` recusa recomendação acima do teto calculado pelos cenários (e reclassificar depois de concluído rebaixa a recomendação, se preciso). `run_complete(runId, recommendation, summary)` → `report_build(runId, explanations, summaries)`:
 - `explanations`: um item por problema (FAILED e divergências relevantes) em linguagem simples para quem não acompanhou: passo a passo numerado para ver, o que acontece (com números e o que a API devolve), o que o card pede e ressalvas (ex.: verificação reprovada que foi erro de automação, dúvida para o PO); `severity` e, se virou card, `jira`.
 - `summaries` (obrigatório, **todos** os cenários, inclusive os que passaram): veredito, o que foi visto em linguagem de quem não conhece o sistema, para onde olhar; `severity` nos achados (alta/media/baixa/nao-bug) e `jira` quando houver card. O HTML monta com isso o bloco "Em palavras simples", o filtro de severidade e o selo "Bug criado". Se `missingSummaries` voltar com códigos, complete antes de mostrar o relatório.
 - Card de bug criado ou achado reclassificado depois: chame `report_build` de novo com `summaries` só dos códigos que mudaram (somam por código).

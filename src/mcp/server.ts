@@ -11,6 +11,7 @@ import { registerAnalysisTools } from './tools/analysis.ts';
 import { registerAutomationTools } from './tools/automation.ts';
 import { registerBrowserTools } from './tools/browser.ts';
 import { registerContextTools } from './tools/context.ts';
+import { registerDiscoveryTools } from './tools/discovery.ts';
 import { registerEnvTools } from './tools/env.ts';
 import { registerJiraTools } from './tools/jira.ts';
 import { registerQaTools } from './tools/qa.ts';
@@ -62,6 +63,7 @@ export function createServer(deps: ServerDeps): McpServer {
     registerQaTools(tool, full);
     registerJiraTools(tool, { db: deps.db, rootDir: deps.rootDir });
     registerEnvTools(tool, { rootDir: deps.rootDir });
+    registerDiscoveryTools(tool, { store: deps.store, rootDir: deps.rootDir });
     registerAnalysisTools(tool, { db: deps.db, rootDir: deps.rootDir, cardOf, agent: () => server.server.getClientVersion()?.name ?? null });
     registerAutomationTools(tool, full);
   }

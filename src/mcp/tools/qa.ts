@@ -5,6 +5,7 @@ import { reloadConfig } from '../../config/runtime.ts';
 import type { Config } from '../../config/schema.ts';
 import { executionHints } from '../../knowledge/execution.ts';
 import { proposeKnowledge, ProposedStatement } from '../../knowledge/staging.ts';
+import { loadSystemMap, mapIndex } from '../../knowledge/system-map.ts';
 import { computeRunMetrics, formatMetrics } from '../../metrics/run-metrics.ts';
 import { ingestTranscripts } from '../../metrics/transcripts.ts';
 import { buildReport, SEVERITIES } from '../../reporting/report.ts';
@@ -13,6 +14,7 @@ import type { SecretStore } from '../../security/secrets.ts';
 import type { DigestCache, JiraDigest } from '../../sources/digest.ts';
 import type { Db } from '../../state/db.ts';
 import { planCoverage } from '../../state/coverage.ts';
+import { explorationBrief } from '../../state/exploration.ts';
 import { StateError, type StateStore } from '../../state/store.ts';
 import { ToolContent, type RegisterTool } from '../tooling.ts';
 
@@ -48,12 +50,21 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
       const run = store.getRun(a.runId);
       const batch = store.nextBatch(run.id, config.policy.execution.batchSize);
       const status = store.runStatus(run.id);
-      if (batch.length === 0) return { runId: run.id, progress: status.progress, batch: [], note: 'nenhum cenário pendente' };
-
       const env = config.environments[run.env]!;
-      const modules = JSON.parse(run.modules) as string[];
       const digest = cache.get('jira', run.issue_key, undefined, { internal: true });
       const issue = digest.hit ? (digest.digest as JiraDigest) : undefined;
+      const charters = store.listCharters(run.id);
+      const pendingCharters = charters.filter((c) => c.status === 'PLANNED' || c.status === 'OPEN');
+      // Exploração: charters (planejados ou aberto), testes que o ambiente permite, focos e bugs conhecidos.
+      const exploration = pendingCharters.length || run.mode === 'explore'
+        ? { ...explorationBrief(deps.db, { issueKey: run.issue_key, env, charters, issue, now: new Date() }), ...(() => { const m = loadSystemMap(rootDir, run.project); return m ? { systemMap: mapIndex(m) } : {}; })() } : undefined;
+      if (batch.length === 0) {
+        return exploration && pendingCharters.length
+          ? new ToolContent([{ type: 'text', text: stringify({ runId: run.id, progress: status.progress, batch: [], note: 'cenários concluídos; faltam sessões exploratórias', exploration }, { lineWidth: 0 }) }])
+          : { runId: run.id, progress: status.progress, batch: [], note: 'nenhum cenário pendente' };
+      }
+
+      const modules = JSON.parse(run.modules) as string[];
       const brief = {
         run: { id: run.id, issue: run.issue_key, mode: run.mode, progress: status.progress },
         environment: { id: run.env, type: env.type, allowDataCreation: env.allowDataCreation, roles: Object.keys(env.roles), ...(env.notes ? { notes: env.notes } : {}) },
@@ -75,6 +86,7 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
           steps: s.steps, expected: s.expected,
         })),
         ...(a.compact ? {} : { executionKnowledge: executionHints(rootDir, run.project, modules) }),
+        ...(exploration ? { exploration } : {}),
       };
       store.logEvent(run.id, null, 'batch.brief', { codes: batch.map((s) => s.code) });
       return new ToolContent([{ type: 'text', text: stringify(brief, { lineWidth: 0 }) }]);
@@ -93,6 +105,13 @@ export function registerQaTools(tool: RegisterTool, deps: QaDeps): void {
         scenarios: store.scenarioDetails(run.id).map((s) =>
           `${s.code} [${s.priority}/${s.risk}] ${s.title} — ${s.status}${s.classification ? ` (${s.classification})` : ''}`),
         ...coverageOf(run.issue_key, store.scenarioDetails(run.id)),
+        ...(() => {
+          const charters = store.listCharters(run.id);
+          return charters.length ? {
+            charters: charters.map((c) => `${c.code} ${c.target} — ${c.status} · ${c.timeboxMin} min · testes: ${c.tours.join('; ')}` +
+              `${c.summary?.findings?.length ? ` · achados: ${c.summary.findings.join(', ')}` : ''}`),
+          } : {};
+        })(),
       };
       return new ToolContent([{ type: 'text', text: stringify(view, { lineWidth: 0 }) }]);
     },

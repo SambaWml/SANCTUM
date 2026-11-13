@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config/load.ts';
 import type { Environment } from '../src/config/schema.ts';
 import { classifyAction } from '../src/guard/classify.ts';
-import { decide } from '../src/guard/guard.ts';
+import { decide, isMutation } from '../src/guard/guard.ts';
 import { CleanupSpec, extractId } from '../src/state/cleanup.ts';
 
 const config = loadConfig(join(import.meta.dirname, '..'));
@@ -122,5 +122,18 @@ describe('hook guard-shell', async () => {
     ]) {
       expect(check(cmd), cmd).toBeNull();
     }
+  });
+});
+
+describe('isMutation: telemetria não é dado criado', () => {
+  const e = env({});
+  it('beacons de desempenho/analytics no domínio do app não contam; escrita de verdade conta', () => {
+    for (const path of ['/cdn-cgi/rum', '/cdn-cgi/challenge-platform/h/b/jsd/r/1', '/_vercel/insights/event', '/api/telemetry', '/g/collect']) {
+      expect(isMutation('POST', path, e, config.policy)).toBe(false);
+    }
+    for (const path of ['/api/students', '/api/events/12', '/api/rum-cocktails']) {
+      expect(isMutation('POST', path, e, config.policy)).toBe(true);
+    }
+    expect(isMutation('GET', '/api/students', e, config.policy)).toBe(false);
   });
 });

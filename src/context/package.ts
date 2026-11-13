@@ -5,6 +5,9 @@ import { isEnvRef } from '../config/load.ts';
 import type { Config } from '../config/schema.ts';
 import { latestUsAnalysis } from '../analysis/us-analysis.ts';
 import { loadModules, matchModules, projectDir, projectSummary } from '../knowledge/modules.ts';
+import { loadStaging } from '../knowledge/staging.ts';
+import { loadSystemMap, mapIndex } from '../knowledge/system-map.ts';
+import { normalize } from '../guard/classify.ts';
 import { type DigestCache, type JiraDigest } from '../sources/digest.ts';
 import type { Db } from '../state/db.ts';
 import { FREE_MISSION_PREFIX } from '../state/store.ts';
@@ -82,6 +85,25 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string, options
     };
   });
 
+  // Aprendido em testes anteriores e ainda não revisado: volta para o agente marcado como tal (antes só o
+  // promovido voltava, e nada era promovido). Card: só os módulos que casam; missão sem card: todos.
+  const haystack = ` ${normalize([issue.title, ...issue.components, ...issue.labels].join(' ')).replace(/[^\p{L}\p{N}]+/gu, ' ')} `;
+  const staged = loadStaging(rootDir, projectId).filter((s) => s.proposals.length);
+  const stagedMatched = free ? staged : staged.filter((s) => haystack.includes(` ${normalize(s.module.replace(/-/g, ' '))} `));
+  const rank = { business_rule: 0, risk: 1, regression: 2, permission: 3, behavior: 4 } as Record<string, number>;
+  const unreviewed = stagedMatched.map((s) => ({
+    name: s.module,
+    file: `knowledge/${projectId}/_staging/${s.module}.yaml`,
+    total: s.proposals.length,
+    // O que mais muda o plano primeiro: regras confirmadas pelo usuário, riscos e regressões.
+    statements: [...s.proposals].sort((a, b) => (rank[a.kind] ?? 9) - (rank[b.kind] ?? 9)).slice(0, free ? 4 : 10)
+      .map((p) => `[${p.kind}/${p.status}] ${p.statement}`),
+  }));
+  const map = loadSystemMap(rootDir, projectId);
+  const questions = (db.prepare(`SELECT text, status, answer, run_id FROM questions WHERE project = ? AND (status = 'OPEN' OR status = 'DISMISSED') ORDER BY id DESC LIMIT 12`)
+    .all(projectId) as { text: string; status: string; answer: string | null; run_id: string }[])
+    .map((q) => `[${q.status === 'OPEN' ? 'em aberto' : `dispensada: ${q.answer}`}] ${q.text}`);
+
   // O que o card referencia e ainda não está em cache: candidatos a buscar, se necessário.
   const linked = issue.links.map((l) => ({ key: l.key, relation: l.relation, cached: cache.cachedVersion('jira', l.key) !== undefined }));
   const confluence = issue.confluence.map((c) => ({ ref: c.ref, title: c.title, cached: cache.cachedVersion('confluence', c.ref) !== undefined }));
@@ -117,6 +139,9 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string, options
     knowledge: {
       modulesAvailable: valid.map((m) => m.module),
       matched: modules,
+      // Não revisado por humano: use para planejar e explorar, mas trate como pista, não como regra (salvo CONFIRMED de fonte manual, que o usuário afirmou).
+      ...(unreviewed.length ? { unreviewed } : {}),
+      ...(staged.length && !unreviewed.length ? { unreviewedModules: staged.map((s) => s.module) } : {}),
       ...(loaded.some((l) => l.error) ? { invalidFiles: loaded.filter((l) => l.error).map((l) => `${l.file}: ${l.error}`) } : {}),
     },
     references: {
@@ -127,6 +152,9 @@ export function buildContextPackage(deps: ContextDeps, issueKey: string, options
     },
     history,
     ...(analysis ? { analysis } : {}),
+    // Mapa do sistema (modo descoberta): onde ficam as coisas. Detalhe de uma tela: leia o arquivo.
+    ...(map ? { systemMap: mapIndex(map) } : { systemMap: null }),
+    ...(questions.length ? { pendingQuestions: questions } : {}),
   };
 }
 

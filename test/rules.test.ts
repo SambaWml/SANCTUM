@@ -200,3 +200,20 @@ describe('teto da recomendação do run', () => {
     expect(recommendationCeiling([]).ceiling).toBe('INCONCLUSIVO');
   });
 });
+
+describe('OBSERVATION (usabilidade, layout, texto, melhoria)', () => {
+  it('vale com NEEDS_REVIEW ou PASSED, nunca como falha, e não segura a recomendação', () => {
+    expect(evaluateCompletion({ status: 'NEEDS_REVIEW', classification: 'OBSERVATION', reason: 'tabela estoura em 1440' }, facts()).ok).toBe(true);
+    expect(evaluateCompletion({ status: 'PASSED', classification: 'OBSERVATION' }, facts({ verifications: [v('ui')] })).ok).toBe(true);
+    expect(problems(evaluateCompletion({ status: 'FAILED', classification: 'OBSERVATION', observed: 'x' },
+      facts({ verifications: [v('ui', false)], evidenceCount: 1 })))).toMatch(/OBSERVATION .* não é falha/);
+    const ceiling = recommendationCeiling([{ code: 'CT-001', priority: 'P0', status: 'PASSED', classification: null },
+      { code: 'EXP-001', priority: 'P1', status: 'NEEDS_REVIEW', classification: 'OBSERVATION' }]);
+    expect(ceiling.ceiling).toBe('APROVADO');
+  });
+
+  it('NEEDS_REVIEW com EXPECTED_BEHAVIOR é contraditório', () => {
+    expect(problems(evaluateCompletion({ status: 'NEEDS_REVIEW', classification: 'EXPECTED_BEHAVIOR', reason: 'menu recolhido' }, facts())))
+      .toMatch(/contraditório: se é o esperado, PASSED; se é usabilidade\/layout\/melhoria, OBSERVATION/);
+  });
+});

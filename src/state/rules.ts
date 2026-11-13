@@ -14,6 +14,8 @@ export const CLASSIFICATIONS = [
   'TEST_DATA_FAILURE',
   'REQUIREMENT_AMBIGUITY',
   'EXPECTED_BEHAVIOR',
+  /** Usabilidade, layout, texto, melhoria: registrado para o PO, nunca bug e não segura a recomendação. */
+  'OBSERVATION',
   'UNKNOWN',
 ] as const;
 export type Classification = (typeof CLASSIFICATIONS)[number];
@@ -122,7 +124,7 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
       if (critical && facts.wroteData && !latestPassed.some((v) => isStrong(v.kind))) {
         problems.push(`${facts.priority} com escrita de dados exige verificação forte aprovada (network, api ou persistence)`);
       }
-      if (req.classification && req.classification !== 'EXPECTED_BEHAVIOR') {
+      if (req.classification && req.classification !== 'EXPECTED_BEHAVIOR' && req.classification !== 'OBSERVATION') {
         problems.push(`PASSED não aceita classificação ${req.classification}`);
       }
       break;
@@ -135,6 +137,8 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
         problems.push('FAILED exige classificação');
       } else if (req.classification === 'EXPECTED_BEHAVIOR') {
         problems.push('EXPECTED_BEHAVIOR não é falha — use PASSED ou NEEDS_REVIEW');
+      } else if (req.classification === 'OBSERVATION') {
+        problems.push('OBSERVATION (usabilidade, layout, texto, melhoria) não é falha — use NEEDS_REVIEW ou PASSED com OBSERVATION');
       } else if (req.classification === 'REQUIREMENT_AMBIGUITY') {
         problems.push('ambiguidade de requisito não é falha — use NEEDS_REVIEW');
       } else if (req.classification === 'PRODUCT_BUG') {
@@ -157,6 +161,10 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
     case 'NEEDS_REVIEW':
     case 'NOT_EXECUTED': {
       if (!req.reason?.trim()) problems.push(`${req.status} exige "reason"`);
+      // "Em revisão, mas é o esperado" é contraditório (auditoria do exploratório 09/11: 10 casos de layout/UX).
+      if (req.status === 'NEEDS_REVIEW' && req.classification === 'EXPECTED_BEHAVIOR') {
+        problems.push('NEEDS_REVIEW com EXPECTED_BEHAVIOR é contraditório: se é o esperado, PASSED; se é usabilidade/layout/melhoria, OBSERVATION; se falta regra, REQUIREMENT_AMBIGUITY');
+      }
       break;
     }
   }
@@ -181,7 +189,7 @@ export function evaluateCompletion(req: CompletionRequest, facts: CompletionFact
  * Teto da recomendação do run (execute-and-close.md): o agente escolhe, o core limita.
  * Ordem APROVADO > INCONCLUSIVO > REPROVADO; vale qualquer recomendação igual ou abaixo do teto.
  * PRODUCT_BUG em P0/P1 → REPROVADO; P0/P1 FAILED (sem bug), BLOCKED ou NEEDS_REVIEW (salvo
- * EXPECTED_BEHAVIOR) → INCONCLUSIVO; P0/P1 PASSED com confiança LOW → INCONCLUSIVO; sem nenhum
+ * EXPECTED_BEHAVIOR/OBSERVATION) → INCONCLUSIVO; P0/P1 PASSED com confiança LOW → INCONCLUSIVO; sem nenhum
  * PASSED → INCONCLUSIVO. P2/P3 e NOT_EXECUTED (exige motivo) não travam.
  */
 export const RECOMMENDATIONS = ['REPROVADO', 'INCONCLUSIVO', 'APROVADO'] as const;
@@ -203,7 +211,7 @@ export function recommendationCeiling(scenarios: RecommendationFact[]): { ceilin
     return { ceiling: 'REPROVADO', reasons: bugs.map((s) => `${s.code} (${s.priority}) FAILED/PRODUCT_BUG`) };
   }
   const open = critical.filter((s) =>
-    s.status === 'FAILED' || s.status === 'BLOCKED' || (s.status === 'NEEDS_REVIEW' && s.classification !== 'EXPECTED_BEHAVIOR'));
+    s.status === 'FAILED' || s.status === 'BLOCKED' || (s.status === 'NEEDS_REVIEW' && s.classification !== 'EXPECTED_BEHAVIOR' && s.classification !== 'OBSERVATION'));
   const reasons = open.map((s) => `${s.code} (${s.priority}) ${s.status}${s.classification ? `/${s.classification}` : ''}`);
   // Aprovado raso não sustenta aprovação do card (auditoria 09/11: 52 de 198 PASSED eram LOW).
   for (const s of critical.filter((x) => x.status === 'PASSED' && x.confidence === 'LOW')) {

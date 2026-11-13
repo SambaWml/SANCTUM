@@ -174,7 +174,10 @@ export class BrowserService {
 
   async open(input: { runId: string; role?: string; headed?: boolean; fresh?: boolean }) {
     const run: RunRow = this.deps.store.getRun(input.runId);
-    if (run.status !== 'EXECUTING') throw new BrowserError(`run está ${run.status}; o navegador só abre com plano aprovado`);
+    // Reconhecimento (modo descoberta): em missão exploratória o navegador abre antes do plano, só para leitura —
+    // é mapeando que se descobre o que perguntar e o que planejar. O guard segura tudo que não for GREEN (ver act).
+    const recon = run.mode === 'explore' && (run.status === 'PLANNING' || run.status === 'AWAITING_APPROVAL');
+    if (run.status !== 'EXECUTING' && !recon) throw new BrowserError(`run está ${run.status}; o navegador só abre com plano aprovado (em missão exploratória, abre antes só para leitura)`);
     const env = this.deps.config.environments[run.env]!;
     const baseUrl = resolveValue(env.baseUrl);
     if (!baseUrl) throw new BrowserError(`baseUrl do ambiente ${run.env} não definida — preencha o .env`);
@@ -226,7 +229,7 @@ export class BrowserService {
     // (A limpeza usa context.request, que não passa por aqui.)
     await context.route('**/*', async (route) => {
       const req = route.request();
-      // A Central de Caça aprova os pedidos do agente: o navegador do teste nunca chega nela
+      // O painel do Sanctum aprova os pedidos do agente: o navegador do teste nunca chega nela
       // (senão o agente poderia clicar em "Permitir" nos próprios pedidos).
       if (isLivePanel(new URL(req.url()), this.deps.rootDir)) return route.abort('blockedbyclient');
       // Simulação (CA de estados de erro/carregamento): responde no navegador, sem chegar ao servidor.
@@ -235,6 +238,7 @@ export class BrowserService {
         if (sim.remaining > 0) sim.remaining--;
         sim.hits++;
         if (sim.delayMs) await new Promise((r) => setTimeout(r, sim.delayMs));
+        if (sim.abort || sim.status !== undefined) session.net.markSimulated(req);
         if (sim.abort) return route.abort('failed');
         if (sim.status !== undefined) {
           return route.fulfill({ status: sim.status, contentType: 'application/json', body: sim.body ?? JSON.stringify({ error: `simulado pelo Sanctum (${sim.status})` }) });
@@ -244,7 +248,9 @@ export class BrowserService {
       const url = new URL(req.url());
       // DELETE: barrado em todo ambiente. Demais alterações: barradas onde a política manda (prod).
       const mutation = this.appRequest(session, url, req.headers()) && isMutation(req.method(), url.pathname, session.env, this.deps.config.policy);
-      const blockMutation = mutation && this.deps.config.policy.guard.mutationPolicy[session.env.type] === 'block';
+      // Reconhecimento antes do plano é só leitura: nada grava, nem por Enter/marcar opção (auditoria 13/11).
+      const blockMutation = mutation && (this.deps.config.policy.guard.mutationPolicy[session.env.type] === 'block'
+        || this.deps.store.getRun(session.runId).status !== 'EXECUTING');
       if (session.redApproved || (req.method() !== 'DELETE' && !blockMutation)) return route.continue();
       session.blocked.push({ method: req.method(), path: url.pathname + url.search, ts: Date.now() });
       const code = this.session === session ? this.currentScenario() : null;
@@ -385,6 +391,7 @@ export class BrowserService {
   }
 
   async onScenarioStart(runId: string, code: string) {
+    if (this.session?.runId === runId) this.session.simulations = []; // simulação da sessão exploratória não vaza para o cenário
     if (this.session?.runId !== runId || this.session.traceCode === code) return;
     await this.startTraceChunk(code);
   }
@@ -414,7 +421,7 @@ export class BrowserService {
       throw new BrowserError(`URL recusada (${url.protocol}): só http(s) ou caminho relativo ao ambiente`);
     }
     if (isLivePanel(url, this.deps.rootDir)) {
-      throw new BrowserError('URL recusada: é a Central de Caça do próprio Sanctum, onde o usuário aprova os pedidos do agente — não pode ser testada pelo agente');
+      throw new BrowserError('URL recusada: é o painel do próprio Sanctum, onde o usuário aprova os pedidos do agente — não pode ser testada pelo agente');
     }
     return url;
   }
@@ -506,14 +513,22 @@ export class BrowserService {
     const session = this.s;
     if (input.status === undefined && !input.abort && !input.delayMs) throw new BrowserError('informe status, abort ou delayMs');
     const code = this.currentScenario();
-    if (!code) throw new BrowserError('simulação só dentro de um cenário (scenario_start antes)');
+    // Fora de cenário, só numa sessão exploratória aberta (auditoria 12/11: o explorador não conseguia simular
+    // erro de rede sem antes criar um EXP). A simulação da sessão acaba ao iniciar um cenário ou fechar a sessão.
+    const charter = code ? undefined : this.deps.store.listCharters(session.runId).find((c) => c.status === 'OPEN');
+    if (!code && !charter) throw new BrowserError('simulação só dentro de um cenário (scenario_start antes) ou de uma sessão exploratória aberta (charter_start)');
     const sim: Simulation = {
       urlContains: input.urlContains, method: input.method?.toUpperCase(), status: input.status, body: input.body,
       delayMs: input.delayMs, abort: input.abort, remaining: input.times ?? -1, hits: 0,
     };
     session.simulations.push(sim);
-    this.deps.store.logEvent(session.runId, this.scenarioId(code), 'network.simulate', { ...sim, body: sim.body?.slice(0, 200) });
+    this.deps.store.logEvent(session.runId, this.scenarioId(code), 'network.simulate', { ...sim, body: sim.body?.slice(0, 200), ...(charter ? { charter: charter.code } : {}) });
     return { active: session.simulations.map(describeSimulation) };
+  }
+
+  /** Fim da sessão exploratória: nenhuma simulação sobrevive a ela. */
+  onCharterEnd(runId: string): void {
+    if (this.session?.runId === runId) this.session.simulations = [];
   }
 
   clearSimulations() {
@@ -545,7 +560,11 @@ export class BrowserService {
 
     const locator = await resolveOne(page, input.target);
     const { level, reason } = classifyAction(input.action, await this.semanticText(locator, input.target), this.deps.config.policy);
-    const decision = decide(level, session.env, this.deps.config.policy, approval !== undefined);
+    // Antes da aprovação do plano só vale olhar: nada que crie, altere ou seja de risco, nem com aprovação avulsa.
+    const recon = this.deps.store.getRun(session.runId).status !== 'EXECUTING';
+    const decision = recon && level !== 'GREEN'
+      ? { allowed: false as const, needsApproval: false, reason: 'reconhecimento é só leitura: esta ação fica para depois do plano aprovado (anote no mapa como ação da tela)' }
+      : decide(level, session.env, this.deps.config.policy, approval !== undefined);
     if (!decision.allowed) {
       this.deps.store.recordAction(session.runId, code, {
         action: input.action, target: input.target, guardLevel: level, ok: false,
@@ -745,10 +764,22 @@ export class BrowserService {
   }
 
   private loopWarning(code: string | null): string | undefined {
-    if (!code) return undefined;
+    const charter = this.charterOverdue();
+    if (!code) return charter;
     const load = this.deps.store.scenarioLoad(this.scenarioId(code)!);
-    return load.level === 'ok' ? undefined
+    const loop = load.level === 'ok' ? undefined
       : `${code} já tem ${load.actions} ações e ${load.verifications} verificações nesta tentativa — se está repetindo a mesma coisa, conclua (NEEDS_REVIEW/BLOCKED) ou peça orientação`;
+    return [loop, charter].filter(Boolean).join(' · ') || undefined;
+  }
+
+  /** Sessão exploratória além do prazo: lembra de fechar (o tempo da sessão é o que o usuário aprovou). */
+  private charterOverdue(): string | undefined {
+    const runId = this.session?.runId;
+    if (!runId) return undefined;
+    const open = this.deps.store.listCharters(runId).find((c) => c.status === 'OPEN');
+    if (!open?.startedAt) return undefined;
+    const over = Math.round((Date.now() - Date.parse(open.startedAt)) / 60_000) - open.timeboxMin;
+    return over > 0 ? `charter ${open.code} passou ${over} min do prazo (${open.timeboxMin} min): feche com charter_end; o que ficou de fora vai em notes` : undefined;
   }
 
   async verify(input: VerifyInput) {
@@ -763,7 +794,8 @@ export class BrowserService {
         outcome = await this.poll(timeout, () => this.checkUi(input));
         break;
       case 'persistence': {
-        if (input.path) await session.page.goto(input.path, { waitUntil: 'domcontentloaded' });
+        // Mesma validação do navigate: só http(s) do ambiente (file:, javascript: etc. são recusados).
+        if (input.path) await session.page.goto(this.httpUrl(input.path).toString(), { waitUntil: 'domcontentloaded' });
         else await session.page.reload({ waitUntil: 'domcontentloaded' });
         await session.net.waitQuiet();
         outcome = await this.poll(timeout, () => this.checkUi(input));
@@ -901,6 +933,11 @@ export class BrowserService {
       .filter((e) => e.url.includes(input.urlContains!) && (!method || e.method === method) && (e.status !== undefined || e.failure));
     const last = matches.at(-1);
     if (!last) return { passed: false, expected, actual: 'nenhuma request correspondente no cenário' };
+    // Resposta fabricada pelo network_simulate não é prova do servidor (auditoria 13/11).
+    if (last.simulated) {
+      throw new BrowserError(`a última request de *${input.urlContains}* foi respondida por network_simulate, não pelo servidor: ` +
+        'verifique como a tela reagiu (verify ui) ou limpe a simulação (network_simulate_clear) e repita a ação para verificar a rede real');
+    }
     let passed = this.statusMatches(last.status, input.status);
     let actual = summarize(last);
     if (passed && input.bodyContains) {

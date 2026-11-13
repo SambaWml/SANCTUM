@@ -84,6 +84,11 @@ export function resolveValue(value: ConfigValue, env: NodeJS.ProcessEnv = proces
 }
 
 /** Nomes de todas as variáveis de ambiente referenciadas pela config. */
+/** Variáveis que guardam senha de papel (redigidas pelo valor, qualquer que seja o nome). */
+export function passwordEnvVars(config: Config): string[] {
+  return [...new Set(Object.values(config.environments).flatMap((e) => Object.values(e.roles).map((r) => r.password.env)))].sort();
+}
+
 export function referencedEnvVars(config: Config): string[] {
   const names = new Set<string>();
   for (const env of Object.values(config.environments)) {

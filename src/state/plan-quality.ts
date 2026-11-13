@@ -18,6 +18,8 @@ export interface PlanContext {
   /** Bugs ligados ao card (links do digest): cada um pede cenário de regressão. */
   linkedBugs: string[];
   waivers: PlanWaiver[];
+  /** Charters planejados (sessões exploratórias com foco e tempo). */
+  charters?: number;
 }
 export interface PlanQuality { problems: string[]; notes: string[] }
 
@@ -37,8 +39,17 @@ export function checkPlanQuality(scenarios: PlanScenario[], ctx: PlanContext): P
   const vague = scenarios.filter((s) => VAGUE.test(s.expected.trim()) || s.expected.trim().length < 15).map((s) => s.code);
   if (vague.length) problems.push(`"esperado" não verificável (diga o que aparece na tela, a URL, a requisição/status ou o dado salvo): ${vague.join(', ')}`);
 
+  // Exploração é sessão (charter), não roteiro: CT "exploratório" com passos fixos passava com "sem erros novos" (74 de 93).
+  const scripted = scenarios.filter((s) => s.types.some((t) => /^explorat/i.test(t))).map((s) => s.code);
+  if (scripted.length) problems.push(`exploração não é CT com roteiro: troque ${scripted.join(', ')} por charters no plano (charters: [{ target, tours, persona?, timeboxMin? }])`);
+
   // Reteste repete o que falhou: não precisa cobrir o card inteiro de novo.
   if (ctx.mode === 'retest') return { problems, notes };
+
+  const minCharters = MIN_EXPLORATORY[ctx.mode] ?? 0;
+  if (ctx.mode === 'explore' && (ctx.charters ?? 0) < minCharters && !waived('charters')) {
+    problems.push(`exploratório pede ao menos ${minCharters} charters no plano (alvo, testes, tempo) — o foco da exploração é o que você aprova`);
+  }
 
   const coverage = planCoverage(ctx.criteria, scenarios);
   const missing = coverage.uncovered.filter((u) => !waived(u.split(':')[0]!));
@@ -58,5 +69,8 @@ export function checkPlanQuality(scenarios: PlanScenario[], ctx: PlanContext): P
   return { problems, notes };
 }
 
-/** Exploração mínima ao fechar: o padrão é criar EXP em volta do risco maior durante a execução. */
-export const MIN_EXPLORATORY: Record<string, number> = { manual: 1, explore: 3 };
+/**
+ * Exploração mínima ao fechar: charters fechados com resumo (o que cobriu e que testes aplicou).
+ * Conta sessão com foco, não número de EXP (3 EXP triviais passavam na regra antiga).
+ */
+export const MIN_EXPLORATORY: Record<string, number> = { manual: 1, explore: 2 };

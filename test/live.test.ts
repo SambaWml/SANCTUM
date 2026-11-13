@@ -6,7 +6,7 @@ import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { loadConfig } from '../src/config/load.ts';
 import { createLiveServer } from '../src/live/server.ts';
-import { agentKind, buildLiveState } from '../src/live/state.ts';
+import { agentKind, buildLiveState, confirmedBugs } from '../src/live/state.ts';
 import { Redactor } from '../src/security/redact.ts';
 import { openDb, type Db } from '../src/state/db.ts';
 import { StateStore, type ScenarioInput } from '../src/state/store.ts';
@@ -94,15 +94,25 @@ describe('estado do painel ao vivo', () => {
     expect(s.runs[0]!.decisions.map((d) => d.text)).toEqual(['Aprovou o plano (2 cenários)', 'Autorizou RED: clicou em button "Remover"']);
   });
 
-  it('bug explicado no relatório entra no pote com a chave do Jira e soma XP', () => {
+  it('bug explicado no relatório aparece com a chave do Jira', () => {
     const runId = executingRun();
     store.logEvent(runId, null, 'report.explain', [{ code: 'CT-001', title: 'Remover envia o código', howToSee: 'a', happens: 'b', expected: 'c' }]);
     store.logEvent(runId, null, 'report.summaries', [{ code: 'CT-001', verdict: 'Falhou', text: 'não remove', jira: 'FIX-99' }]);
     const s = buildLiveState(db, { rootDir: root, now: clock });
     expect(s.bugs).toEqual([expect.objectContaining({ code: 'CT-001', jira: 'FIX-99', card: 'FIX-1' })]);
     expect(s.runs[0]!.bugs[0]).toMatchObject({ title: 'Remover envia o código', jira: 'FIX-99' });
-    expect(s.agents[0]).toMatchObject({ agent: 'claude', xp: 50 });
-    expect(s.badges.find((b) => b.id === 'first-bug')?.unlocked).toBe(true);
+  });
+
+  it('bug confirmado conta uma vez: explicação sem confirmação e relatório repetido não somam', () => {
+    const runId = executingRun();
+    const explain = [{ code: 'CT-001', title: 'Divergência de texto', howToSee: 'a', happens: 'b', expected: 'c' }];
+    store.logEvent(runId, null, 'report.explain', explain);
+    const all = (sql: string, ...a: (string | number)[]) => db.prepare(sql).all(...a) as Record<string, unknown>[];
+    expect(confirmedBugs(all).size).toBe(0);
+    store.logEvent(runId, null, 'report.summaries', [{ code: 'CT-001', verdict: 'Falhou', text: 'x', jira: 'FIX-99' }]);
+    store.logEvent(runId, null, 'report.explain', explain);
+    store.logEvent(runId, null, 'report.summaries', [{ code: 'CT-001', verdict: 'Falhou', text: 'x', jira: 'FIX-99' }]);
+    expect([...confirmedBugs(all).keys()]).toEqual([`${runId}:CT-001`]);
   });
 
   it('run ativo sem atividade mostra há quanto tempo está parado', () => {
@@ -134,11 +144,11 @@ describe('servidor do painel', () => {
   });
   afterEach(() => new Promise<void>((r) => server.close(() => r())));
 
-  const call = (path: string, opts: { method?: string; host?: string } = {}) => new Promise<{ status: number; body: string; type: string }>((resolve, reject) => {
+  const call = (path: string, opts: { method?: string; host?: string } = {}) => new Promise<{ status: number; body: string; type: string; frame?: string }>((resolve, reject) => {
     const req = request({ host: '127.0.0.1', port, path, method: opts.method ?? 'GET', headers: { host: opts.host ?? `127.0.0.1:${port}` } }, (res) => {
       let body = '';
       res.on('data', (c) => (body += c));
-      res.on('end', () => resolve({ status: res.statusCode!, body, type: String(res.headers['content-type']) }));
+      res.on('end', () => resolve({ status: res.statusCode!, body, type: String(res.headers['content-type']), frame: res.headers['x-frame-options'] as string | undefined }));
     });
     req.on('error', reject);
     req.end();
@@ -148,7 +158,10 @@ describe('servidor do painel', () => {
     const runId = executingRun();
     store.startScenario(runId, 'CT-001');
     store.recordAction(runId, 'CT-001', { action: 'fill', target: { role: 'textbox', name: 'Senha' }, guardLevel: 'GREEN', ok: true, valueSample: SECRET });
-    expect((await call('/')).body).toContain('Central de Caça');
+    const home = await call('/');
+    expect(home.body).toContain('Central de QA');
+    expect(home.frame).toBe('DENY'); // clickjacking (13/11)
+    expect((await call('/jogo')).status).toBe(404);
     const state = await call('/api/state');
     expect(state.status).toBe(200);
     expect(state.body).toContain('FIX-1');

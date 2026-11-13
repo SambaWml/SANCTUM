@@ -233,4 +233,18 @@ describe('missão sem card (EXPLORA)', () => {
     expect(store.startRun({ issueKey: 'EXPLORA-202611031230', env: 'fixture-local', mode: 'explore' }).project).toBe('fixture');
     expect(() => store.startRun({ issueKey: 'OUTRO-1', env: 'fixture-local', mode: 'explore' })).toThrow(/não pertence/);
   });
+
+  it('missão sem card não aprova nem reprova: a recomendação é ignorada', () => {
+    const store = new StateStore(db, config, { now: () => new Date('2026-11-03T12:30:00Z') });
+    const run = store.startRun({ issueKey: 'EXPLORA-202611031230', env: 'fixture-local', mode: 'explore' });
+    store.savePlan(run.id, [{ code: 'CT-001', title: 'Login', priority: 'P2', risk: 'LOW', types: ['functional'], steps: ['x'], expected: 'painel visível' }], [],
+      [{ target: 'Cadastro: estados de erro', tours: ['500 com network_simulate'] }]);
+    store.approvePlan(run.id);
+    store.startScenario(run.id, 'CT-001');
+    store.recordVerification(run.id, 'CT-001', { kind: 'ui', description: 'painel', passed: true });
+    store.completeScenario(run.id, 'CT-001', { status: 'PASSED' });
+    expect(() => store.completeRun(run.id, 'APROVADO', 'x')).toThrow(/charters planejados sem sessão: CH-01/);
+    store.endCharter(run.id, 'CH-01', { skipReason: 'ambiente caiu antes da sessão' });
+    expect(store.completeRun(run.id, 'APROVADO', 'explorado').recommendation).toBeNull();
+  });
 });

@@ -68,7 +68,7 @@ describe('análise da US (/analisar)', () => {
   it('painel lança a análise pelos dois agentes', () => {
     const card = { kind: 'card' as const, key: 'FIX-42' };
     expect(missionCommand(card, 'analyze')).toBe('/analisar FIX-42');
-    expect(boundPrompt(card, 'analyze')).toMatch(/skills\/analisar\/SKILL\.md[\s\S]*us_analysis_save/);
+    expect(boundPrompt(card, 'analyze')).toMatch(/docs\/agents\/analisar\.md[\s\S]*us_analysis_save/);
     expect(SANCTUM_TOOLS).toContain('us_analysis_save');
   });
 });

@@ -61,7 +61,7 @@ Para cada Critério de Aceite (CA) principal, desdobre em múltiplos cenários:
   - `P2`: Borda relevante, validações de formato de campo.
   - `P3`: Cosmético, layout menor.
 - **Risco**: `HIGH`, `MEDIUM` ou `LOW`. (HIGH exige testes negativos e bordas; LOW pode ser mais enxuto).
-- **Types**: Array contendo os tipos aplicáveis (`functional`, `negative`, `permission`, `validation`, `visual`, `regression`, `exploratory`).
+- **Types**: Array contendo os tipos aplicáveis (`functional`, `negative`, `permission`, `validation`, `visual`, `regression`). Exploração não entra como CT: vai em `charters` (veja `exploratory.md`).
 - **Steps**: Passos curtos e executáveis no nível do usuário.
 - **Expected**: Resultado observável e estritamente verificável por ferramenta:
   - Texto e visibilidade na tela (`ui`).

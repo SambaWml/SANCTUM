@@ -115,7 +115,7 @@ describe('proibido sempre: terminal e arquivos do Sanctum', () => {
   });
 
   it('o que conta como arquivo do Sanctum', () => {
-    for (const p of ['C:/Users/wesml/NEW QA/src/live/page.html', 'C:\\Users\\wesml\\NEW QA\\.claude\\settings.json', '.mcp.json', 'AGENTS.md', 'config/qa-policy.yaml', 'test/x.test.ts', 'package.json']) {
+    for (const p of ['C:/Users/wesml/NEW QA/src/live/panel.html', 'C:\\Users\\wesml\\NEW QA\\.claude\\settings.json', '.mcp.json', 'AGENTS.md', 'config/qa-policy.yaml', 'test/x.test.ts', 'package.json']) {
       expect(isProtectedPath(p)).toBe(true);
     }
     for (const p of ['config/environments.yaml', 'reports/FIX-1/a.md', 'runs/_evidencias/x.png', 'knowledge/guruja/modules/meta.yaml']) {
@@ -123,5 +123,9 @@ describe('proibido sempre: terminal e arquivos do Sanctum', () => {
     }
     expect(isForbiddenRule('run_command(dir)')).toBe(true);
     expect(isForbiddenRule('mcp(sanctum/jira_comment)')).toBe(false);
+    // edit_file do Antigravity também é escrita (13/11) e a espera agendada nunca é liberada.
+    expect(isForbiddenRule('edit_file(src/state/store.ts)')).toBe(true);
+    expect(isForbiddenRule('edit_file(runs/notas.md)')).toBe(false);
+    expect(isForbiddenRule('schedule')).toBe(true);
   });
 });

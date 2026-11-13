@@ -184,13 +184,27 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
 
     expect((await h.ok('batch_brief', { runId })).batch).toEqual([]);
 
+    // Sessão exploratória (charter): o briefing traz os testes que o ambiente permite; ideia não explorada não vira cenário.
+    await h.ok('charter_start', { runId, target: 'Lista de alunos: estados vazio e de erro', tours: ['erro 500 na API da lista'] });
+    const exploring = parse((await h.call('batch_brief', { runId })).text);
+    expect(exploring.batch).toEqual([]);
+    expect(exploring.exploration.charters[0]).toMatchObject({ code: 'CH-01', status: 'OPEN' });
+    expect(exploring.exploration.tours.allowed.join(' ')).toMatch(/network_simulate/);
+    await h.ok('scenario_add', { runId, title: 'Lista vazia sem mensagem', priority: 'P3', risk: 'LOW', types: ['functional'], preconditions: 'admin sem alunos', steps: ['abrir a lista'], expected: 'mensagem "nenhum aluno"' });
+    // Teste declarado sem rastro não fecha a sessão: disse que simulou erro, precisa ter simulado.
+    const thin = await h.call('charter_end', { runId, code: 'CH-01', covered: ['/alunos com 500 na API'], tours: ['erro 500 na API da lista'] });
+    expect(thin.text).toMatch(/sem substância[\s\S]*não houve network_simulate/);
+    await h.ok('network_simulate', { urlContains: '/api/students', status: 500 });
+    await h.ok('network_simulate_clear', {});
+    await h.ok('charter_end', { runId, code: 'CH-01', covered: ['/alunos com 500 na API'], tours: ['erro 500 na API da lista'], observations: ['botão Salvar pequeno no celular'], questions: ['nome duplicado é permitido?'] });
+
     // 5. Limpeza, 6. conhecimento, 7. fechamento
     expect((await h.ok('cleanup_run', { runId })).results[0].status).toBe('VERIFIED');
     await h.ok('knowledge_propose', {
       runId, module: 'alunos',
       statements: [{ statement: 'POST /api/students devolve 500 para o nome "erro"', kind: 'regression', status: 'OBSERVED', confidence: 'HIGH', source: { type: 'run', reference: runId } }],
     });
-    const done = await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'CA02 violado: erro ao salvar sem mensagem útil.', noExplorationReason: 'teste da ferramenta, sem exploração' });
+    const done = await h.ok('run_complete', { runId, recommendation: 'REPROVADO', summary: 'CA02 violado: erro ao salvar sem mensagem útil.' });
     expect(done.executionKnowledge.merged).toMatchObject({ file: 'knowledge/fixture/execution/alunos.json' });
 
     const report = await h.ok('report_build', { runId });
@@ -203,6 +217,8 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     expect(md).toMatch(/Verificação reprovada \(ui\) "mensagem amigável de erro"/);
     expect(md).toMatch(/Evidências: `runs\/FIX-50\/.+\.png` \(screenshot\)/);
     expect(md).toMatch(/Nome duplicado é permitido\?/);
+    expect(md).toMatch(/## Sessões exploratórias[\s\S]*CH-01 — Lista de alunos[\s\S]*Observações \(não são bugs\)[\s\S]*Ideias não exploradas: EXP-001 Lista vazia sem mensagem/);
+    expect(md).not.toMatch(/\| EXP-001 \|/);
     expect(md).toMatch(/Rascunho de comentário para o Jira \(não publicado\)/);
     expect(md).toMatch(/#1 \/api\/students \(3\): VERIFIED/);
     // Vídeo da sessão: arquivo real, capítulos por cenário e trecho apontado na falha.
@@ -237,7 +253,9 @@ describe('fluxo /qa ponta a ponta (fixture, ferramentas reais)', () => {
     const page = readFileSync(join(h.root, withSummary.html), 'utf8');
     expect(page).toContain('<b>Em palavras simples — Bug (alta):</b> Salvar com erro não mostra mensagem nenhuma ao usuário.');
     expect(page).toContain('<b>Em palavras simples — Passou:</b>');
-    expect(page).toContain('href="https://luby.atlassian.net/browse/FIX-12"');
+    process.env.SANCTUM_JIRA_URL = 'https://exemplo.atlassian.net';
+    expect(readFileSync(join(h.root, (await h.ok('report_build', { runId })).html), 'utf8')).toContain('href="https://exemplo.atlassian.net/browse/FIX-12"');
+    delete process.env.SANCTUM_JIRA_URL;
     expect(page).toMatch(/<details class="scenario" id="CT-002" data-group="alta" data-jira="1"/);
     expect(page).toContain('<button data-f="alta">Alta (1)</button>');
     expect(page).toContain('<button data-f="jira">Bug criado (1)</button>');

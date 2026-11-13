@@ -1,0 +1,860 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sanctum · Central de QA</title>
+<link rel="icon" href="/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Silkscreen:wght@400;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+/* Painel de operação do Sanctum. O pixel é identidade (marca, ícones, barras em blocos), não fantasia:
+   grafite neutro, um acento dourado, cores semânticas só para estado. */
+:root {
+  --bg: #0f1115; --panel: #161920; --raise: #1c2029; --line: #262b36; --line-2: #313847;
+  --fg: #e8eaf0; --muted: #8b93a5; --faint: #5d6577;
+  --gold: #e8b04a; --gold-soft: rgba(232,176,74,.12);
+  --ok: #3ccf8e; --ok-soft: rgba(60,207,142,.12);
+  --warn: #f2a93b; --warn-soft: rgba(242,169,59,.12);
+  --bad: #f06a6a; --bad-soft: rgba(240,106,106,.12);
+  --info: #7aa7ff; --info-soft: rgba(122,167,255,.12);
+  --ui: 'Inter', system-ui, sans-serif; --pixel: 'Silkscreen', ui-monospace, monospace; --mono: 'JetBrains Mono', ui-monospace, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 var(--ui); }
+body::before { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+  background-size: 8px 8px; }
+.wrap { max-width: 1440px; margin: 0 auto; padding: 0 max(16px, env(safe-area-inset-left)) 48px max(16px, env(safe-area-inset-right)); position: relative; z-index: 1; }
+button { font: inherit; }
+a { color: var(--info); }
+
+header { display: flex; align-items: center; gap: 24px; padding: 18px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand svg { width: 34px; height: 34px; }
+.brand b { font: 700 18px var(--pixel); letter-spacing: .06em; }
+.brand span { color: var(--muted); font-size: 13px; border-left: 1px solid var(--line-2); padding-left: 12px; }
+.updated { color: var(--faint); font-size: 12px; }
+.filters { display: flex; gap: 8px; margin-left: auto; flex-wrap: wrap; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line-2); border-radius: 8px; overflow: hidden; }
+.seg button { background: none; border: 0; color: var(--muted); padding: 7px 12px; font-weight: 500; font-size: 13px; cursor: pointer; }
+.seg button.on { background: var(--raise); color: var(--fg); }
+.btn { border: 1px solid var(--line-2); background: var(--raise); color: var(--fg); border-radius: 8px; padding: 8px 14px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; white-space: nowrap; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: #1a1406; }
+.btn.ok { background: var(--ok); border-color: var(--ok); color: #06210f; }
+.btn.danger { color: var(--bad); }
+.btn.ghost { background: none; }
+.btn.sm { padding: 5px 10px; font-size: 12px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.btn:focus-visible, .seg button:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.count { background: var(--bad); color: #fff; font-size: 11px; font-weight: 700; border-radius: 999px; padding: 0 7px; }
+.count.zero { background: var(--line-2); color: var(--muted); }
+
+.banner { display: none; margin-top: 16px; padding: 10px 14px; border-radius: 8px; border: 1px solid var(--warn); background: var(--warn-soft); color: var(--warn); font-weight: 500; }
+.banner.on { display: block; }
+.banner.bad { border-color: var(--bad); background: var(--bad-soft); color: var(--bad); }
+
+section { margin-top: 24px; }
+.h { display: flex; align-items: baseline; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+.h h2 { margin: 0; font-size: 15px; font-weight: 600; }
+.h small { color: var(--muted); font-size: 12px; }
+.label { font: 600 11px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; }
+.empty { padding: 20px 16px; color: var(--muted); }
+
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 12px; }
+.kpi { padding: 16px; min-width: 0; display: flex; flex-direction: column; }
+.kpi .label { min-height: 2.6em; line-height: 1.3; }
+.kpi .spark { margin-top: auto; padding-top: 10px; }
+.kpi .v { font-size: 28px; font-weight: 700; letter-spacing: -.01em; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.kpi .d { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.up { color: var(--ok); } .down { color: var(--bad); }
+.spark { display: flex; gap: 3px; align-items: flex-end; height: 32px; }
+.spark i { flex: 1; max-width: 14px; background: var(--line-2); display: block; min-height: 2px; }
+.spark i:last-child { background: var(--gold); }
+
+.main { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 16px; align-items: start; margin-top: 24px; }
+.main > div > section:first-child { margin-top: 0; }
+.side .h { min-height: 22px; }
+.qi { display: grid; grid-template-columns: 36px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 14px 16px; border-top: 1px solid var(--line); }
+.qi:first-child { border-top: 0; }
+.qi .ic { width: 36px; height: 36px; border-radius: 8px; display: grid; place-items: center; }
+.qi .ic svg { width: 18px; height: 18px; }
+.qi .t { font-weight: 600; }
+.qi .s { color: var(--muted); font-size: 13px; overflow-wrap: anywhere; }
+.qi .acts { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; border: 1px solid currentColor; text-transform: uppercase; letter-spacing: .04em; white-space: nowrap; }
+.t-gold { color: var(--gold); background: var(--gold-soft); }
+.t-ok { color: var(--ok); background: var(--ok-soft); }
+.t-warn { color: var(--warn); background: var(--warn-soft); }
+.t-bad { color: var(--bad); background: var(--bad-soft); }
+.t-info { color: var(--info); background: var(--info-soft); }
+.t-mute { color: var(--muted); background: transparent; }
+
+.scroll { overflow-x: auto; }
+.tbl { width: 100%; border-collapse: collapse; }
+.tbl th { text-align: left; font: 600 11px var(--ui); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); padding: 12px 16px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.tbl td { padding: 14px 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.tbl tr:last-child td { border-bottom: 0; }
+.key { font: 600 13px var(--mono); overflow-wrap: anywhere; }
+.target { display: block; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tbl td.act { width: 1%; white-space: nowrap; text-align: right; }
+.tbl td.last { max-width: 260px; overflow-wrap: anywhere; }
+.sub { color: var(--muted); font-size: 12px; }
+.agent { display: inline-flex; align-items: center; gap: 8px; white-space: nowrap; }
+.agent svg { width: 14px; height: 14px; }
+.blocks { display: flex; gap: 2px; flex-wrap: wrap; max-width: 260px; }
+.blocks i { width: 10px; height: 10px; background: var(--line-2); display: block; }
+.blocks i.p { background: var(--ok); } .blocks i.f { background: var(--bad); } .blocks i.r { background: var(--warn); } .blocks i.b { background: var(--faint); } .blocks i.n { background: var(--gold); }
+.steps { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.steps span { font: 600 11px var(--ui); padding: 3px 8px; border: 1px solid var(--line-2); border-radius: 4px; color: var(--faint); white-space: nowrap; }
+.steps span.done { color: var(--muted); background: var(--raise); }
+.steps span.now { color: #1a1406; background: var(--gold); border-color: var(--gold); }
+
+.side { display: flex; flex-direction: column; gap: 16px; }
+.side .card { padding: 16px; }
+.meter { margin-top: 10px; }
+.meter .row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--muted); }
+.meter .bar { display: flex; gap: 2px; margin-top: 4px; }
+.meter .bar i { flex: 1; height: 8px; background: var(--line-2); }
+.meter .bar i.on { background: var(--info); } .meter .bar i.hot { background: var(--warn); } .meter .bar i.max { background: var(--bad); }
+.ag { padding: 12px 0; border-top: 1px solid var(--line); }
+.ag:first-of-type { border-top: 0; padding-top: 4px; }
+.mod { display: grid; grid-template-columns: minmax(0,1fr) 110px 32px; gap: 10px; align-items: center; font-size: 13px; padding: 6px 0; }
+.mod .bar { height: 8px; background: var(--line-2); position: relative; }
+.mod .bar i { position: absolute; inset: 0 auto 0 0; background: var(--bad); }
+.row2 { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 6px 0; }
+
+/* diálogos */
+dialog { background: var(--panel); color: var(--fg); border: 1px solid var(--line-2); border-radius: 14px; padding: 0; width: min(720px, calc(100vw - 32px)); max-height: calc(100vh - 48px); }
+dialog::backdrop { background: rgba(5,6,9,.7); }
+.dlg-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+.dlg-h h3 { margin: 0; font-size: 16px; }
+.dlg-b { padding: 16px 20px; overflow: auto; max-height: calc(100vh - 200px); }
+.dlg-f { display: flex; justify-content: flex-end; gap: 8px; padding: 14px 20px; border-top: 1px solid var(--line); flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.field label { font-size: 12px; color: var(--muted); font-weight: 600; }
+.field input, .field textarea { background: var(--bg); color: var(--fg); border: 1px solid var(--line-2); border-radius: 8px; padding: 9px 12px; font: inherit; }
+.field textarea { min-height: 90px; resize: vertical; }
+.field input:focus, .field textarea:focus { outline: 2px solid var(--gold); outline-offset: 0; border-color: transparent; }
+.choice { display: flex; gap: 6px; flex-wrap: wrap; }
+.choice button { border: 1px solid var(--line-2); background: none; color: var(--muted); border-radius: 8px; padding: 7px 12px; font-size: 13px; cursor: pointer; }
+.choice button.on { border-color: var(--gold); color: var(--fg); background: var(--gold-soft); }
+.err { color: var(--bad); font-size: 13px; min-height: 18px; }
+.what { font-size: 12px; color: var(--muted); min-height: 18px; overflow-wrap: anywhere; }
+.what b { color: var(--fg); font-weight: 600; }
+.check { display: flex; gap: 8px; align-items: center; font-size: 13px; color: var(--fg); cursor: pointer; }
+.check input { accent-color: var(--gold); width: 16px; height: 16px; }
+.check.off { color: var(--faint); cursor: not-allowed; }
+.choice button[disabled] { opacity: .4; cursor: not-allowed; }
+.explain { padding: 12px 14px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--raise); color: var(--muted); font-size: 13px; margin-bottom: 14px; }
+.explain b { color: var(--fg); }
+.msgs { display: flex; flex-direction: column; gap: 10px; }
+.msg { padding: 10px 14px; border-radius: 10px; background: var(--raise); white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; }
+.msg.user { background: var(--gold-soft); align-self: flex-end; max-width: 85%; }
+.msg.system { background: none; color: var(--muted); font-size: 12px; padding: 2px 0; }
+.msg .who { display: block; font: 600 11px var(--ui); color: var(--faint); margin-bottom: 4px; }
+.plan-list { margin: 0; padding: 0; list-style: none; }
+.plan-list li { padding: 10px 0; border-top: 1px solid var(--line); }
+.plan-list li:first-child { border-top: 0; }
+
+.foot { margin-top: 32px; display: flex; justify-content: space-between; gap: 12px; color: var(--faint); font-size: 12px; flex-wrap: wrap; }
+
+/* detalhe do run (painel lateral) */
+.drawer[hidden], .scrim[hidden] { display: none; }
+.tbl tr[data-detail] { cursor: pointer; }
+.tbl tr[data-detail]:hover td { background: rgba(255,255,255,.025); }
+.scrim { position: fixed; inset: 0; background: rgba(5,6,9,.55); z-index: 20; }
+.drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(920px, 100vw); background: var(--panel); border-left: 1px solid var(--line-2); display: flex; flex-direction: column; box-shadow: -30px 0 60px rgba(0,0,0,.45); z-index: 21; }
+.d-head { padding: 18px 24px 0; border-bottom: 1px solid var(--line); }
+.d-top { display: flex; align-items: flex-start; gap: 16px; }
+.d-top h2 { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.d-sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.d-close { margin-left: auto; }
+.facts { display: flex; gap: 24px; margin: 14px 0 0; flex-wrap: wrap; font-size: 13px; }
+.facts > div > span { display: block; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+.d-tabs { display: flex; gap: 4px; margin-top: 16px; overflow-x: auto; }
+.d-tabs button { background: none; border: 0; border-bottom: 2px solid transparent; color: var(--muted); padding: 10px 14px; font-weight: 600; font-size: 13px; cursor: pointer; white-space: nowrap; }
+.d-tabs button.on { color: var(--fg); border-bottom-color: var(--gold); }
+.d-tabs button .n { font-size: 11px; color: var(--faint); margin-left: 6px; }
+.d-body { flex: 1; overflow: auto; padding: 20px 24px 32px; }
+.live { display: inline-flex; align-items: center; gap: 6px; color: var(--ok); font-size: 12px; font-weight: 600; }
+.live i { width: 8px; height: 8px; background: var(--ok); display: inline-block; }
+.okc { color: var(--ok); } .badc { color: var(--bad); }
+.box { background: var(--bg); border: 1px solid var(--line); border-radius: 12px; }
+.now-grid { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; }
+.now-side .box { padding: 14px; margin-bottom: 12px; }
+.shotimg { display: block; width: 100%; border-radius: 8px; border: 1px solid var(--line); background: #fff; cursor: zoom-in; }
+.noshot { aspect-ratio: 16/10; display: grid; place-items: center; text-align: center; padding: 20px; color: var(--muted); border: 1px dashed var(--line-2); border-radius: 8px; font-size: 13px; }
+.cap { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 12px; margin-top: 8px; flex-wrap: wrap; }
+.mini { display: flex; gap: 8px; font-size: 13px; padding: 3px 0; }
+.mini .t, .ev .t { color: var(--faint); font: 500 12px var(--mono); min-width: 40px; }
+.scn { border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; background: var(--bg); }
+.scn summary { display: grid; grid-template-columns: 70px minmax(0,1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; cursor: pointer; list-style: none; }
+.scn summary::-webkit-details-marker { display: none; }
+.scn .inner { padding: 0 14px 14px; }
+.kv { font-size: 13px; margin-bottom: 10px; overflow-wrap: anywhere; } .kv > span { display: block; font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.chk { display: grid; grid-template-columns: 70px 16px minmax(0,1fr); gap: 6px; font-size: 13px; padding: 3px 0; overflow-wrap: anywhere; }
+.chk .k { font: 600 11px var(--mono); color: var(--muted); padding-top: 2px; }
+.thumbs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 8px; }
+.filt { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.filt button { border: 1px solid var(--line-2); background: none; color: var(--muted); border-radius: 999px; padding: 4px 12px; font-size: 12px; cursor: pointer; }
+.filt button.on { border-color: var(--gold); color: var(--fg); background: var(--gold-soft); }
+.grp { margin-bottom: 18px; }
+.grp h5 { margin: 0 0 6px; font-size: 13px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.tl { border-left: 2px solid var(--line-2); margin-left: 5px; padding-left: 16px; }
+.ev { position: relative; display: grid; grid-template-columns: 46px minmax(0,1fr) auto; gap: 10px; padding: 4px 0; font-size: 13px; overflow-wrap: anywhere; }
+.ev::before { content: ""; position: absolute; left: -21px; top: 10px; width: 8px; height: 8px; background: var(--line-2); }
+.ev.check::before { background: var(--ok); } .ev.fail::before { background: var(--bad); } .ev.you::before { background: var(--gold); } .ev.sim::before, .ev.risk::before { background: var(--warn); } .ev.shot::before { background: var(--info); }
+.ev.action .x { color: var(--muted); }
+.ev .lnk { background: none; border: 0; color: var(--info); font-size: 12px; cursor: pointer; padding: 0; white-space: nowrap; }
+.chapters { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0 20px; }
+.chapters button { border: 1px solid var(--line-2); background: var(--raise); color: var(--fg); border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; }
+.chapters i { width: 8px; height: 8px; display: inline-block; }
+video { width: 100%; border-radius: 10px; background: #000; }
+#lightbox { width: min(1200px, calc(100vw - 32px)); background: #000; border: 0; }
+#lightbox img { display: block; width: 100%; }
+@media (max-width: 760px) { .now-grid { grid-template-columns: minmax(0, 1fr); } .thumbs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+@media (max-width: 1180px) { .kpis { grid-template-columns: repeat(3, minmax(0,1fr)); } .main { grid-template-columns: minmax(0,1fr); } }
+@media (max-width: 640px) {
+  .kpis { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .qi { grid-template-columns: 36px minmax(0,1fr); } .qi .acts { grid-column: 1 / -1; justify-content: flex-start; }
+  .brand span { display: none; } .filters { margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand">
+    <svg viewBox="0 0 16 16" shape-rendering="crispEdges" aria-hidden="true">
+      <path fill="#e8b04a" d="M3 1h10v1H3zM2 2h12v6H2zM3 8h10v2H3zM4 10h8v2H4zM5 12h6v1H5zM6 13h4v1H6zM7 14h2v1H7z"/>
+      <path fill="#0f1115" d="M5 4h6v1H5zM7 5h2v5H7zM5 6h2v1H5zM9 6h2v1H9z"/>
+    </svg>
+    <b>SANCTUM</b><span>Central de QA</span>
+  </div>
+  <span class="updated" id="updated">conectando…</span>
+  <div class="filters">
+    <div class="seg" role="group" aria-label="Período">
+      <button data-days="1">Hoje</button><button data-days="7" class="on">7 dias</button><button data-days="30">30 dias</button>
+    </div>
+    <button class="btn ghost" id="alerts" title="Aviso do sistema quando algo precisar de você">Avisos: desligados</button>
+    <a class="btn ghost" href="#decisoes">Decisões <span class="count zero" id="dec-count">0</span></a>
+    <button class="btn primary" id="new-mission">+ Nova missão</button>
+  </div>
+</header>
+
+<div class="banner" id="banner" role="status"></div>
+
+<section aria-labelledby="kpi-h">
+  <h2 id="kpi-h" class="label" style="margin:0 0 10px">Indicadores · <span id="period-label">últimos 7 dias</span></h2>
+  <div class="kpis" id="kpis"></div>
+</section>
+
+<div class="main">
+  <div>
+    <section id="decisoes">
+      <div class="h"><h2>Precisa de você</h2><small id="dec-sub"></small></div>
+      <div class="card" id="queue"></div>
+    </section>
+    <section>
+      <div class="h"><h2>Em andamento</h2><small id="run-sub"></small></div>
+      <div class="card scroll" id="running"></div>
+    </section>
+    <section>
+      <div class="h"><h2>Resultados</h2><small id="res-sub"></small></div>
+      <div class="card scroll" id="results"></div>
+    </section>
+  </div>
+  <aside class="side">
+    <div class="card"><div class="h" style="margin:0"><h2>Agentes e limites</h2></div><div id="agents"></div></div>
+    <div class="card"><div class="h" style="margin:0 0 6px"><h2>Onde mais falha</h2><small>cenários reprovados por módulo</small></div><div id="fails"></div></div>
+    <div class="card"><div class="h" style="margin:0 0 6px"><h2>Conhecimento</h2></div><div class="sub" style="margin-bottom:8px">O que os testes aprenderam e o mapa de cada sistema</div><div id="knowledge"></div></div>
+  </aside>
+</div>
+
+<div class="foot"><span>Sanctum · os números vêm dos testes registrados; nada é estimado</span><span id="readonly"></span></div>
+</div>
+
+<dialog id="dlg-mission" aria-labelledby="dm-h">
+  <form method="dialog" id="mission-form">
+    <div class="dlg-h"><h3 id="dm-h">Nova missão</h3><button class="btn ghost sm" value="cancel" aria-label="Fechar">✕</button></div>
+    <div class="dlg-b">
+      <div class="field"><label for="m-target">Card ou sistema</label><input id="m-target" placeholder="PROJ-123, link do card no Jira ou endereço do sistema" autocomplete="off" spellcheck="false">
+        <div class="what" id="m-what" aria-live="polite">Cole a chave do card, o link do Jira ou o endereço do sistema.</div></div>
+      <div id="m-card" hidden>
+        <div class="field"><label>O que fazer</label><div class="choice" id="m-kind">
+          <button type="button" data-v="analyze">Analisar US</button><button type="button" data-v="qa" class="on">Testar</button>
+          <button type="button" data-v="retest">Retestar</button><button type="button" data-v="automate">Automatizar</button>
+        </div><div class="what" id="m-kind-hint"></div></div>
+        <label class="check" id="m-more-wrap" style="margin-bottom:14px"><input type="checkbox" id="m-more"> Mais exploração: sessões exploratórias extras em volta do risco</label>
+      </div>
+      <div class="explain" id="m-url" hidden><b>Sistema sem card.</b> O agente mapeia o sistema só olhando, te pergunta o que não dá para deduzir e só depois monta o plano para você aprovar.</div>
+      <div class="explain" id="m-resume" hidden></div>
+      <div class="field"><label>Agente</label><div class="choice" id="m-agent">
+        <button type="button" data-v="claude" class="on">Claude</button><button type="button" data-v="antigravity">Antigravity</button>
+      </div></div>
+      <div class="field"><label for="m-obj">Objetivo ou observação (opcional)</label><textarea id="m-obj" placeholder="Ex.: focar no checkout com cartão recusado"></textarea></div>
+      <div class="err" id="m-err" role="alert"></div>
+    </div>
+    <div class="dlg-f"><button class="btn ghost" value="cancel">Cancelar</button><button class="btn primary" id="m-go" type="submit" value="go">Iniciar missão</button></div>
+  </form>
+</dialog>
+
+<dialog id="dlg-chat" aria-labelledby="dc-h">
+  <div class="dlg-h"><h3 id="dc-h">Conversa</h3><button class="btn ghost sm" id="dc-close" aria-label="Fechar">✕</button></div>
+  <div class="dlg-b"><div class="msgs" id="dc-msgs"></div></div>
+  <div class="dlg-b" style="border-top:1px solid var(--line);padding-top:14px">
+    <div class="field" style="margin:0"><label for="dc-text">Sua resposta</label><textarea id="dc-text"></textarea></div>
+    <div class="err" id="dc-err" role="alert"></div>
+  </div>
+  <div class="dlg-f"><button class="btn danger" id="dc-stop">Parar missão</button><button class="btn primary" id="dc-send">Enviar</button></div>
+</dialog>
+
+<dialog id="dlg-plan" aria-labelledby="dp-h">
+  <div class="dlg-h"><h3 id="dp-h">Plano</h3><button class="btn ghost sm" id="dp-close" aria-label="Fechar">✕</button></div>
+  <div class="dlg-b" id="dp-body"></div>
+  <div class="dlg-f"><button class="btn ghost" id="dp-adjust">Pedir ajustes</button><button class="btn ok" id="dp-approve">Aprovar e executar</button></div>
+</dialog>
+
+<div class="scrim" id="d-scrim" hidden></div>
+<aside class="drawer" id="drawer" role="dialog" aria-modal="true" aria-labelledby="d-title" hidden>
+  <div class="d-head">
+    <div class="d-top"><div><h2 id="d-title"></h2><div class="d-sub" id="d-sub"></div></div><button class="btn ghost sm d-close" id="d-close" aria-label="Fechar">✕</button></div>
+    <div class="facts" id="d-facts"></div>
+    <div class="d-tabs" role="tablist" id="d-tabs"></div>
+  </div>
+  <div class="d-body" id="d-body"></div>
+</aside>
+<dialog id="lightbox" aria-label="Print ampliado"><img id="lb-img" alt=""></dialog>
+
+<script>
+const TOKEN = '__SANCTUM_TOKEN__';
+const JIRA_BASE = '__SANCTUM_JIRA__';
+const CAN_ACT = TOKEN.length > 0 && !TOKEN.startsWith('__');
+let S = null, days = 7, timer = null, failures = 0;
+
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const $ = (id) => document.getElementById(id);
+const jiraLink = (k) => (JIRA_BASE && !JIRA_BASE.startsWith('__') ? `<a href="${esc(JIRA_BASE)}/browse/${encodeURIComponent(k)}" target="_blank" rel="noopener">${esc(k)}</a>` : esc(k));
+const hhmm = (iso) => (iso ? new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : '');
+const dur = (min) => (min == null ? '—' : min < 60 ? `${min} min` : `${Math.floor(min / 60)}h${String(min % 60).padStart(2, '0')}`);
+const since = (iso) => dur(Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000)));
+const fmtNum = (n) => (n >= 1e6 ? `${(n / 1e6).toFixed(1).replace('.', ',')} mi` : n >= 1e3 ? `${Math.round(n / 1e3)} mil` : String(n));
+
+async function api(path, body) {
+  const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json', 'x-sanctum-token': TOKEN }, body: JSON.stringify(body || {}) });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || `falhou (${res.status})`);
+  return data;
+}
+
+// Ícones em pixel (8x8): a identidade fica nos detalhes, não na tela inteira.
+const ICON = {
+  plan: '<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#e8b04a" d="M1 0h5v1H1zM0 1h1v6H0zM6 1h1v1H6zM7 2h1v6H7zM1 7h6v1H1zM2 3h4v1H2zM2 5h3v1H2z"/></svg>',
+  risk: '<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#f06a6a" d="M3 0h2v1H3zM2 1h4v1H2zM1 2h6v3H1zM0 5h8v2H0z"/><path fill="#161920" d="M3 2h2v2H3zM3 5h2v1H3z"/></svg>',
+  ask: '<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#7aa7ff" d="M2 0h4v1H2zM1 1h1v1H1zM6 1h1v3H6zM5 4h1v1H5zM3 5h2v1H3zM3 7h2v1H3z"/></svg>',
+  chat: '<svg viewBox="0 0 8 8" shape-rendering="crispEdges"><path fill="#3ccf8e" d="M0 0h8v5H0zM1 5h2v1H1zM1 6h1v1H1z"/><path fill="#161920" d="M1 2h6v1H1z"/></svg>',
+};
+const AGENT_COLOR = { claude: '#e8935c', antigravity: '#7aa7ff', codex: '#3ccf8e', other: '#8b93a5' };
+const AGENT_LABEL = { claude: 'Claude', antigravity: 'Antigravity', codex: 'Codex', other: 'Sem registro' };
+const agentTag = (a) => `<span class="agent"><svg viewBox="0 0 4 4" shape-rendering="crispEdges" aria-hidden="true"><path fill="${AGENT_COLOR[a] || AGENT_COLOR.other}" d="M1 0h2v1H1zM0 1h4v2H0zM1 3h2v1H1z"/></svg>${esc(AGENT_LABEL[a] || a)}</span>`;
+const VERDICT = { APROVADO: ['Aprovado', 't-ok'], REPROVADO: ['Reprovado', 't-bad'], INCONCLUSIVO: ['Inconclusivo', 't-warn'], EXPLORADO: ['Explorado', 't-info'], 'SEM VEREDITO': ['Sem veredito', 't-mute'] };
+const MODE = { manual: 'Teste do card', explore: 'Exploração', retest: 'Reteste', automate: 'Automação' };
+const targetLabel = (t) => { try { const u = new URL(t); return `<span class="key target" title="${esc(t)}">${esc(u.host + (u.pathname === '/' ? '' : u.pathname))}</span>`; } catch { return `<span class="key">${esc(t)}</span>`; } };
+const blocksFromScenarios = (list) => `<div class="blocks">${list.map((s) => `<i class="${({ PASSED: 'p', FAILED: 'f', NEEDS_REVIEW: 'r', BLOCKED: 'b', NOT_EXECUTED: 'b', IN_PROGRESS: 'n' })[s.status] || ''}" title="${esc(`${s.code} ${s.title || ''} — ${s.status}`)}"></i>`).join('')}</div>`;
+const blocksFromCounts = (c) => {
+  const order = [['PASSED', 'p'], ['FAILED', 'f'], ['NEEDS_REVIEW', 'r'], ['BLOCKED', 'b'], ['NOT_EXECUTED', 'b'], ['PENDING', '']];
+  const cells = order.flatMap(([k, cls]) => Array.from({ length: Math.min(c[k] || 0, 30) }, () => `<i class="${cls}"></i>`));
+  const total = Object.values(c).reduce((n, x) => n + x, 0);
+  return total ? `<div class="blocks" title="${esc(Object.entries(c).map(([k, v]) => `${k}: ${v}`).join(' · '))}">${cells.join('')}</div><div class="sub">${c.PASSED || 0} de ${total} passaram</div>` : '<span class="sub">—</span>';
+};
+
+// ── Indicadores ──
+function kpiCard(label, value, detail, spark) {
+  const max = Math.max(1, ...(spark || []));
+  // Fatia sem movimento fica como linha de base (2 px), não como barra.
+  return `<div class="card kpi"><div class="label">${label}</div><div class="v">${value}</div><div class="d">${detail}</div>${spark && spark.some((v) => v) ? `<div class="spark" aria-hidden="true" title="tendência no período">${spark.map((v) => `<i style="height:${v ? Math.max(12, Math.round((v / max) * 100)) + '%' : '2px'}"></i>`).join('')}</div>` : '<div class="spark" aria-hidden="true"></div>'}</div>`;
+}
+function delta(cur, prev, { unit = '', better = 'up', pp = false } = {}) {
+  if (cur == null || prev == null || prev === 0 && cur === 0) return '<span>sem comparação</span>';
+  const d = cur - prev;
+  if (d === 0) return '<span>igual ao período anterior</span>';
+  const good = better === 'up' ? d > 0 : d < 0;
+  const txt = `${d > 0 ? '+' : '−'}${Math.abs(d)}${pp ? ' p.p.' : unit}`;
+  return `<b class="${good ? 'up' : 'down'}">${txt}</b> vs. período anterior`;
+}
+function renderKpis() {
+  const k = S.business.kpis;
+  $('kpis').innerHTML = [
+    kpiCard('Cards testados', k.cards.value, `${delta(k.cards.value, k.cards.prev)}${k.explorations ? ` · ${k.explorations} exploração(ões)` : ''}`, k.cards.spark),
+    kpiCard('Bugs confirmados', k.bugs.value, `${k.bugs.jira} viraram card no Jira`, k.bugs.spark),
+    kpiCard('Aprovados de primeira', k.firstPass.value == null ? '—' : `${k.firstPass.value}%`, delta(k.firstPass.value, k.firstPass.prev, { pp: true }), k.firstPass.spark),
+    kpiCard('Tempo médio por card', dur(k.avgMinutes.value), delta(k.avgMinutes.value, k.avgMinutes.prev, { unit: ' min', better: 'down' }), k.avgMinutes.spark),
+    kpiCard('Cobertura dos critérios', k.coverage.value == null ? '—' : `${k.coverage.value}%`, k.coverage.value == null ? 'nenhum card com critérios no período' : `${k.coverage.uncovered} critério(s) sem cenário executado`, null),
+    kpiCard('Consumo do Claude', k.consumption && k.consumption.value != null ? `${fmtNum(k.consumption.value)} <span class="sub">tokens</span>` : '—', k.consumption ? `todas as sessões neste projeto · ${delta(Math.round(k.consumption.value / 1000), Math.round((k.consumption.prev || 0) / 1000), { unit: ' mil', better: 'down' })}` : 'sem dados', k.consumption && k.consumption.spark),
+  ].join('');
+}
+
+// ── Fila de decisões ──
+const missionOfRun = (runId) => (S.missions || []).find((m) => (m.runId || m.run_id) === runId && ['RUNNING', 'WAITING'].includes(m.status));
+function decisions() {
+  const items = [];
+  for (const p of S.prompts || []) {
+    const m = (S.missions || []).find((x) => x.id === p.mission_id);
+    items.push({ icon: 'risk', bg: 'var(--bad-soft)', title: `Permissão · ${p.kind === 'plan' ? 'aprovação' : 'ação do agente'}`,
+      sub: `${m ? `${esc(m.target)} · ${AGENT_LABEL[m.agent] || m.agent} · ` : ''}${esc(p.summary || p.tool || '')}`,
+      acts: CAN_ACT ? `<button class="btn ghost" data-prompt="${p.id}" data-d="deny">Negar</button><button class="btn" data-prompt="${p.id}" data-d="allow">Permitir esta ação</button>` : '' });
+  }
+  for (const p of S.pending || []) {
+    const m = missionOfRun(p.runId);
+    if (p.kind === 'plan') {
+      const n = (p.scenarios || []).length;
+      const unc = (p.uncovered || []).length;
+      items.push({ icon: 'plan', bg: 'var(--gold-soft)', title: `Aprovar plano · <span class="key">${esc(p.card)}</span>`,
+        sub: `${n} cenário(s) · ${AGENT_LABEL[p.agent] || p.agent}${unc ? ` · <span class="down">${unc} critério(s) sem cenário</span>` : ' · todos os critérios cobertos'}${m ? '' : ' · aprove no terminal do agente'}`,
+        acts: `<button class="btn ghost" data-plan="${esc(p.runId)}">Ver plano</button>${m && CAN_ACT ? `<button class="btn ok" data-approve="${esc(m.id)}">Aprovar</button>` : ''}` });
+    } else {
+      items.push({ icon: 'risk', bg: 'var(--bad-soft)', title: `Ação de risco · <span class="key">${esc(p.card)}</span>`,
+        sub: `${esc(p.title)} · autorize ou negue no terminal do agente`, acts: '' });
+    }
+  }
+  const qByRun = {};
+  for (const q of S.business.questions || []) (qByRun[q.runId] = qByRun[q.runId] || []).push(q);
+  for (const [runId, qs] of Object.entries(qByRun)) {
+    const m = missionOfRun(runId);
+    items.push({ icon: 'ask', bg: 'var(--info-soft)', title: `Responder ${qs.length} pergunta(s) · ${esc(qs[0].project)}`,
+      sub: `Modo descoberta: "${esc(qs[0].text)}"${qs.length > 1 ? ` e mais ${qs.length - 1}` : ''}${m ? '' : ' · responda no terminal do agente'}`,
+      acts: m && CAN_ACT ? `<button class="btn" data-answer="${esc(m.id)}" data-run="${esc(runId)}">Responder</button>` : '' });
+  }
+  for (const m of S.missions || []) {
+    if (m.status !== 'FAILED' && m.status !== 'STOPPED') continue;
+    items.push({ icon: 'risk', bg: 'var(--warn-soft)', title: `Missão ${m.status === 'FAILED' ? 'falhou' : 'parada'} · <span class="key">${esc(m.target)}</span>`,
+      sub: `${AGENT_LABEL[m.agent] || m.agent} · ${esc((m.error || m.last_message || 'sem detalhe').slice(0, 200))}`,
+      acts: CAN_ACT ? `<button class="btn ghost" data-archive="${esc(m.id)}">Arquivar</button><button class="btn" data-resume="${esc(m.id)}">Retomar</button>` : '' });
+  }
+  for (const r of S.runs || []) {
+    if (!['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status) || missionOfRun(r.id) || (r.idleMinutes ?? 0) < 15) continue;
+    if ((S.pending || []).some((p) => p.runId === r.id)) continue;
+    items.push({ icon: 'chat', bg: 'var(--warn-soft)', title: `Ninguém está operando · <span class="key">${esc(r.card)}</span>`,
+      sub: `Parado há ${dur(r.idleMinutes)} em "${esc((r.nowLine || '').slice(0, 120))}". Retome com um agente ou encerre.`,
+      acts: CAN_ACT ? `<button class="btn ghost" data-abort="${esc(r.id)}">Encerrar</button><button class="btn" data-reopen="${esc(r.card)}" data-kind="resume">Retomar</button>` : '' });
+  }
+  const covered = new Set((S.pending || []).map((p) => p.runId));
+  for (const m of S.missions || []) {
+    if (m.status !== 'WAITING' || covered.has(m.runId || m.run_id) || qByRun[m.runId || m.run_id]) continue;
+    items.push({ icon: 'chat', bg: 'var(--ok-soft)', title: `O agente espera você · <span class="key">${esc(m.target)}</span>`,
+      sub: esc((m.last_message || '').slice(0, 180)), acts: CAN_ACT ? `<button class="btn" data-chat="${esc(m.id)}">Responder</button>` : '' });
+  }
+  return items;
+}
+let lastCount = null;
+const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch {} } };
+let alertsOn = store.get('sanctum-alerts') === '1' && typeof Notification !== 'undefined' && Notification.permission === 'granted';
+function paintAlerts() { $('alerts').textContent = `Avisos: ${alertsOn ? 'ligados' : 'desligados'}`; }
+$('alerts').addEventListener('click', async () => {
+  if (typeof Notification === 'undefined') { alert('Este navegador não mostra avisos do sistema.'); return; }
+  if (!alertsOn && Notification.permission !== 'granted' && (await Notification.requestPermission()) !== 'granted') { alert('Os avisos foram bloqueados no navegador.'); return; }
+  alertsOn = !alertsOn; store.set('sanctum-alerts', alertsOn ? '1' : '0'); paintAlerts();
+});
+paintAlerts();
+function notifyNew(items) {
+  if (lastCount !== null && items.length > lastCount && alertsOn && document.hidden) {
+    try { new Notification('Sanctum: precisa de você', { body: items[0].title.replace(/<[^>]+>/g, ''), icon: '/favicon.png', tag: 'sanctum-decisao' }); } catch {}
+  }
+  lastCount = items.length;
+}
+function renderQueue() {
+  const items = decisions();
+  notifyNew(items);
+  $('dec-count').textContent = items.length;
+  $('dec-count').classList.toggle('zero', items.length === 0);
+  $('dec-sub').textContent = items.length ? `${items.length} decisão(ões) · os agentes estão parados esperando` : 'nada esperando por você';
+  $('queue').innerHTML = items.length ? items.map((i) => `<div class="qi"><div class="ic" style="background:${i.bg}">${ICON[i.icon]}</div><div><div class="t">${i.title}</div><div class="s">${i.sub}</div></div><div class="acts">${i.acts}</div></div>`).join('')
+    : '<div class="empty">Nenhuma decisão pendente.</div>';
+  document.title = items.length ? `(${items.length}) Sanctum · Central de QA` : 'Sanctum · Central de QA';
+}
+
+// ── Em andamento ──
+function renderRunning() {
+  const active = (S.runs || []).filter((r) => ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status));
+  const linked = new Set(active.map((r) => r.id));
+  const loose = (S.missions || []).filter((m) => ['RUNNING', 'WAITING'].includes(m.status) && !linked.has(m.runId || m.run_id));
+  $('run-sub').textContent = active.length + loose.length ? `${active.length + loose.length} missão(ões)` : '';
+  if (!active.length && !loose.length) { $('running').innerHTML = '<div class="empty">Nenhuma missão em andamento.</div>'; return; }
+  const rows = active.map((r) => {
+    const st = S.business.stages[r.id];
+    const steps = st ? `<div class="steps">${st.steps.map((s, i) => `<span class="${i < st.current ? 'done' : i === st.current ? 'now' : ''}">${esc(s)}</span>`).join('')}</div>` : '';
+    const m = missionOfRun(r.id);
+    const idle = r.idleMinutes != null && r.idleMinutes >= 15 ? ` <span class="tag t-warn">parado há ${dur(r.idleMinutes)}</span>` : '';
+    return `<tr data-detail="${esc(r.id)}"><td>${targetLabel(r.card)}<div class="sub">${esc(MODE[r.mode] || r.mode)} · ${esc(r.env)}</div></td><td>${agentTag(r.agent)}</td><td>${steps}${idle}</td>
+      <td>${r.scenarios.length ? `${blocksFromScenarios(r.scenarios)}<div class="sub">${r.scenarios.filter((s) => !['PENDING', 'IN_PROGRESS'].includes(s.status)).length} de ${r.scenarios.length}</div>` : '<span class="sub">sem plano ainda</span>'}</td>
+      <td>${since(r.startedAt)}</td><td class="sub last">${esc(r.nowLine || '')}${r.charter ? `<br>Sessão ${esc(r.charter.code)}: ${r.charter.minutesLeft >= 0 ? `faltam ${r.charter.minutesLeft} min` : `passou ${-r.charter.minutesLeft} min`}` : ''}</td>
+      <td class="act">${m && CAN_ACT ? `<button class="btn ghost sm" data-chat="${esc(m.id)}">Conversa</button>` : ''}</td></tr>`;
+  });
+  for (const m of loose) {
+    rows.push(`<tr><td>${targetLabel(m.target)}<div class="sub">${esc(({ qa: 'Teste do card', explore: 'Exploração', retest: 'Reteste', resume: 'Retomada', analyze: 'Análise da US' })[m.kind] || m.kind)} · preparando</div></td><td>${agentTag(m.agent)}</td><td><span class="tag ${m.status === 'WAITING' ? 't-gold' : 't-info'}">${m.status === 'WAITING' ? 'Esperando você' : 'Trabalhando'}</span></td>
+      <td><span class="sub">—</span></td><td>${since(m.created_at)}</td><td class="sub last">${esc(((m.activity || []).slice(-1)[0] || {}).text || '')}</td><td class="act">${CAN_ACT ? `<button class="btn ghost sm" data-chat="${esc(m.id)}">Conversa</button>` : ''}</td></tr>`);
+  }
+  $('running').innerHTML = `<table class="tbl"><thead><tr><th>Card</th><th>Agente</th><th>Etapa</th><th>Cenários</th><th>Tempo</th><th>Último passo</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+}
+
+// ── Resultados ──
+function renderResults() {
+  const list = S.business.results || [];
+  $('res-sub').textContent = list.length ? `${list.length} concluído(s) no período` : '';
+  if (!list.length) { $('results').innerHTML = '<div class="empty">Nenhum teste concluído no período.</div>'; return; }
+  const seen = new Set();
+  $('results').innerHTML = `<table class="tbl"><thead><tr><th>Card</th><th>Veredito</th><th>Cenários</th><th>Bugs</th><th>Duração</th><th></th></tr></thead><tbody>${list.map((r) => {
+    const newest = !seen.has(r.card); seen.add(r.card);
+    const retest = CAN_ACT && newest && !r.card.startsWith('EXPLORA-') && ['REPROVADO', 'INCONCLUSIVO'].includes(r.verdict)
+      ? `<button class="btn ghost sm" data-reopen="${esc(r.card)}" data-kind="retest">Retestar</button>` : '';
+    const [label, cls] = VERDICT[r.verdict] || [r.verdict, 't-mute'];
+    return `<tr data-detail="${esc(r.runId)}"><td style="max-width:420px"><div class="key">${esc(r.card)}</div><div class="sub">${esc(r.title || MODE[r.mode] || '')}${r.mode === 'retest' ? ' · reteste' : ''}</div></td>
+      <td><span class="tag ${cls}">${esc(label)}</span></td><td>${blocksFromCounts(r.counts)}</td>
+      <td>${r.bugs}${r.jira.length ? ` · <span class="sub">${r.jira.map(jiraLink).join(', ')}</span>` : ''}</td>
+      <td>${dur(r.minutes)}<div class="sub">${new Date(r.endedAt).toLocaleDateString('pt-BR')}</div></td>
+      <td class="act"><div style="display:flex;gap:6px;justify-content:flex-end">${retest}${r.report ? `<a class="btn ghost sm" href="/report/${encodeURIComponent(r.runId)}" target="_blank" rel="noopener">Relatório</a>` : '<span class="sub" style="white-space:nowrap">sem relatório</span>'}</div></td></tr>`;
+  }).join('')}</tbody></table>`;
+}
+
+// ── Lateral ──
+function meter(label, w) {
+  if (!w || w.usedPct == null) return '';
+  const on = Math.round(w.usedPct / 10);
+  const cls = w.usedPct >= 90 ? 'max' : w.usedPct >= 70 ? 'hot' : 'on';
+  const reset = w.resetsAt ? ` · renova ${new Date(w.resetsAt).toLocaleString('pt-BR', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}` : '';
+  return `<div class="meter"><div class="row"><span>${label}</span><span>${Math.round(w.usedPct)}%${reset}</span></div><div class="bar">${Array.from({ length: 10 }, (_, i) => `<i class="${i < on ? cls : ''}"></i>`).join('')}</div></div>`;
+}
+function renderSide() {
+  const agents = (S.usage && S.usage.agents) || [];
+  $('agents').innerHTML = agents.length ? agents.map((a) => {
+    const top = Math.max(a.fiveHour?.usedPct ?? 0, a.sevenDay?.usedPct ?? 0);
+    const read = a.fiveHour?.usedPct != null || a.sevenDay?.usedPct != null;
+    const tag = !a.available ? '<span class="tag t-mute">sem dados</span>' : !read ? '<span class="tag t-mute">sem leitura</span>' : top >= 90 ? '<span class="tag t-bad">no limite</span>' : top >= 70 ? '<span class="tag t-warn">uso alto</span>' : '<span class="tag t-ok">disponível</span>';
+    return `<div class="ag"><div style="display:flex;gap:8px;align-items:center;font-weight:600">${agentTag(a.agent)} ${tag}</div>${meter('Janela de 5 h', a.fiveHour)}${meter('Semana', a.sevenDay)}${a.available && !read && !a.note ? '<div class="sub" style="margin-top:6px">O limite aparece depois da próxima resposta do agente.</div>' : ''}${a.note ? `<div class="sub" style="margin-top:6px">${esc(a.note)}</div>` : ''}</div>`;
+  }).join('') : '<div class="sub">Consumo indisponível.</div>';
+
+  const fails = S.business.failingModules || [];
+  const max = Math.max(1, ...fails.map((f) => f.failures));
+  $('fails').innerHTML = fails.length ? fails.map((f) => `<div class="mod"><span>${esc(f.name)}</span><div class="bar"><i style="width:${Math.round((f.failures / max) * 100)}%"></i></div><span class="sub">${f.failures}</span></div>`).join('')
+    : '<div class="sub">Nenhum cenário reprovado no período.</div>';
+
+  const k = S.business.knowledge || [];
+  $('knowledge').innerHTML = k.length ? k.map((x) => `<div class="row2"><span style="text-transform:capitalize">${esc(x.project)}</span><span class="sub">${x.staging} aprendizado(s) em revisão${x.mapScreens ? ` · mapa com ${x.mapScreens} telas` : ''}</span></div>`).join('')
+    : '<div class="sub">Nada aprendido ainda.</div>';
+}
+
+function renderBanner() {
+  const b = $('banner');
+  const stale = S.staleSince ? `Painel desatualizado: o Sanctum foi alterado às ${hhmm(S.staleSince)}. Feche e rode npm run live de novo para valer as regras novas.` : '';
+  b.textContent = stale;
+  b.classList.toggle('bad', false);
+  b.classList.toggle('on', !!stale);
+}
+
+function render() {
+  const parts = { renderKpis, renderQueue, renderRunning, renderResults, renderSide, renderBanner };
+  const broken = [];
+  for (const [name, fn] of Object.entries(parts)) { try { fn(); } catch (e) { broken.push(name); console.error(name, e); } }
+  if (broken.length) { const b = $('banner'); b.textContent = `Erro ao desenhar parte do painel (${broken.join(', ')}). Recarregue a página.`; b.classList.add('on', 'bad'); }
+  $('updated').textContent = `atualizado às ${hhmm(S.generatedAt)}`;
+  $('period-label').textContent = days === 1 ? 'hoje' : `últimos ${days} dias`;
+}
+
+async function tick() {
+  clearTimeout(timer);
+  try {
+    const res = await fetch(`/api/state?days=${days}`, { cache: 'no-store' });
+    if (!res.ok) throw new Error(String(res.status));
+    S = await res.json();
+    failures = 0;
+    render();
+  } catch (e) {
+    failures++;
+    if (failures >= 2) { const b = $('banner'); b.textContent = 'Sem conexão com o painel. O npm run live ainda está rodando?'; b.classList.add('on', 'bad'); }
+  }
+  timer = setTimeout(tick, document.hidden ? 15000 : 4000);
+}
+document.addEventListener('visibilitychange', () => { if (!document.hidden) tick(); });
+
+// ── Ações ──
+document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  days = Number(b.dataset.days);
+  document.querySelectorAll('.seg button').forEach((x) => x.classList.toggle('on', x === b));
+  tick();
+}));
+function choice(id, onChange) { const el = $(id); el.addEventListener('click', (e) => { const t = e.target.closest('button'); if (!t || t.disabled) return; el.querySelectorAll('button').forEach((x) => x.classList.toggle('on', x === t)); if (onChange) onChange(); }); return () => el.querySelector('.on').dataset.v; }
+const kindOf = choice('m-kind', () => refreshForm()), agentOf = choice('m-agent');
+/** Mesma regra do servidor: chave ou link do Jira é card; endereço sem http(s) ganha https (localhost/IP: http). */
+function parseTarget(raw) {
+  let t = raw.trim();
+  if (!t) return null;
+  const key = /(?:browse\/|selectedIssue=|^)([A-Za-z][A-Za-z0-9]+-\d+)(?:$|[?#&/])/.exec(t);
+  const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(t);
+  if (key && (!hasScheme || /atlassian\.net|\/browse\/|selectedIssue=/.test(t))) return { kind: 'card', key: key[1].toUpperCase() };
+  if (!hasScheme && /^[^\s/]+(\.[^\s/]+|:\d+)/.test(t)) t = `${/^(localhost|127\.|10\.|192\.168\.|\[?::1)/i.test(t) ? 'http' : 'https'}://${t}`;
+  try { const u = new URL(t); if (/^https?:$/.test(u.protocol)) return { kind: 'url', url: u.href }; } catch {}
+  return { kind: 'invalid' };
+}
+let fixedKind = null;
+function refreshForm() {
+  const t = parseTarget($('m-target').value);
+  const what = $('m-what');
+  $('m-card').hidden = !(t && t.kind === 'card') || !!fixedKind;
+  $('m-url').hidden = !(t && t.kind === 'url') || !!fixedKind;
+  $('m-resume').hidden = !fixedKind;
+  if (!t) what.textContent = 'Cole a chave do card, o link do Jira ou o endereço do sistema.';
+  else if (t.kind === 'invalid') what.textContent = 'Não reconheci: use a chave (PROJ-123), o link do card ou um endereço como sistema.com.br';
+  else if (t.kind === 'url') what.innerHTML = `Vai abrir <b>${esc(t.url)}</b>`;
+  else what.innerHTML = `Card <b>${esc(t.key)}</b>`;
+  if (t && t.kind === 'card' && !fixedKind) {
+    const tested = ((S && S.business && S.business.testedCards) || []).includes(t.key);
+    $('m-kind').querySelectorAll('button[data-v="retest"],button[data-v="automate"]').forEach((x) => { x.disabled = !tested; });
+    if (!tested && ['retest', 'automate'].includes(kindOf())) $('m-kind').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === 'qa'));
+    $('m-kind-hint').textContent = tested ? '' : 'Retestar e Automatizar valem para card que já tem teste concluído.';
+    const more = kindOf() === 'qa';
+    $('m-more').disabled = !more;
+    $('m-more-wrap').classList.toggle('off', !more);
+  }
+}
+$('m-target').addEventListener('input', refreshForm);
+function openMission(target, kind) {
+  $('m-err').textContent = CAN_ACT ? '' : 'Painel aberto só para leitura: inicie a missão pelo terminal.';
+  $('m-go').disabled = !CAN_ACT;
+  $('m-target').value = target || '';
+  $('m-more').checked = false;
+  // Retomar não é tipo de missão nova: vem da fila, com o card fixo.
+  fixedKind = kind === 'resume' ? 'resume' : null;
+  $('dm-h').textContent = fixedKind ? 'Retomar teste' : 'Nova missão';
+  $('m-go').textContent = fixedKind ? 'Retomar' : 'Iniciar missão';
+  $('m-target').readOnly = !!fixedKind;
+  $('m-resume').innerHTML = fixedKind ? `O agente continua o teste de <b>${esc(target)}</b> de onde parou, sem refazer o que já foi concluído.` : '';
+  if (kind && !fixedKind) $('m-kind').querySelectorAll('button').forEach((x) => x.classList.toggle('on', x.dataset.v === kind));
+  refreshForm();
+  $('dlg-mission').showModal();
+  (target ? $('m-obj') : $('m-target')).focus();
+}
+$('new-mission').addEventListener('click', () => openMission('', 'qa'));
+$('mission-form').addEventListener('submit', async (e) => {
+  if (e.submitter && e.submitter.value !== 'go') return;
+  e.preventDefault();
+  const t = parseTarget($('m-target').value);
+  if (!t || t.kind === 'invalid') { $('m-err').textContent = 'Informe a chave do card (PROJ-123), o link do card no Jira ou o endereço do sistema.'; return; }
+  const kind = fixedKind || (t.kind === 'url' ? 'explore' : kindOf() === 'qa' && $('m-more').checked ? 'explore' : kindOf());
+  $('m-go').disabled = true;
+  try {
+    await api('/api/missions', { agent: agentOf(), target: t.kind === 'url' ? t.url : t.key, kind, objective: $('m-obj').value.trim() });
+    $('dlg-mission').close(); $('m-target').value = ''; $('m-obj').value = ''; tick();
+  } catch (err) { $('m-err').textContent = err.message; } finally { $('m-go').disabled = false; }
+});
+
+let chatId = null;
+function openChat(id, prefill) {
+  const m = (S.missions || []).find((x) => x.id === id);
+  if (!m) return;
+  chatId = id;
+  $('dc-h').textContent = `${m.target} · ${AGENT_LABEL[m.agent] || m.agent}`;
+  const msgs = (m.messages || []).slice(-30);
+  $('dc-msgs').innerHTML = msgs.length ? msgs.map((x) => `<div class="msg ${esc(x.role)}"><span class="who">${x.role === 'user' ? 'você' : x.role === 'agent' ? 'agente' : 'sistema'} · ${hhmm(x.ts)}</span>${esc(x.text)}</div>`).join('') : '<div class="sub">Sem mensagens ainda.</div>';
+  $('dc-text').value = prefill || '';
+  $('dc-err').textContent = '';
+  $('dc-stop').hidden = !['RUNNING', 'WAITING'].includes(m.status);
+  $('dlg-chat').showModal();
+  const box = $('dc-msgs').parentElement; box.scrollTop = box.scrollHeight;
+  $('dc-text').focus();
+}
+$('dc-close').addEventListener('click', () => $('dlg-chat').close());
+$('dc-send').addEventListener('click', async () => {
+  const text = $('dc-text').value.trim();
+  if (!text) { $('dc-err').textContent = 'Escreva a resposta.'; return; }
+  try { await api(`/api/missions/${chatId}/reply`, { text }); $('dlg-chat').close(); tick(); } catch (e) { $('dc-err').textContent = e.message; }
+});
+let stopArmed = false;
+$('dc-stop').addEventListener('click', async () => {
+  if (!stopArmed) { stopArmed = true; $('dc-stop').textContent = 'Confirmar: parar a missão'; setTimeout(() => { stopArmed = false; $('dc-stop').textContent = 'Parar missão'; }, 4000); return; }
+  stopArmed = false; $('dc-stop').textContent = 'Parar missão';
+  try { await api(`/api/missions/${chatId}/stop`); $('dlg-chat').close(); tick(); } catch (e) { $('dc-err').textContent = e.message; }
+});
+
+let planRun = null;
+function openPlan(runId) {
+  const p = (S.pending || []).find((x) => x.runId === runId && x.kind === 'plan');
+  if (!p) return;
+  planRun = runId;
+  const m = missionOfRun(runId);
+  $('dp-h').textContent = `Plano · ${p.card}`;
+  $('dp-body').innerHTML = `${(p.uncovered || []).length ? `<div class="banner on" style="margin:0 0 12px">Critérios sem cenário: ${p.uncovered.map(esc).join(' · ')}</div>` : ''}
+    <ul class="plan-list">${(p.scenarios || []).map((s) => `<li><span class="key">${esc(s.code)}</span> ${esc(s.title)}<div class="sub">Esperado: ${esc(s.expected || '')}</div></li>`).join('')}</ul>
+    ${m ? '' : '<p class="sub">Esta missão foi iniciada fora do painel: aprove no terminal do agente.</p>'}`;
+  $('dp-approve').hidden = !(m && CAN_ACT);
+  $('dp-adjust').hidden = !(m && CAN_ACT);
+  $('dlg-plan').showModal();
+}
+$('dp-close').addEventListener('click', () => $('dlg-plan').close());
+$('dp-approve').addEventListener('click', async () => { const m = missionOfRun(planRun); if (!m) return; try { await api(`/api/missions/${m.id}/reply`, { text: 'Plano aprovado. Pode executar.', approvePlan: true }); $('dlg-plan').close(); tick(); } catch (e) { alert(e.message); } });
+$('dp-adjust').addEventListener('click', () => { const m = missionOfRun(planRun); $('dlg-plan').close(); if (m) openChat(m.id, 'Ajustes no plano: '); });
+
+document.addEventListener('click', async (e) => {
+  const t = e.target.closest('button[data-prompt],button[data-approve],button[data-plan],button[data-chat],button[data-answer],button[data-archive],button[data-resume],button[data-abort],button[data-reopen]');
+  if (!t) return;
+  if (t.dataset.plan) return openPlan(t.dataset.plan);
+  if (t.dataset.reopen) return openMission(t.dataset.reopen, t.dataset.kind);
+  if (t.dataset.abort && t.dataset.armed !== '1') {
+    t.dataset.armed = '1'; t.textContent = 'Confirmar: encerrar o run';
+    setTimeout(() => { t.dataset.armed = ''; t.textContent = 'Encerrar'; }, 4000);
+    return;
+  }
+  if (t.dataset.chat) return openChat(t.dataset.chat);
+  if (t.dataset.answer) {
+    const qs = (S.business.questions || []).filter((q) => q.runId === t.dataset.run);
+    return openChat(t.dataset.answer, qs.map((q, i) => `${i + 1}. ${q.text}${q.options.length ? ` (${q.options.join(' / ')})` : ''}\nResposta: `).join('\n\n'));
+  }
+  t.disabled = true;
+  try {
+    if (t.dataset.prompt) await api(`/api/prompts/${t.dataset.prompt}`, { decision: t.dataset.d });
+    if (t.dataset.approve) await api(`/api/missions/${t.dataset.approve}/reply`, { text: 'Plano aprovado. Pode executar.', approvePlan: true });
+    if (t.dataset.archive) await api(`/api/missions/${t.dataset.archive}/archive`);
+    if (t.dataset.resume) await api(`/api/missions/${t.dataset.resume}/resume`);
+    if (t.dataset.abort) await api(`/api/runs/${encodeURIComponent(t.dataset.abort)}/abort`, { reason: 'encerrado pelo usuário no painel: ninguém estava operando' });
+    tick();
+  } catch (err) { alert(err.message); t.disabled = false; }
+});
+
+// ── Detalhe do run ──
+let D = null, dRun = null, dTab = null, dFilter = 'all', dTimer = null;
+const STATUS_TAG = { PASSED: ['Passou', 't-ok'], FAILED: ['Falhou', 't-bad'], NEEDS_REVIEW: ['Em revisão', 't-warn'], BLOCKED: ['Bloqueado', 't-mute'], NOT_EXECUTED: ['Não executado', 't-mute'], PENDING: ['Pendente', 't-mute'], IN_PROGRESS: ['Agora', 't-info'] };
+const statusTag = (st) => { const [l, c] = STATUS_TAG[st] || [st, 't-mute']; return `<span class="tag ${c}">${esc(l)}</span>`; };
+const isActive = (r) => ['PLANNING', 'AWAITING_APPROVAL', 'EXECUTING'].includes(r.status);
+const shotUrl = (id) => `/evidence/${id}`;
+
+async function openDetail(runId) {
+  dRun = runId; dTab = null; dFilter = 'all';
+  $('drawer').hidden = false; $('d-scrim').hidden = false;
+  $('d-title').textContent = 'Carregando…'; $('d-body').innerHTML = ''; $('d-tabs').innerHTML = ''; $('d-facts').innerHTML = '';
+  await loadDetail();
+  $('d-close').focus();
+}
+function closeDetail() { dRun = null; D = null; clearTimeout(dTimer); $('drawer').hidden = true; $('d-scrim').hidden = true; }
+async function loadDetail() {
+  clearTimeout(dTimer);
+  if (!dRun) return;
+  try {
+    const res = await fetch(`/api/runs/${encodeURIComponent(dRun)}/detail`, { cache: 'no-store' });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || String(res.status));
+    D = await res.json();
+    renderDetail();
+  } catch (e) { $('d-body').innerHTML = `<div class="empty">Não deu para carregar o detalhe: ${esc(e.message)}</div>`; }
+  if (dRun && D && isActive(D.run) && !document.hidden) dTimer = setTimeout(loadDetail, 4000);
+}
+function renderDetail() {
+  const r = D.run, d = D.detail;
+  const res = (S && S.business.results || []).find((x) => x.runId === r.id);
+  const active = isActive(r);
+  if (!dTab) dTab = active ? 'agora' : 'cenarios';
+  $('d-title').innerHTML = `${targetLabel(r.card)} ${res && res.title ? `<span style="font-weight:500">${esc(res.title)}</span>` : ''} ${active ? '<span class="live"><i></i>ao vivo</span>' : res ? statusTagVerdict(res.verdict) : ''}`;
+  $('d-sub').textContent = `${MODE[r.mode] || r.mode} · ${r.env} · ${AGENT_LABEL[r.agent] || r.agent}`;
+  const counts = {}; for (const s of d.scenarios) counts[s.status] = (counts[s.status] || 0) + 1;
+  const done = d.scenarios.filter((s) => !['PENDING', 'IN_PROGRESS'].includes(s.status)).length;
+  const st = S && S.business.stages[r.id];
+  const mins = Math.round(((r.endedAt ? Date.parse(r.endedAt) : Date.now()) - Date.parse(r.startedAt)) / 60000);
+  $('d-facts').innerHTML = [
+    st ? `<div><span>Etapa</span><div class="steps">${st.steps.map((x, i) => `<span class="${i < st.current ? 'done' : i === st.current ? 'now' : ''}">${esc(x)}</span>`).join('')}</div></div>` : '',
+    `<div><span>Cenários</span>${done} de ${d.scenarios.length}${counts.PASSED ? ` · <b class="okc">${counts.PASSED} passaram</b>` : ''}${counts.FAILED ? ` · <b class="badc">${counts.FAILED} falharam</b>` : ''}${counts.NEEDS_REVIEW ? ` · ${counts.NEEDS_REVIEW} em revisão` : ''}</div>`,
+    `<div><span>Tempo</span>${dur(mins)}</div>`,
+    `<div><span>Atividade</span>${d.counts.actions} ações · ${d.counts.checks} verificações</div>`,
+  ].join('');
+  const tabs = [...(active ? [['agora', 'Agora', '']] : []), ['cenarios', 'Cenários', d.scenarios.length], ['passos', 'Passo a passo', d.steps.length], ['evid', 'Evidências', d.shots.length + (d.video ? 1 : 0)]];
+  if (!tabs.some(([k]) => k === dTab)) dTab = tabs[0][0];
+  $('d-tabs').innerHTML = tabs.map(([k, l, n]) => `<button role="tab" data-dtab="${k}" class="${k === dTab ? 'on' : ''}">${l}${n !== '' ? `<span class="n">${n}</span>` : ''}</button>`).join('');
+  const open = new Set([...$('d-body').querySelectorAll('details[open]')].map((x) => x.dataset.code));
+  $('d-body').innerHTML = ({ agora: tabNow, cenarios: tabScenarios, passos: tabSteps, evid: tabEvidence })[dTab](r, d, open);
+}
+function statusTagVerdict(v) { const [l, c] = VERDICT[v] || [v, 't-mute']; return `<span class="tag ${c}">${esc(l)}</span>`; }
+function shotFigure(sh, label) {
+  if (!sh) return '<div class="noshot">Nenhum print salvo ainda. O agente salva print ao verificar e quando algo falha.</div>';
+  if (!sh.exists) return `<div class="noshot">Print apagado pela limpeza de evidências (${esc(sh.name)}).</div>`;
+  return `<img class="shotimg" src="${shotUrl(sh.id)}" alt="${esc(label || sh.name)}" data-zoom="${sh.id}" loading="lazy">`;
+}
+function tabNow(r, d) {
+  const cur = d.scenarios.find((s) => s.status === 'IN_PROGRESS');
+  const last = [...d.shots].reverse().find((x) => x.exists) || d.shots[d.shots.length - 1];
+  const recent = d.steps.slice(-6).reverse();
+  return `<div class="now-grid"><div>${shotFigure(last, 'última tela salva')}
+    ${last ? `<div class="cap"><span>Última tela salva${last.code ? ` · ${esc(last.code)}` : ''}</span><span>${hhmm(last.ts)}</span></div>` : ''}</div>
+    <div class="now-side">
+      <div class="box"><div class="label">Cenário atual</div>${cur ? `<div style="font-weight:600;margin-top:4px"><span class="key">${esc(cur.code)}</span> ${esc(cur.title)}</div><div class="sub" style="margin-top:6px">Esperado: ${esc(cur.expected)}</div>` : `<div class="sub" style="margin-top:4px">${esc(r.nowLine || 'nenhum cenário em execução agora')}</div>`}</div>
+      <div class="box"><div class="label">Últimos passos</div>${recent.map((x) => `<div class="mini"><span class="t">${hhmm(x.ts)}</span><span class="${x.kind === 'check' ? 'okc' : x.kind === 'fail' ? 'badc' : ''}">${esc(x.text)}</span></div>`).join('') || '<div class="sub">—</div>'}</div>
+      ${cur ? `<div class="box"><div class="label">Sinais do cenário</div><div style="font-size:13px;margin-top:4px">${cur.signals.consoleErrors} erro(s) de console · ${cur.signals.httpErrors} resposta(s) de erro da API · ${cur.signals.createdData} dado(s) criado(s)</div></div>` : ''}
+    </div></div>`;
+}
+function tabScenarios(r, d, open) {
+  if (!d.scenarios.length) return '<div class="empty">Ainda sem plano.</div>';
+  return d.scenarios.map((s) => {
+    const shots = d.shots.filter((x) => x.code === s.code && x.exists).slice(-3);
+    const bug = s.status === 'FAILED' && s.classification === 'PRODUCT_BUG';
+    const isOpen = open.has(s.code) || (open.size === 0 && (s.status === 'FAILED' || s.status === 'IN_PROGRESS'));
+    return `<details class="scn" data-code="${esc(s.code)}" ${isOpen ? 'open' : ''}><summary><span class="key">${esc(s.code)}</span>
+      <div><div>${esc(s.title)}</div><div class="sub">${esc(s.priority)} · risco ${esc(({ HIGH: 'alto', MEDIUM: 'médio', LOW: 'baixo' })[s.risk] || s.risk)} · ${s.checks.length} verificação(ões)${s.charter ? ` · sessão ${esc(s.charter)}` : ''}</div></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${statusTag(s.status)}${bug ? '<span class="tag t-bad">Bug confirmado</span>' : s.classification === 'OBSERVATION' ? '<span class="tag t-info">Observação</span>' : ''}</div></summary>
+      <div class="inner">
+        <div class="kv"><span>Esperado</span>${esc(s.expected)}</div>
+        ${s.observed ? `<div class="kv"><span>Observado</span>${esc(s.observed)}</div>` : ''}
+        ${s.reason ? `<div class="kv"><span>Motivo</span>${esc(s.reason)}</div>` : ''}
+        ${s.checks.length ? `<div class="kv"><span>Verificações</span>${s.checks.map((c) => `<div class="chk"><span class="k">${esc(c.kind)}</span><span class="${c.passed ? 'okc' : 'badc'}">${c.passed ? '✓' : '✗'}</span><span>${esc(c.description)}${c.passed ? '' : ` · <span class="sub">esperado ${esc(c.expected)} · obtido ${esc(c.actual)}</span>`}</span></div>`).join('')}</div>` : ''}
+        ${s.status !== 'PENDING' ? `<div class="sub">${s.signals.consoleErrors} erro(s) de console · ${s.signals.httpErrors} resposta(s) de erro da API · ${s.signals.createdData} dado(s) criado(s)</div>` : ''}
+        ${shots.length ? `<div class="thumbs">${shots.map((x) => `<div>${shotFigure(x)}<div class="cap"><span>${esc(x.name)}</span><span>${hhmm(x.ts)}</span></div></div>`).join('')}</div>` : ''}
+      </div></details>`;
+  }).join('');
+}
+function tabSteps(r, d) {
+  const keep = { all: () => true, checks: (x) => x.kind === 'check' || x.kind === 'fail', fails: (x) => x.kind === 'fail' || x.kind === 'risk', you: (x) => x.kind === 'you', shots: (x) => x.kind === 'shot' }[dFilter];
+  const list = d.steps.filter(keep);
+  const filters = [['all', 'Tudo'], ['checks', 'Verificações'], ['fails', 'Falhas e riscos'], ['you', 'Suas decisões'], ['shots', 'Prints']];
+  const titleOf = new Map(d.scenarios.map((s) => [s.code, s]));
+  const groups = [];
+  for (const x of list) { const g = groups[groups.length - 1]; if (g && g.code === x.code) g.items.push(x); else groups.push({ code: x.code, items: [x] }); }
+  const shotOk = new Map(d.shots.map((x) => [x.id, x.exists]));
+  return `<div class="filt">${filters.map(([k, l]) => `<button data-dfilter="${k}" class="${k === dFilter ? 'on' : ''}">${l}</button>`).join('')}</div>` +
+    (groups.length ? groups.map((g) => {
+      const s = g.code && titleOf.get(g.code);
+      return `<div class="grp"><h5>${s ? `<span class="key">${esc(s.code)}</span> ${esc(s.title)} ${statusTag(s.status)}` : '<span class="sub">Geral</span>'}</h5><div class="tl">${g.items.map((x) =>
+        `<div class="ev ${x.kind}"><span class="t">${hhmm(x.ts)}</span><span class="x">${esc(x.text)}</span>${x.shot ? (shotOk.get(x.shot) ? `<button class="lnk" data-zoom="${x.shot}">ver print</button>` : '<span class="sub">apagado</span>') : '<span></span>'}</div>`).join('')}</div></div>`;
+    }).join('') : '<div class="empty">Nada com esse filtro.</div>');
+}
+function tabEvidence(r, d) {
+  const fmt = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, '0')}`;
+  const statusOf = new Map(d.scenarios.map((s) => [s.code, s.status]));
+  const color = (c) => ({ PASSED: 'var(--ok)', FAILED: 'var(--bad)', NEEDS_REVIEW: 'var(--warn)', IN_PROGRESS: 'var(--info)' })[statusOf.get(c)] || 'var(--faint)';
+  const video = !d.video ? '<div class="sub" style="margin-bottom:20px">Sem vídeo: ele é salvo quando o navegador fecha.</div>'
+    : !d.video.exists ? '<div class="sub" style="margin-bottom:20px">O vídeo deste teste foi apagado pela limpeza de evidências.</div>'
+    : `<video id="d-video" controls preload="metadata" src="${shotUrl(d.video.id)}"></video><div class="chapters">${d.video.chapters.map((c) => `<button data-seek="${c.atSec}"><i style="background:${color(c.code)}"></i>${esc(c.code)} · ${fmt(c.atSec)}</button>`).join('')}</div>`;
+  const kept = d.shots.filter((x) => x.exists).sort((a, b) => Number(b.failed) - Number(a.failed) || b.ts.localeCompare(a.ts));
+  const gone = d.shots.length - kept.length;
+  return `<div class="label" style="margin-bottom:8px">Vídeo da execução</div>${video}
+    <div class="label" style="margin-bottom:8px">Prints · ${kept.length}</div>
+    ${kept.length ? `<div class="thumbs">${kept.map((x) => `<div>${shotFigure(x)}<div class="cap"><span>${x.failed ? '<b class="badc">✗</b> ' : ''}${esc(x.code || 'geral')} · ${esc(x.name)}</span><span>${hhmm(x.ts)}</span></div></div>`).join('')}</div>` : '<div class="sub">Nenhum print disponível.</div>'}
+    ${gone ? `<p class="sub" style="margin-top:14px">${gone} print(s) deste teste foram apagados pela limpeza de evidências.</p>` : ''}`;
+}
+document.addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-detail]');
+  if (row && !e.target.closest('button,a')) return openDetail(row.dataset.detail);
+  const tab = e.target.closest('[data-dtab]'); if (tab) { dTab = tab.dataset.dtab; return renderDetail(); }
+  const flt = e.target.closest('[data-dfilter]'); if (flt) { dFilter = flt.dataset.dfilter; return renderDetail(); }
+  const zoom = e.target.closest('[data-zoom]'); if (zoom) { $('lb-img').src = shotUrl(zoom.dataset.zoom); return $('lightbox').showModal(); }
+  const seek = e.target.closest('[data-seek]'); if (seek) { const v = $('d-video'); if (v) { v.currentTime = Number(seek.dataset.seek); v.play().catch(() => {}); } }
+});
+$('lightbox').addEventListener('click', () => $('lightbox').close());
+$('d-close').addEventListener('click', closeDetail);
+$('d-scrim').addEventListener('click', closeDetail);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('drawer').hidden && !$('lightbox').open) closeDetail(); });
+
+$('readonly').textContent = CAN_ACT ? '' : 'Somente leitura: abra pelo npm run live para agir.';
+tick();
+</script>
+</body>
+</html>

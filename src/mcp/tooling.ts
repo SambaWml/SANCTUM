@@ -24,7 +24,8 @@ export class ToolContent {
 }
 
 /** Exigem aprovação humana a cada chamada (plano, ação de risco, escrita no Jira). */
-const SENSITIVE = new Set(['plan_approve', 'act_approved', 'jira_create_issue', 'jira_comment', 'jira_transition']);
+// question_answer: a resposta do usuário vira regra com fonte "manual" — só com a confirmação dele.
+const SENSITIVE = new Set(['plan_approve', 'act_approved', 'jira_create_issue', 'jira_comment', 'jira_transition', 'question_answer']);
 
 /** Ferramentas que operam a sessão do navegador (sem runId nos argumentos). */
 const SESSION_TOOLS = /^(navigate|act|act_approved|verify|snapshot|screenshot|network|network_simulate|network_simulate_clear|console|browser_viewport|browser_save_auth|browser_close)$/;
@@ -74,7 +75,7 @@ export function createRegistrar(
             throw new GuardError('operação não autorizada pelo usuário; nenhuma ação executada');
           }
         }
-        // Missão do Antigravity lançada pela Central de Caça: plano, ação de risco e escrita no Jira
+        // Missão do Antigravity lançada pelo painel do Sanctum: plano, ação de risco e escrita no Jira
         // só com a concessão única dada no painel (o modo sem terminal dele não pergunta ao usuário).
         // Sem run (ex.: Jira com o navegador fechado), vale a missão do Antigravity em andamento.
         if (SENSITIVE.has(name) && deps.db && /antigravity/i.test(store.agent?.client ?? '')) {
